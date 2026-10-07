@@ -1,0 +1,54 @@
+# ============================================================
+#  Nexus-Core — Exclusiones del contexto de build de Docker
+#  Reduce el tamaño de la imagen y evita filtrar secretos.
+# ============================================================
+
+# --- Control de versiones y metadatos del IDE ---
+.git
+.gitignore
+.github
+.idea
+.vscode
+*.swp
+
+# --- Entornos virtuales de Python ---
+venv
+.venv
+env
+ENV
+.python-version
+
+# --- Artefactos de Python ---
+__pycache__
+*.py[cod]
+*$py.class
+*.egg-info
+.eggs
+build
+dist
+.mypy_cache
+.ruff_cache
+.pytest_cache
+
+# --- Secretos y configuración local ---
+.env
+.env.*
+!.env.example
+
+# --- Volumen de datos local ---
+data
+logs
+*.log
+
+# --- Documentación y tests (no necesarios dentro de la imagen) ---
+docs
+tests
+backend/tests
+backend/requirements-dev.txt
+README.md
+Makefile
+*.md
+
+# --- Sistema ---
+.DS_Store
+Thumbs.db

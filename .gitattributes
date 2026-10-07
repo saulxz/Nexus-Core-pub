@@ -1,0 +1,36 @@
+# ============================================================
+#  Nexus-Core — Normalización de finales de línea
+#  El proyecto se despliega en Debian/ARM64, por lo que todos los
+#  ficheros de texto deben guardarse con LF. Sin esta regla, Git
+#  en Windows los convertiría a CRLF y rompería los scripts .sh.
+# ============================================================
+
+* text=auto eol=lf
+
+# --- Scripts de shell: deben ser LF o no se ejecutan en Linux ---
+*.sh text eol=lf
+
+# --- Código y configuración ---
+*.py   text eol=lf
+*.js   text eol=lf
+*.css  text eol=lf
+*.html text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.md   text eol=lf
+*.txt  text eol=lf
+
+# --- Ficheros sin extensión ---
+Dockerfile      text eol=lf
+Makefile        text eol=lf
+.gitignore      text eol=lf
+.dockerignore   text eol=lf
+.env.example    text eol=lf
+
+# --- Binarios ---
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary

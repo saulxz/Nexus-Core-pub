@@ -1,0 +1,15 @@
+# ============================================================
+#  Nexus-Core — Dependencias de desarrollo y testing
+#  Instalar con:  pip install -r requirements-dev.txt
+# ============================================================
+
+# Framework de tests
+pytest==8.3.4
+# Soporte de tests asíncronos (endpoints async)
+pytest-asyncio==0.25.0
+# Cliente HTTP usado por TestClient de FastAPI
+httpx==0.28.1
+
+# Calidad de código
+ruff==0.8.4
+mypy==1.14.0

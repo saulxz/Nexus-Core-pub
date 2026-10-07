@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Nexus-Core — Plataforma de orquestación de infraestructura y ciberseguridad con Agente de IA." />
+  <title>Nexus-Core · Orquestación &amp; Ciberseguridad Edge</title>
+
+  <!-- Tailwind CSS (Play CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Configuración de Tailwind: paleta oscura tipo panel cloud.
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          colors: {
+            nexus: {
+              950: '#020617',
+              900: '#0f172a',
+              800: '#1e293b',
+              700: '#334155'
+            }
+          },
+          boxShadow: {
+            glow: '0 0 25px rgba(34, 211, 238, 0.15)'
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Chart.js para las gráficas de telemetría -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+
+  <!-- Tipografía Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Estilos propios -->
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+
+<body class="min-h-screen bg-nexus-950 text-slate-100 font-sans antialiased">
+
+  <!-- ===================== CABECERA ===================== -->
+  <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-nexus-950/80 backdrop-blur">
+    <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+      <div class="flex items-center gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-emerald-500 font-extrabold text-nexus-950 shadow-glow">
+          N
+        </div>
+        <div>
+          <h1 class="text-lg font-bold leading-tight tracking-tight">Nexus-Core</h1>
+          <p class="text-xs text-slate-400">Orquestación &amp; Ciberseguridad Edge</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <!-- Indicador de estado del backend -->
+        <div class="flex items-center gap-2 rounded-full border border-slate-700/70 bg-nexus-900/70 px-3 py-1.5 text-xs">
+          <span id="status-dot" class="h-2.5 w-2.5 rounded-full bg-slate-500"></span>
+          <span id="status-text" class="text-slate-300">Comprobando…</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navegación por pestañas -->
+    <nav class="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-2 sm:px-6" aria-label="Secciones">
+      <button data-tab="dashboard" class="tab-btn tab-active">Dashboard</button>
+      <button data-tab="containers" class="tab-btn">Contenedores</button>
+      <button data-tab="network" class="tab-btn">Red</button>
+      <button data-tab="chat" class="tab-btn lg:hidden">Asistente IA</button>
+    </nav>
+  </header>
+
+  <!-- ===================== CONTENIDO ===================== -->
+  <main class="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[1fr_380px]">
+
+    <!-- ------------------ Columna principal ------------------ -->
+    <div class="space-y-6">
+
+      <!-- SECCIÓN: DASHBOARD -->
+      <section id="section-dashboard" class="tab-section space-y-6">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold">Telemetría del sistema</h2>
+          <span id="metrics-updated" class="text-xs text-slate-500"></span>
+        </div>
+
+        <!-- Tarjetas de métricas -->
+        <div id="metrics-cards" class="grid grid-cols-2 gap-4 xl:grid-cols-4">
+          <!-- CPU -->
+          <article class="metric-card">
+            <div class="flex items-center justify-between">
+              <span class="metric-label">CPU</span>
+              <span class="text-cyan-400" aria-hidden="true">▉</span>
+            </div>
+            <p class="metric-value"><span id="metric-cpu">--</span><span class="metric-unit">%</span></p>
+            <div class="progress-track"><div id="bar-cpu" class="progress-fill bg-cyan-400" style="width:0%"></div></div>
+          </article>
+
+          <!-- RAM -->
+          <article class="metric-card">
+            <div class="flex items-center justify-between">
+              <span class="metric-label">RAM</span>
+              <span class="text-emerald-400" aria-hidden="true">▤</span>
+            </div>
+            <p class="metric-value"><span id="metric-ram">--</span><span class="metric-unit">%</span></p>
+            <div class="progress-track"><div id="bar-ram" class="progress-fill bg-emerald-400" style="width:0%"></div></div>
+          </article>
+
+          <!-- Temperatura -->
+          <article class="metric-card">
+            <div class="flex items-center justify-between">
+              <span class="metric-label">Temperatura</span>
+              <span class="text-orange-400" aria-hidden="true">◉</span>
+            </div>
+            <p class="metric-value"><span id="metric-temp">--</span><span class="metric-unit">°C</span></p>
+            <p id="metric-temp-note" class="mt-2 text-xs text-slate-500">Sensor no disponible</p>
+          </article>
+
+          <!-- Disco -->
+          <article class="metric-card">
+            <div class="flex items-center justify-between">
+              <span class="metric-label">Disco</span>
+              <span class="text-violet-400" aria-hidden="true">▣</span>
+            </div>
+            <p class="metric-value"><span id="metric-disk">--</span><span class="metric-unit">%</span></p>
+            <div class="progress-track"><div id="bar-disk" class="progress-fill bg-violet-400" style="width:0%"></div></div>
+          </article>
+        </div>
+
+        <!-- Gráfica en tiempo real -->
+        <div class="panel">
+          <div class="mb-3 flex items-center justify-between">
+            <h3 class="panel-title">Uso de recursos (tiempo real)</h3>
+            <div class="flex items-center gap-4 text-xs text-slate-400">
+              <span class="flex items-center gap-1"><i class="inline-block h-2 w-3 rounded bg-cyan-400"></i> CPU</span>
+              <span class="flex items-center gap-1"><i class="inline-block h-2 w-3 rounded bg-emerald-400"></i> RAM</span>
+            </div>
+          </div>
+          <div class="h-64">
+            <canvas id="resource-chart" aria-label="Gráfica de uso de CPU y RAM"></canvas>
+          </div>
+        </div>
+
+        <!-- Información adicional -->
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div class="panel">
+            <p class="metric-label">Núcleos</p>
+            <p id="info-cpu-count" class="mt-1 text-2xl font-semibold">--</p>
+          </div>
+          <div class="panel">
+            <p class="metric-label">RAM usada</p>
+            <p id="info-ram-used" class="mt-1 text-2xl font-semibold">--</p>
+          </div>
+          <div class="panel">
+            <p class="metric-label">Uptime</p>
+            <p id="info-uptime" class="mt-1 text-2xl font-semibold">--</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN: CONTENEDORES -->
+      <section id="section-containers" class="tab-section hidden space-y-6">
+        <h2 class="text-xl font-semibold">Contenedores Docker</h2>
+
+        <!-- Formulario de despliegue -->
+        <div class="panel">
+          <h3 class="panel-title mb-4">Desplegar nuevo servicio</h3>
+          <form id="deploy-form" class="grid grid-cols-1 gap-3 sm:grid-cols-4">
+            <label class="flex flex-col gap-1 sm:col-span-2">
+              <span class="metric-label">Imagen</span>
+              <select id="deploy-image" class="input-field" required>
+                <option value="nginx">nginx</option>
+                <option value="alpine">alpine</option>
+                <option value="httpd">httpd</option>
+                <option value="busybox">busybox</option>
+                <option value="redis">redis</option>
+                <option value="postgres">postgres</option>
+                <option value="mysql">mysql</option>
+                <option value="traefik">traefik</option>
+                <option value="portainer">portainer</option>
+              </select>
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="metric-label">Puerto (opcional)</span>
+              <input id="deploy-port" type="number" min="1" max="65535" placeholder="8080" class="input-field" />
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="metric-label">Nombre (opcional)</span>
+              <input id="deploy-name" type="text" placeholder="web-demo" class="input-field" />
+            </label>
+            <div class="sm:col-span-4">
+              <button type="submit" class="btn-primary" id="deploy-submit">Desplegar contenedor</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Tabla de contenedores -->
+        <div class="panel overflow-hidden">
+          <div class="mb-3 flex items-center justify-between">
+            <h3 class="panel-title">Contenedores en el host</h3>
+            <button id="refresh-containers" class="btn-ghost">↻ Refrescar</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>Imagen</th>
+                  <th>Estado</th>
+                  <th>Puertos</th>
+                  <th class="text-right">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="containers-table">
+                <tr><td colspan="6" class="empty-row">Cargando contenedores…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN: RED -->
+      <section id="section-network" class="tab-section hidden space-y-6">
+        <h2 class="text-xl font-semibold">Ciberseguridad · Auditar red local</h2>
+
+        <div class="panel">
+          <h3 class="panel-title mb-4">Escaneo de hosts activos</h3>
+          <form id="scan-form" class="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <label class="flex flex-1 flex-col gap-1">
+              <span class="metric-label">Subred (CIDR privada)</span>
+              <input id="scan-subnet" type="text" placeholder="192.168.1.0/24" class="input-field" />
+            </label>
+            <button type="submit" class="btn-primary" id="scan-submit">Escanear red</button>
+          </form>
+          <p class="mt-2 text-xs text-slate-500">
+            Solo se permiten rangos privados (RFC1918) para evitar usos indebidos.
+          </p>
+        </div>
+
+        <div class="panel overflow-hidden">
+          <div class="mb-3 flex items-center justify-between">
+            <h3 class="panel-title">Resultados</h3>
+            <span id="scan-summary" class="text-xs text-slate-500">Sin datos</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Dirección IP</th>
+                  <th>Estado</th>
+                  <th>MAC</th>
+                  <th>Hostname</th>
+                </tr>
+              </thead>
+              <tbody id="network-table">
+                <tr><td colspan="4" class="empty-row">Ejecuta un escaneo para ver resultados.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ------------------ Panel de CHAT ------------------ -->
+    <aside id="chat-panel" class="tab-section hidden lg:block lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)]">
+      <div class="flex h-full min-h-[520px] flex-col overflow-hidden rounded-2xl border border-slate-800 bg-nexus-900/60">
+        <!-- Cabecera del chat -->
+        <div class="flex items-center gap-3 border-b border-slate-800 px-4 py-3">
+          <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-emerald-500 text-sm font-bold text-nexus-950">
+            IA
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-semibold">Asistente Nexus</p>
+            <p class="text-xs text-slate-400">Agente con acceso al sistema</p>
+          </div>
+          <button id="chat-clear" class="btn-ghost text-xs" title="Limpiar conversación">Limpiar</button>
+        </div>
+
+        <!-- Historial de mensajes -->
+        <div id="chat-messages" class="chat-scroll flex-1 space-y-3 overflow-y-auto p-4">
+          <div class="chat-bubble assistant">
+            Hola 👋 Soy el agente de Nexus-Core. Puedo escanear tu red, desplegar
+            contenedores o darte el estado del sistema. ¿En qué te ayudo?
+          </div>
+        </div>
+
+        <!-- Caja de entrada -->
+        <form id="chat-form" class="border-t border-slate-800 p-3">
+          <div class="flex items-end gap-2">
+            <textarea id="chat-input" rows="2" placeholder="Escribe un mensaje…"
+                      class="input-field flex-1 resize-none"></textarea>
+            <button type="submit" id="chat-send" class="btn-primary h-11 px-4" aria-label="Enviar mensaje">
+              ➤
+            </button>
+          </div>
+        </form>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ===================== TOASTS ===================== -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+
+  <!-- ===================== SCRIPTS ===================== -->
+  <script src="/js/app.js"></script>
+</body>
+</html>

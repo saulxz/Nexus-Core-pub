@@ -1,0 +1,124 @@
+# ============================================================
+#  Nexus-Core — Orquestación con Docker Compose
+#  Levanta la plataforma web y le concede acceso controlado al
+#  socket de Docker del host para administrar contenedores.
+#
+#  Uso:
+#     cp .env.example .env      # ajusta tus claves/valores
+#     docker compose up -d --build
+#
+#  AVISO DE SEGURIDAD: montar /var/run/docker.sock otorga al
+#  contenedor un nivel de privilegio equivalente a root sobre el
+#  host. Despliega esta plataforma SOLO en una red de confianza
+#  (LAN doméstica / laboratorio) y nunca expuesta directamente
+#  a Internet.
+# ============================================================
+
+name: nexus-core
+
+services:
+  nexus-core:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nexus-core:1.0.0
+    container_name: nexus-core
+    restart: unless-stopped
+
+    # Las variables se interpolan desde el fichero `.env` de la raíz
+    # (Docker Compose lo carga automáticamente). Se definen valores por
+    # defecto con `${VAR:-default}` para que el proyecto arranque igual.
+    environment:
+      # ----------------------- Aplicación -----------------------
+      APP_NAME: "Nexus-Core"
+      APP_VERSION: "1.0.0"
+      HOST: "0.0.0.0"
+      PORT: "8000"
+      API_PREFIX: "/api"
+      LOG_LEVEL: "${LOG_LEVEL:-INFO}"
+      FRONTEND_DIR: "frontend"
+      # ------------------------- Docker -------------------------
+      # Socket del daemon de Docker ubicado en el host.
+      DOCKER_SOCKET: "unix:///var/run/docker.sock"
+      CONTAINER_NAME_PREFIX: "nexus-"
+      MAX_RUNNING_CONTAINERS: "${MAX_RUNNING_CONTAINERS:-15}"
+      # Whitelist de imágenes que la plataforma/IA puede desplegar.
+      ALLOWED_IMAGES: "${ALLOWED_IMAGES:-alpine,nginx,httpd,busybox,redis,postgres,mysql,traefik,portainer}"
+      # -------------------------- Red ---------------------------
+      SCAN_DEFAULT_SUBNET: "${SCAN_DEFAULT_SUBNET:-192.168.1.0/24}"
+      SCAN_TIMEOUT_SECONDS: "${SCAN_TIMEOUT_SECONDS:-120}"
+      # --------------------- Agente de IA -----------------------
+      AI_PROVIDER: "${AI_PROVIDER:-openai}"
+      AI_MODEL: "${AI_MODEL:-gpt-4o-mini}"
+      AI_TEMPERATURE: "${AI_TEMPERATURE:-0.2}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      OPENAI_BASE_URL: "${OPENAI_BASE_URL:-https://api.openai.com/v1}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      # Google Gemini: la clave viaja en la cabecera x-goog-api-key.
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      GEMINI_BASE_URL: "${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta}"
+      GEMINI_MODEL: "${GEMINI_MODEL:-gemini-2.5-flash}"
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://host.docker.internal:11434/v1}"
+      # -------------------------- CORS --------------------------
+      ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-*}"
+
+    ports:
+      - "8000:8000"
+
+    volumes:
+      # Socket de Docker: imprescindible para que el backend pueda listar,
+      # crear y destruir contenedores del host mediante el SDK de Docker.
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Volumen con nombre para persistir datos y logs de la aplicación.
+      - nexus_data:/app/data
+
+    # El socket pertenece al grupo `docker` del host (GID 999 en Debian).
+    # Añadiendo el contenedor a ese GID, el usuario `nexus` puede usarlo
+    # sin necesidad de ejecutar la aplicación como root.
+    group_add:
+      - "999"
+
+    extra_hosts:
+      # Permite alcanzar servicios que corren en el host, por ejemplo un
+      # servidor Ollama local en http://host.docker.internal:11434.
+      - "host.docker.internal:host-gateway"
+
+    # ------------------- Endurecimiento -------------------
+    # Se eliminan TODAS las capabilities de Linux y se vuelven a añadir
+    # únicamente las imprescindibles para las funciones de red.
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_RAW     # nmap: envío/recepción de paquetes ICMP y ARP
+      - NET_ADMIN   # consulta de iptables e interfaces de red
+    # Impide que un proceso escale privilegios mediante binarios setuid.
+    security_opt:
+      - no-new-privileges:true
+
+    networks:
+      - nexus_net
+
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+    # Rotación de logs para no llenar la microSD/NVMe de la Raspberry Pi.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# --------------------------- Redes ---------------------------
+networks:
+  nexus_net:
+    name: nexus_net
+    driver: bridge
+
+# -------------------------- Volúmenes ------------------------
+volumes:
+  nexus_data:
+    name: nexus_data

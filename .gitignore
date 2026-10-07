@@ -1,0 +1,55 @@
+# ============================================================
+#  Nexus-Core — .gitignore
+# ============================================================
+
+# ------------------------- Python -------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# -------------------- Entornos virtuales ------------------
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# ------------------- Herramientas de calidad ---------------
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# --------------------- Secretos / config -------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ------------------------- Datos / logs --------------------
+data/
+logs/
+*.log
+
+# --------------------------- IDE ---------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ------------------------- Sistema -------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
