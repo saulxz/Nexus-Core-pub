@@ -1,259 +1,578 @@
 /* ============================================================
-   Nexus-Core — Estilos complementarios a Tailwind
-   Contiene componentes reutilizables (botones, tarjetas, tablas),
-   animaciones y ajustes finos que Tailwind no cubre directamente.
+   Nexus-Core — Estilos propios
+   ------------------------------------------------------------
+   Recolor y retexturizado siguiendo el sistema de diseño azul
+   marino: papel #070c1a, superficies #0d1527, acento #4da6ff.
+   Cada clase conserva la estructura del original; solo el color cambia.
+
+   Correspondencia con el original (fichero css/wiki.css):
+     .panel / .metric-card   <- .pw-card          (L758)
+     h2                      <- .pw-h2            (L1027)
+     .tab-btn                <- .pw-spectrum-chip (L3576)
+     .tab-active             <- [aria-checked=true]
+     .input-field            <- .pw-search-input  (L368)
+     .btn-ghost              <- .pw-btn-text      (L2138)
+     .btn-primary            <- relleno de acento (chip marcado)
+     .data-table             <- .pw-wtable        (L1229)
+     .badge                  <- .pw-tag           (L923)
+     .action-chip            <- .pw-chip          (L3009)
+     .toast                  <- .pw-note          (L1159)
+
+   IMPORTANTE: los nombres de clase son contrato con app.js
+   (.tab-btn, .tab-active, .panel, .progress-fill.warn/.danger,
+   .chat-bubble.user/.assistant/.system, .toast.success/.error…).
+   No renombrar sin revisar frontend/js/app.js.
    ============================================================ */
 
-/* ------------------- Reset / base ------------------- */
+/* ------------------- Tokens -------------------
+   Cada valor es literal de la variante azul marina de referencia:
+   papel #070c1a, superficies #0d1527 y acento #4da6ff. */
 :root {
   color-scheme: dark;
+
+  /* Superficies */
+  --nx-bg: #070c1a;
+  --nx-surface: #0d1527;
+  --nx-surface-2: #121d33;
+  --nx-wash: #121d33;
+  /* Un escalón de acento para las hovers de superficie (tablas, filas).
+     Es el mismo acento del sistema a un 7%, no un color nuevo. */
+  --nx-surface-hover: color-mix(in srgb, var(--nx-link) 7%, var(--nx-surface));
+
+  /* Tinta */
+  --nx-ink: #e9f1fd;
+  --nx-ink-soft: #b9c7e2;
+  --nx-ink-muted: #8497ba;
+  --nx-ink-faint: #2c4066;
+  --nx-on-accent: #070c1a;
+
+  /* Enlace y estados */
+  --nx-link: #4da6ff;
+  --nx-link-hover: #7cbdff;
+  --nx-link-visited: #9d8cff;
+  --nx-missing: #ff6b6b;
+
+  /* Filetes */
+  --nx-border: #1a2740;
+  --nx-border-soft: #131e33;
+  --nx-border-strong: #2c4066;
+
+  --nx-focus: #4da6ff;
+  --nx-focus-halo: rgba(77, 166, 255, 0.25);
+  /* Acento lavado: selección de texto y arranque del gradiente base
+     de la capa ambiental. Mismo rgba que la variante de referencia. */
+  --nx-accent-wash: rgba(77, 166, 255, 0.10);
+
+  /* Tipografía: pilas del sistema, sin descargas externas. */
+  --nx-font-serif: "Iowan Old Style", "Palatino Linotype", Palatino,
+    "Book Antiqua", Georgia, "Times New Roman", Times, serif;
+  --nx-font-sans: system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+
+  /* Escala tipográfica */
+  --nx-fs-xs: 0.75rem;
+  --nx-fs-sm: 0.8125rem;
+  --nx-fs-base: 1rem;
+  --nx-fs-lg: 1.125rem;
+  --nx-fs-xl: 1.3125rem;
+  --nx-fs-2xl: clamp(1.4rem, 1.18rem + 0.9vw, 1.75rem);
+
+  /* Espaciado */
+  --nx-space-1: 0.25rem;
+  --nx-space-2: 0.5rem;
+  --nx-space-3: 0.75rem;
+  --nx-space-4: 1rem;
+  --nx-space-5: 1.5rem;
+  --nx-space-6: 2rem;
+
+  /* Radios / sombras / ritmo */
+  --nx-radius-sm: 2px;
+  --nx-radius: 4px;
+  --nx-radius-lg: 6px;
+  --nx-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --nx-shadow: 0 1px 3px rgba(0, 0, 0, 0.55),
+    0 8px 20px -8px rgba(0, 0, 0, 0.6);
+  --nx-shadow-pop: 0 8px 28px -8px rgba(0, 0, 0, 0.65);
+  --nx-lh-tight: 1.25;
+  --nx-lh-body: 1.7;
+  --nx-lh-loose: 1.75;
+
+  /* Movimiento: un solo escalón para hover, como el original. */
+  --nx-dur-1: 180ms;
+  --nx-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Escalón fino del sistema ambiental (puerto de la variante local):
+     140ms para tinta, bordes y botones; 240ms para superficies; 600ms
+     para el revelado al hacer scroll. La curva es su ease-out. */
+  --nx-dur-micro: 140ms;
+  --nx-dur-standard: 240ms;
+  --nx-dur-reveal: 600ms;
+  --nx-ease-glide: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Alias que ya usaban botones, pestañas y badges: ahora marca el
+     ritmo corto de la referencia sin tocar ninguna regla. */
+  --nx-transition: var(--nx-dur-micro) var(--nx-ease-glide);
+  --nx-transition-card: var(--nx-dur-standard) var(--nx-ease-glide);
+
+  /* Colores funcionales del panel: NO se inventa ninguno.
+     Salen de tokens reales de la variante azul marina de referencia. */
+  --nx-metric-cpu: var(--nx-link);           /* #4da6ff */
+  --nx-metric-ram: var(--nx-link-visited);   /* #9d8cff */
+  --nx-metric-disk: var(--nx-ink-muted);     /* #8497ba */
+  --nx-warn: color-mix(in srgb, var(--nx-missing) 55%, var(--nx-surface-2));
 }
 
+/* ------------------- Reset / base ------------------- */
 body {
-  /* Fondo con un degradado sutil para dar profundidad al panel. */
-  background-image:
-    radial-gradient(1200px 600px at 100% -10%, rgba(6, 182, 212, 0.08), transparent 60%),
-    radial-gradient(900px 500px at -10% 110%, rgba(16, 185, 129, 0.06), transparent 60%);
+  background-color: var(--nx-bg);
+  color: var(--nx-ink);
+  font-family: var(--nx-font-sans);
 }
 
-/* ------------------- Navegación (tabs) ------------------- */
+/* ------------------- Capa ambiental -------------------
+   Una sola capa fija con tres pasadas: gradiente base, retícula de
+   46px y foco que sigue al puntero. Va en z-index:-1 porque el color
+   de <body> se propaga al canvas del documento (no pinta la caja del
+   body), así que la capa queda por encima del fondo y por debajo de
+   todo el contenido: paneles, tarjetas, cabecera con backdrop-blur
+   (z-40) y toasts (z-50). Verificado contra el orden de pintado de
+   CSS 2.1 apéndice E. */
+.nx-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    58% 42% at 68% 12%,
+    var(--nx-accent-wash) 0%,
+    rgba(77, 166, 255, 0.045) 45%,
+    rgba(77, 166, 255, 0) 100%
+  );
+}
+
+/* Retícula de 1px cada 46px: una mancha de tinta, no un patrón.
+   La máscara radial la derrite hacia abajo. */
+.nx-ambient::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(77, 166, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(77, 166, 255, 0.08) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(ellipse 100% 80% at 50% 0%, #000 25%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 100% 80% at 50% 0%, #000 25%, transparent 78%);
+}
+
+/* Foco que sigue al puntero. La opacidad no pasa de 0.12: se nota,
+   no se ve. --mx / --my llevan valores por defecto que cubren el
+   primer pintado, los dispositivos táctiles y el caso de que el JS
+   no llegue a ejecutarse. */
+.nx-ambient::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    600px circle at var(--mx, 50%) var(--my, 40%),
+    rgba(77, 166, 255, 0.12),
+    rgba(77, 166, 255, 0.05) 40%,
+    rgba(77, 166, 255, 0) 65%
+  );
+}
+
+/* ------------------- Selección de texto ------------------- */
+::selection {
+  background-color: var(--nx-accent-wash);
+  color: var(--nx-ink);
+}
+
+/* ------------------- Revelado al hacer scroll -------------------
+   `.js` lo añade el script en línea del <head>: sin JavaScript el
+   atributo no hace nada y la página se ve entera desde el principio.
+   El estado oculto se acota a :not(.is-visible) para que la regla
+   desaparezca al revelarse y no tape el desplazamiento de hover
+   que llevan las tarjetas. */
+.js [data-reveal]:not(.is-visible) {
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity var(--nx-dur-reveal) var(--nx-ease-glide),
+    transform var(--nx-dur-reveal) var(--nx-ease-glide);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.js [data-reveal].is-visible {
+  opacity: 1;
+  will-change: auto;
+}
+
+/* Encabezados de sección: copia de .pw-h2 (wiki.css L1027). */
+h2 {
+  padding-bottom: var(--nx-space-2);
+  border-bottom: 1px solid var(--nx-border);
+  font-family: var(--nx-font-serif);
+  font-size: var(--nx-fs-2xl);
+  font-weight: 600;
+  line-height: var(--nx-lh-tight);
+  letter-spacing: -0.015em;
+}
+/* En el dashboard el h2 comparte fila con la marca de tiempo:
+   se le da el ancho sobrante para que el filete recorra la fila. */
+.tab-section > .flex > h2 {
+  flex: 1 1 auto;
+  margin-right: var(--nx-space-4);
+}
+
+/* Foco visible (anillo global del original). */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--nx-focus);
+  outline-offset: 1px;
+}
+
+/* Respaldo de `.hidden`: app.js lo usa para alternar pestañas y esta regla
+   la aporta Tailwind. Si el CDN no carga, sin esto se verían todas las
+   secciones apiladas a la vez. */
+.hidden { display: none; }
+
+/* ------------------- Navegación (tabs) -------------------
+   Copia de .pw-spectrum-chip (wiki.css L3576), incluido su estado
+   marcado: el único relleno de acento del sistema es la selección. */
 .tab-btn {
-  border-radius: 0.5rem;
-  padding: 0.4rem 0.9rem;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #94a3b8;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  border: 1px solid var(--nx-border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--nx-ink);
+  padding: var(--nx-space-2) var(--nx-space-3);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: color var(--nx-transition), background-color var(--nx-transition),
+    border-color var(--nx-transition);
   white-space: nowrap;
 }
 .tab-btn:hover {
-  background-color: rgba(30, 41, 59, 0.7);
-  color: #e2e8f0;
+  border-color: var(--nx-link);
+  color: var(--nx-link);
 }
 .tab-active {
-  background-color: rgba(6, 182, 212, 0.15);
-  color: #67e8f9;
+  background: var(--nx-link);
+  border-color: var(--nx-link);
+  color: var(--nx-on-accent);
+}
+.tab-active:hover {
+  background: var(--nx-link-hover);
+  border-color: var(--nx-link-hover);
+  color: var(--nx-on-accent);
 }
 
-/* ------------------- Paneles ------------------- */
+/* ------------------- Paneles -------------------
+   Copia de .pw-card (wiki.css L758): radio 4px y SIN sombra en
+   reposo; la sombra solo aparece al pasar por encima. */
 .panel {
-  border-radius: 1rem;
-  border: 1px solid #1e293b;
-  background-color: rgba(15, 23, 42, 0.6);
-  padding: 1rem;
-  backdrop-filter: blur(4px);
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius);
+  background: var(--nx-surface);
+  padding: var(--nx-space-4);
+  color: var(--nx-ink);
+  line-height: var(--nx-lh-body);
+  transition: border-color var(--nx-transition-card),
+    background-color var(--nx-transition-card), box-shadow var(--nx-transition-card);
+}
+/* El comentario de arriba dice que la sombra solo aparece al pasar por
+   encima: aquí se cumple. El borde se afina y la superficie sube un
+   escalón, sin desplazamiento (las tarjetas de métricas ya suben). */
+.panel:hover {
+  border-color: var(--nx-border-strong);
+  background: var(--nx-surface-2);
+  box-shadow: var(--nx-shadow);
 }
 .panel-title {
-  font-size: 0.95rem;
+  font-family: var(--nx-font-serif);
+  font-size: var(--nx-fs-lg);
   font-weight: 600;
-  color: #e2e8f0;
+  line-height: var(--nx-lh-tight);
+  letter-spacing: -0.01em;
+  color: var(--nx-ink);
 }
 
 /* ------------------- Tarjetas de métricas ------------------- */
 .metric-card {
-  border-radius: 1rem;
-  border: 1px solid #1e293b;
-  background: linear-gradient(160deg, rgba(15, 23, 42, 0.9), rgba(2, 6, 23, 0.7));
-  padding: 1rem;
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius);
+  background: var(--nx-surface);
+  padding: var(--nx-space-4);
+  color: var(--nx-ink);
+  line-height: var(--nx-lh-body);
+  transition: border-color var(--nx-transition-card), box-shadow var(--nx-transition-card),
+    transform var(--nx-transition-card), background-color var(--nx-transition-card);
 }
 .metric-card:hover {
+  border-color: var(--nx-border-strong);
+  background: var(--nx-surface-2);
+  box-shadow: var(--nx-shadow);
   transform: translateY(-2px);
-  border-color: #334155;
-  box-shadow: 0 0 25px rgba(34, 211, 238, 0.12);
 }
+/* Copia de .pw-card-meta (wiki.css L802). */
 .metric-label {
-  font-size: 0.72rem;
-  text-transform: uppercase;
+  color: var(--nx-ink-muted);
+  font-size: var(--nx-fs-xs);
+  font-weight: 600;
   letter-spacing: 0.06em;
-  color: #94a3b8;
+  text-transform: uppercase;
+  line-height: var(--nx-lh-tight);
 }
+/* Cifra destacada en serif, como los títulos del original. */
 .metric-value {
-  margin-top: 0.35rem;
-  font-size: 2rem;
-  font-weight: 700;
-  line-height: 1;
+  margin-top: var(--nx-space-1);
+  font-family: var(--nx-font-serif);
+  font-size: var(--nx-fs-2xl);
+  font-weight: 600;
+  line-height: var(--nx-lh-tight);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--nx-ink);
 }
 .metric-unit {
   margin-left: 0.15rem;
-  font-size: 1rem;
+  font-family: var(--nx-font-sans);
+  font-size: var(--nx-fs-sm);
   font-weight: 500;
-  color: #64748b;
+  color: var(--nx-ink-muted);
 }
 
-/* ------------------- Barras de progreso ------------------- */
+/* ------------------- Barras de progreso -------------------
+   Medida y radio de la franja del original (.pw-card-flag, L2932):
+   4px de alto y radio 2px. */
 .progress-track {
-  margin-top: 0.75rem;
-  height: 0.4rem;
+  margin-top: var(--nx-space-3);
+  height: 4px;
   width: 100%;
   overflow: hidden;
-  border-radius: 9999px;
-  background-color: #1e293b;
+  border-radius: var(--nx-radius-sm);
+  background: var(--nx-surface-2);
 }
 .progress-fill {
   height: 100%;
-  border-radius: 9999px;
-  transition: width 0.6s ease, background-color 0.3s ease;
+  border-radius: var(--nx-radius-sm);
+  transition: width 0.6s var(--nx-ease-out), background-color 0.3s var(--nx-ease-out);
 }
 
-/* Colores de alerta según umbral (se aplican por JS). */
-.progress-fill.warn { background-color: #f59e0b !important; }
-.progress-fill.danger { background-color: #ef4444 !important; }
+/* Umbrales con los colores reales de la paleta. */
+.progress-fill.warn { background-color: var(--nx-warn) !important; }
+.progress-fill.danger { background-color: var(--nx-missing) !important; }
 
-/* ------------------- Formularios ------------------- */
+/* ------------------- Formularios -------------------
+   Copia de .pw-search-input (wiki.css L368). */
 .input-field {
   width: 100%;
-  border-radius: 0.6rem;
-  border: 1px solid #334155;
-  background-color: rgba(2, 6, 23, 0.7);
-  padding: 0.55rem 0.75rem;
-  font-size: 0.875rem;
-  color: #e2e8f0;
-  outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius);
+  background: var(--nx-surface);
+  color: var(--nx-ink);
+  font-family: inherit;
+  font-size: var(--nx-fs-sm);
+  line-height: 1.5;
 }
-.input-field::placeholder { color: #64748b; }
+.input-field::placeholder { color: var(--nx-ink-muted); }
 .input-field:focus {
-  border-color: #06b6d4;
-  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
+  border-color: var(--nx-focus);
+  box-shadow: 0 0 0 3px var(--nx-focus-halo);
+  outline: none;
 }
 
 /* ------------------- Botones ------------------- */
+
+/* Acción principal: el relleno de acento es el que el sistema reserva a
+   lo seleccionado/activo (chip marcado del espectro). */
 .btn-primary {
-  border-radius: 0.6rem;
-  background: linear-gradient(135deg, #06b6d4, #10b981);
-  padding: 0.6rem 1rem;
-  font-size: 0.875rem;
+  border: 1px solid var(--nx-link);
+  border-radius: var(--nx-radius);
+  background: var(--nx-link);
+  color: var(--nx-on-accent);
+  padding: 0.2rem 0.6rem;
+  font-family: inherit;
+  font-size: var(--nx-fs-sm);
   font-weight: 600;
-  color: #020617;
-  transition: filter 0.2s ease, transform 0.1s ease;
+  line-height: 1.6;
+  cursor: pointer;
+  transition: background var(--nx-transition), color var(--nx-transition),
+    border-color var(--nx-transition);
 }
-.btn-primary:hover { filter: brightness(1.1); }
-.btn-primary:active { transform: scale(0.98); }
+.btn-primary:hover { background: var(--nx-link-hover); border-color: var(--nx-link-hover); }
 .btn-primary:disabled {
   cursor: not-allowed;
-  filter: grayscale(0.6) brightness(0.8);
+  background: var(--nx-ink-faint);
+  border-color: var(--nx-ink-faint);
+  color: var(--nx-surface);
 }
 
+/* Copia de .pw-btn-text (wiki.css L2138). */
 .btn-ghost {
-  border-radius: 0.5rem;
-  border: 1px solid #334155;
-  padding: 0.35rem 0.7rem;
-  font-size: 0.8rem;
-  color: #cbd5e1;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius);
+  background: var(--nx-surface);
+  color: var(--nx-ink-soft);
+  font-family: inherit;
+  font-size: var(--nx-fs-xs);
+  font-weight: 600;
+  line-height: 1.6;
+  cursor: pointer;
+  transition: background var(--nx-transition), color var(--nx-transition),
+    border-color var(--nx-transition);
 }
 .btn-ghost:hover {
-  background-color: rgba(30, 41, 59, 0.7);
-  border-color: #475569;
+  background: var(--nx-wash);
+  border-color: var(--nx-border-strong);
+  color: var(--nx-ink);
 }
 
-/* Botón de eliminar fila. */
+/* Eliminar: mismo cuerpo que .pw-btn-text, en el rojo de la paleta. */
 .btn-danger {
-  border-radius: 0.5rem;
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  padding: 0.3rem 0.6rem;
-  font-size: 0.75rem;
-  color: #fca5a5;
-  transition: background-color 0.2s ease;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--nx-missing);
+  border-radius: var(--nx-radius);
+  background: var(--nx-surface);
+  color: var(--nx-missing);
+  font-family: inherit;
+  font-size: var(--nx-fs-xs);
+  font-weight: 600;
+  line-height: 1.6;
+  cursor: pointer;
+  transition: background var(--nx-transition), color var(--nx-transition),
+    border-color var(--nx-transition);
 }
-.btn-danger:hover { background-color: rgba(239, 68, 68, 0.15); }
+.btn-danger:hover {
+  background: color-mix(in srgb, var(--nx-missing) 8%, var(--nx-surface));
+  color: var(--nx-missing);
+  border-color: var(--nx-missing);
+}
 
-/* ------------------- Tablas de datos ------------------- */
+/* ------------------- Tablas de datos -------------------
+   Copia de .pw-wtable (wiki.css L1229): borde en cada celda,
+   cabecera en surface-2 y filas pares sombreadas. */
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.85rem;
+  border: 1px solid var(--nx-border);
+  background: var(--nx-surface);
+  font-size: var(--nx-fs-sm);
+  line-height: var(--nx-lh-body);
 }
 .data-table thead th {
-  padding: 0.6rem 0.75rem;
+  padding: var(--nx-space-2) var(--nx-space-3);
+  border: 1px solid var(--nx-border);
+  background: var(--nx-surface-2);
   text-align: left;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #94a3b8;
-  border-bottom: 1px solid #1e293b;
+  font-weight: 700;
+  color: var(--nx-ink);
+  white-space: nowrap;
 }
 .data-table tbody td {
-  padding: 0.6rem 0.75rem;
-  border-bottom: 1px solid rgba(30, 41, 59, 0.6);
-  color: #cbd5e1;
+  padding: var(--nx-space-2) var(--nx-space-3);
+  border: 1px solid var(--nx-border);
+  text-align: left;
   vertical-align: middle;
+  color: var(--nx-ink-soft);
+  transition: background-color var(--nx-transition);
 }
-.data-table tbody tr:hover { background-color: rgba(30, 41, 59, 0.35); }
+.data-table tbody tr:nth-child(even) td {
+  background: var(--nx-surface-2);
+}
+/* La fila bajo el puntero se separa con un lavado de acento, para no
+   perderla al seguir la lectura en horizontal. Va después del nth-child
+   para ganar en el empate de especificidad. */
+.data-table tbody tr:hover td {
+  background: var(--nx-surface-hover);
+}
 .empty-row {
   text-align: center;
-  color: #64748b;
-  padding: 1.5rem 0.75rem !important;
+  color: var(--nx-ink-muted);
 }
 
-/* ------------------- Badges de estado ------------------- */
+/* ------------------- Badges de estado -------------------
+   Cuerpo de .pw-tag (wiki.css L923): pastilla con fondo surface-2.
+   Solo cambia la tinta según el estado, sin salir de la paleta. */
 .badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  border-radius: 9999px;
-  padding: 0.15rem 0.55rem;
-  font-size: 0.72rem;
+  display: inline-block;
+  padding: 0.1rem 0.55rem;
+  border: 1px solid var(--nx-border);
+  border-radius: 999px;
+  background: var(--nx-surface-2);
+  color: var(--nx-ink-soft);
+  font-size: var(--nx-fs-xs);
   font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
 }
-.badge-running { background-color: rgba(16, 185, 129, 0.15); color: #6ee7b7; }
-.badge-stopped { background-color: rgba(148, 163, 184, 0.15); color: #cbd5e1; }
-.badge-error   { background-color: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+.badge-running { color: var(--nx-link); border-color: color-mix(in srgb, var(--nx-link) 35%, var(--nx-border)); }
+.badge-stopped { color: var(--nx-ink-muted); }
+.badge-error   { color: var(--nx-missing); border-color: color-mix(in srgb, var(--nx-missing) 35%, var(--nx-border)); }
 
 /* ------------------- Chat ------------------- */
 .chat-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #334155 transparent;
+  scrollbar-color: var(--nx-border-strong) transparent;
 }
 .chat-scroll::-webkit-scrollbar { width: 6px; }
 .chat-scroll::-webkit-scrollbar-thumb {
-  background-color: #334155;
-  border-radius: 9999px;
+  background-color: var(--nx-border-strong);
+  border-radius: 999px;
 }
 
+/* Mensajes: mismo cuerpo que .pw-note (wiki.css L1159), con su
+   borde izquierdo de 3px y su radio asimétrico. */
 .chat-bubble {
   max-width: 85%;
-  border-radius: 1rem;
-  padding: 0.6rem 0.85rem;
-  font-size: 0.85rem;
-  line-height: 1.4;
-  animation: bubble-in 0.25s ease;
+  padding: var(--nx-space-3) var(--nx-space-4);
+  background: var(--nx-surface-2);
+  border: 1px solid var(--nx-border-soft);
+  border-left: 3px solid var(--nx-ink-faint);
+  border-radius: 0 var(--nx-radius-sm) var(--nx-radius-sm) 0;
+  color: var(--nx-ink-soft);
+  font-size: var(--nx-fs-sm);
+  line-height: var(--nx-lh-loose);
+  animation: bubble-in var(--nx-dur-1) var(--nx-ease-out);
   white-space: pre-wrap;
   word-break: break-word;
 }
 .chat-bubble.user {
   margin-left: auto;
-  background: linear-gradient(135deg, #0891b2, #059669);
-  color: #020617;
-  border-bottom-right-radius: 0.25rem;
+  background: var(--nx-link);
+  border-color: var(--nx-link);
+  border-left-color: var(--nx-link);
+  color: var(--nx-on-accent);
 }
 .chat-bubble.assistant {
   margin-right: auto;
-  background-color: #1e293b;
-  color: #e2e8f0;
-  border-bottom-left-radius: 0.25rem;
 }
 .chat-bubble.system {
   margin: 0 auto;
-  background-color: rgba(100, 116, 139, 0.15);
-  color: #94a3b8;
-  font-size: 0.78rem;
+  background: transparent;
+  border: 1px dashed var(--nx-border-strong);
+  border-left: 1px dashed var(--nx-border-strong);
+  border-radius: var(--nx-radius-sm);
+  color: var(--nx-ink-muted);
+  font-size: var(--nx-fs-xs);
   text-align: center;
 }
 
-/* Chip de acción ejecutada por el agente. */
+/* Chip de acción: copia de .pw-chip (wiki.css L3009). */
 .action-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  margin-top: 0.4rem;
-  border-radius: 9999px;
-  border: 1px solid rgba(34, 211, 238, 0.35);
-  background-color: rgba(34, 211, 238, 0.1);
-  padding: 0.15rem 0.55rem;
-  font-size: 0.7rem;
-  color: #67e8f9;
+  display: inline-block;
+  max-width: 100%;
+  margin-top: var(--nx-space-1);
+  padding: 0.1rem 0.55rem;
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius-sm);
+  background: var(--nx-surface-2);
+  color: var(--nx-ink-soft);
+  font-size: var(--nx-fs-xs);
+  font-weight: 600;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
 }
 
 /* Indicador "escribiendo…" */
@@ -265,28 +584,32 @@ body {
 .typing span {
   width: 6px;
   height: 6px;
-  border-radius: 9999px;
-  background-color: #64748b;
+  border-radius: 999px;
+  background-color: var(--nx-ink-faint);
   animation: typing-blink 1.4s infinite both;
 }
 .typing span:nth-child(2) { animation-delay: 0.2s; }
 .typing span:nth-child(3) { animation-delay: 0.4s; }
 
-/* ------------------- Toast ------------------- */
+/* ------------------- Toast -------------------
+   Cuerpo de .pw-note (wiki.css L1159). El estado va en el borde
+   izquierdo, igual que el aviso original. */
 .toast {
   min-width: 260px;
   max-width: 360px;
-  border-radius: 0.75rem;
-  border: 1px solid #334155;
-  background-color: rgba(15, 23, 42, 0.95);
-  padding: 0.75rem 1rem;
-  font-size: 0.83rem;
-  color: #e2e8f0;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-  animation: toast-in 0.25s ease;
+  padding: var(--nx-space-3) var(--nx-space-4);
+  background: var(--nx-surface-2);
+  border: 1px solid var(--nx-border-soft);
+  border-left: 3px solid var(--nx-ink-faint);
+  border-radius: 0 var(--nx-radius-sm) var(--nx-radius-sm) 0;
+  color: var(--nx-ink-soft);
+  font-size: var(--nx-fs-sm);
+  line-height: var(--nx-lh-loose);
+  box-shadow: var(--nx-shadow-pop);
+  animation: toast-in var(--nx-dur-1) var(--nx-ease-out);
 }
-.toast.success { border-color: rgba(16, 185, 129, 0.5); }
-.toast.error   { border-color: rgba(239, 68, 68, 0.5); }
+.toast.success { border-left-color: var(--nx-link); }
+.toast.error   { border-left-color: var(--nx-missing); }
 
 /* ------------------- Animaciones ------------------- */
 @keyframes bubble-in {
@@ -308,9 +631,47 @@ body {
   display: inline-block;
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(148, 163, 184, 0.4);
-  border-top-color: #22d3ee;
+  border: 2px solid var(--nx-border-strong);
+  border-top-color: var(--nx-link);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   vertical-align: middle;
+}
+
+/* ------------------- Movimiento reducido -------------------
+   Reducir, no quitar: el foco del puntero se apaga y el viaje del
+   revelado desaparece, pero se conservan la retícula (es textura, no
+   movimiento), el fundido y todos los cambios de estado. */
+@media (prefers-reduced-motion: reduce) {
+  /* Una preferencia del usuario tiene que ganarle a cualquier regla del
+     fichero, incluidas las utilidades de Tailwind; por eso el !important.
+     Es el único sitio del stylesheet que lo usa (el otro par son los
+     umbrales de las barras de progreso). */
+  /* biome-ignore-start lint/complexity/noImportantStyles: un reset por
+     preferencia del usuario debe ganarle a todas las reglas, incluidas
+     las utilidades de Tailwind; no puede ganar solo por especificidad. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* biome-ignore-end lint/complexity/noImportantStyles: ver arriba */
+
+  /* Se apaga el foco que sigue al puntero; la retícula se queda. */
+  .nx-ambient::after {
+    display: none;
+  }
+
+  /* El revelado pierde el desplazamiento y conserva el fundido. */
+  .js [data-reveal]:not(.is-visible) {
+    transform: none;
+  }
+
+  /* Las tarjetas y los paneles conservan su acknowledgement, sin subir. */
+  .metric-card:hover {
+    transform: none;
+  }
 }

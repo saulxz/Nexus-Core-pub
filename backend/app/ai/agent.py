@@ -34,18 +34,36 @@ from app.core.logging_conf import logger
 
 # ============================ Utilidades internas ============================
 def _missing_key_reply(settings: Settings, variable: str) -> dict[str, Any]:
-    """Respuesta de cortesía cuando falta la clave del proveedor LLM."""
+    """Respuesta de cortesía cuando falta la clave del proveedor LLM activo."""
+    hint = ""
+    provider = settings.AI_PROVIDER.lower()
+    if settings.GEMINI_API_KEY and provider != "gemini":
+        hint = (
+            " Ya tienes una clave de Google Gemini guardada: en «Proveedor» "
+            "selecciona «Google Gemini» y pulsa Guardar."
+        )
+    elif settings.OPENAI_API_KEY and provider != "openai":
+        hint = (
+            " Ya tienes una clave de OpenAI guardada: en «Proveedor» "
+            "selecciona «OpenAI» y pulsa Guardar."
+        )
+    elif settings.ANTHROPIC_API_KEY and provider != "anthropic":
+        hint = (
+            " Ya tienes una clave de Anthropic guardada: en «Proveedor» "
+            "selecciona «Anthropic» y pulsa Guardar."
+        )
     reply = (
-        f"El Agente de IA está configurado con el proveedor "
-        f"'{settings.AI_PROVIDER}', pero falta la variable {variable}. "
-        "Configúrala en el fichero .env o cambia AI_PROVIDER a 'ollama' para "
-        "usar un modelo local (Gemini, OpenAI y Anthropic también requieren clave)."
+        "Ahora mismo no puedo responder porque el proveedor activo "
+        f"('{provider}') todavía no tiene su clave de API. "
+        "El asistente es opcional: el resto del panel funciona igual sin él. "
+        "Para activarlo, abre «Ajustes» en la cabecera, elige el proveedor, "
+        "pega su clave y guarda." + hint + f" (Detalle técnico: falta {variable}.)"
     )
     return {
         "reply": reply,
         "actions": [],
         "model": settings.ai_model,
-        "provider": settings.AI_PROVIDER.lower(),
+        "provider": provider,
     }
 
 
@@ -528,12 +546,15 @@ async def run_agent(
 
     return {
         "reply": (
-            f"Proveedor de IA no soportado: '{provider}'. "
-            "Usa 'openai', 'anthropic', 'gemini' u 'ollama'."
+            "El asistente de IA no está configurado ahora mismo. No es "
+            "obligatorio: el resto del panel (servicios, red, contenedores) "
+            "funciona igual sin él. Si quieres activarlo, abre «Ajustes» en la "
+            "cabecera, elige un proveedor (por ejemplo, Google Gemini), pega su "
+            "clave y guarda."
         ),
         "actions": [],
         "model": settings.ai_model,
-        "provider": provider,
+        "provider": provider or "sin-configurar",
     }
 
 

@@ -1,0 +1,58 @@
+# ============================================================
+#  Nexus-Core — Unidad systemd (despliegue nativo en la VM)
+#
+#  Instalación (ver deploy/install.sh):
+#    1. Copiar el proyecto a /opt/nexus-core
+#    2. Crear el usuario de sistema `nexus`
+#    3. Copiar esta unidad a /etc/systemd/system/nexus.service
+#    4. systemctl daemon-reload && systemctl enable --now nexus
+#
+#  NOTAS DE SEGURIDAD (Fase 0):
+#   * La aplicación corre como usuario NO privilegiado `nexus`.
+#   * NoNewPrivileges=no: se mantiene desactivado porque las fases
+#     siguientes usan `sudo` con lista blanca exacta (deploy/sudoers.d/nexus).
+#     Si se exige NoNewPrivileges=yes, hay que migrar los privilegios a un
+#     daemon por socket unix (ver informe de diseño, §1.4).
+# ============================================================
+
+[Unit]
+Description=Nexus-Core — Panel de orquestación, servicios e IA (TFG)
+Documentation=file:/opt/nexus-core/README.md
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=nexus
+Group=nexus
+WorkingDirectory=/opt/nexus-core
+Environment=NEXUS_DATA_DIR=/var/lib/nexus
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/nexus-core/.venv/bin/uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port 8000 --workers 1
+Restart=on-failure
+RestartSec=2
+UMask=0077
+
+# --- Endurecimiento del servicio ---
+NoNewPrivileges=no
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/nexus
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+# La app necesita: red (API), unix (socket Docker futuro) y netlink.
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+
+# Cuando se active la gestión de contenedores en el host (Fase 1+):
+#   SupplementaryGroups=docker
+# (y comprobar que el GID del grupo docker del host es el esperado)
+
+[Install]
+WantedBy=multi-user.target

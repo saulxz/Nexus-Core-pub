@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# ============================================================
+#  svc-ctl — helper privilegiado (root) de Nexus-Core.
+#
+#  Uso:  svc-ctl <start|stop|restart|reload> <unidad.service>
+#
+#  Seguridad:
+#   * Solo acepta las cuatro acciones de la lista blanca.
+#   * Solo acepta unidades presentes en /etc/nexus/allowed-units
+#     (fichero propiedad de root; la web no puede modificarlo).
+#   * Ejecuta systemctl con argumentos EXACTOS (sin shell, sin comodines).
+#
+#  Autorizado en /etc/sudoers.d/nexus (solo este script, sin argumentos
+#  comodín: el propio script valida lo que recibe).
+# ============================================================
+set -euo pipefail
+
+ALLOWED_FILE="/etc/nexus/allowed-units"
+ACTION_RE='^(start|stop|restart|reload)$'
+UNIT_RE='^[A-Za-z0-9@._:-]{1,128}\.service$'
+
+if [[ $# -ne 2 ]]; then
+  echo "uso: svc-ctl <start|stop|restart|reload> <unidad.service>" >&2
+  exit 64
+fi
+
+action="$1"
+unit="$2"
+
+[[ "$action" =~ $ACTION_RE ]] || { echo "acción no permitida: '$action'" >&2; exit 65; }
+[[ "$unit" =~ $UNIT_RE ]] || { echo "nombre de unidad no válido: '$unit'" >&2; exit 66; }
+
+if [[ ! -r "$ALLOWED_FILE" ]]; then
+  echo "falta la lista blanca $ALLOWED_FILE" >&2
+  exit 67
+fi
+
+if ! grep -qxF "$unit" "$ALLOWED_FILE"; then
+  echo "unidad no autorizada: '$unit' (añádela a $ALLOWED_FILE si procede)" >&2
+  exit 68
+fi
+
+exec /usr/bin/systemctl "$action" "$unit"

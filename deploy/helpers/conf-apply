@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# ============================================================
+#  conf-apply — aplica una configuración preparada por Nexus-Core.
+#
+#  Pipeline (validar -> backup -> reemplazo atómico -> validar real ->
+#  recargar -> rollback automático si algo falla):
+#
+#   1. Valida el borrador con la herramienta oficial del servicio.
+#   2. Copia de seguridad del fichero actual (conserva las 20 últimas).
+#   3. Reemplazo atómico (mismo sistema de ficheros, mv(2)).
+#   4. Valida el fichero REAL ya instalado.
+#   5. Recarga el servicio; ante cualquier fallo, restaura el backup.
+#
+#  Uso:   conf-apply <samba|dnsmasq>
+#  Lee:   /var/lib/nexus/staging/<servicio>.conf   (preparado por la web)
+#  Copias: /var/backups/nexus/<servicio>/
+#
+#  Propiedad de root; solo autorizado vía /etc/sudoers.d/nexus.
+# ============================================================
+set -euo pipefail
+
+STAGING="/var/lib/nexus/staging"
+BACKUP_ROOT="/var/backups/nexus"
+MAX_BACKUPS=20
+
+case "${1:-}" in
+  samba)
+    TARGET="/etc/samba/smb.conf"
+    OWNER="root:root"; MODE="0644"
+    validate_file() { /usr/bin/testparm -s "$1" >/dev/null; }
+    reload_service() {
+      /usr/bin/smbcontrol all reload-config 2>/dev/null \
+        || /usr/bin/systemctl reload-or-restart smb.service
+    }
+    ;;
+  dnsmasq)
+    TARGET="/etc/dnsmasq.d/nexus.conf"
+    OWNER="root:root"; MODE="0644"
+    validate_file() { /usr/sbin/dnsmasq --test --conf-file="$1" >/dev/null 2>&1; }
+    reload_service() { /usr/bin/systemctl reload-or-restart dnsmasq.service; }
+    ;;
+  *)
+    echo "servicio no soportado: '${1:-}'" >&2
+    exit 64
+    ;;
+esac
+
+SERVICE="$1"
+STAGE="$STAGING/$SERVICE.conf"
+BACKUP_DIR="$BACKUP_ROOT/$SERVICE"
+
+if [[ ! -r "$STAGE" ]]; then
+  echo "no hay configuración preparada en $STAGE" >&2
+  exit 65
+fi
+
+# 1) Validación del borrador con la herramienta oficial del servicio.
+if ! validate_file "$STAGE"; then
+  echo "la validación del borrador falló para '$SERVICE'" >&2
+  exit 66
+fi
+
+# 2) Copia de seguridad del fichero actual (si existe).
+mkdir -p "$BACKUP_DIR"
+chown root:nexus "$BACKUP_DIR" 2>/dev/null || true
+chmod 0750 "$BACKUP_DIR"
+RESTORE_FROM=""
+if [[ -f "$TARGET" ]]; then
+  STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+  RESTORE_FROM="$BACKUP_DIR/$(basename "$TARGET").$STAMP"
+  cp -a "$TARGET" "$RESTORE_FROM"
+  # Poda: conservar solo las últimas MAX_BACKUPS copias.
+  ls -1t "$BACKUP_DIR" 2>/dev/null | tail -n "+$((MAX_BACKUPS + 1))" | while read -r old; do
+    rm -f "$BACKUP_DIR/$old"
+  done
+fi
+
+# 3) Reemplazo atómico en el mismo sistema de ficheros.
+TARGET_DIR="$(dirname "$TARGET")"
+mkdir -p "$TARGET_DIR"
+TMP="$(mktemp "$TARGET_DIR/.nexus-XXXXXX")"
+cat "$STAGE" > "$TMP"
+chown "$OWNER" "$TMP"
+chmod "$MODE" "$TMP"
+mv -f "$TMP" "$TARGET"
+
+# Rollback: restaura la copia (o retira el fichero si no había nada).
+rollback() {
+  if [[ -n "$RESTORE_FROM" && -f "$RESTORE_FROM" ]]; then
+    cp -a "$RESTORE_FROM" "$TARGET"
+    echo "rollback aplicado desde $RESTORE_FROM" >&2
+  else
+    rm -f "$TARGET"
+    echo "configuración retirada (no había versión previa)" >&2
+  fi
+  reload_service >/dev/null 2>&1 || true
+}
+
+# 4) Validación del fichero REAL instalado.
+if ! validate_file "$TARGET"; then
+  rollback
+  echo "la validación final falló; se restauró la versión anterior" >&2
+  exit 67
+fi
+
+# 5) Recarga del servicio con rollback ante fallo.
+if ! reload_service; then
+  rollback
+  echo "la recarga del servicio falló; se restauró la versión anterior" >&2
+  exit 68
+fi
+
+echo "OK: '$SERVICE' actualizado, validado y recargado ($TARGET)"

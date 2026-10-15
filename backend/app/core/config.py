@@ -35,10 +35,25 @@ class Settings(BaseSettings):
     PORT: int = 8000
     API_PREFIX: str = "/api"
     LOG_LEVEL: str = "INFO"
-    # Orígenes permitidos por CORS, separados por comas. "*" en laboratorio.
-    ALLOWED_ORIGINS: str = "*"
+    # Orígenes permitidos por CORS, separados por comas. Vacío = sin CORS
+    # (same-origin), que es el modo recomendado: panel y API se sirven desde
+    # el mismo host. "*" queda desaconsejado (se ignora con aviso).
+    ALLOWED_ORIGINS: str = ""
     # Directorio del frontend estático (relativo al WORKDIR /app).
     FRONTEND_DIR: str = "frontend"
+
+    # ------------------------------- Seguridad --------------------------------
+    # Hosts aceptados por TrustedHostMiddleware (csv). "*" desactiva el filtro
+    # (cómodo en LAN con IP cambiante); en producción fija el host real.
+    ALLOWED_HOSTS: str = "*"
+    # Sesiones del panel: caducidad por inactividad y absoluta.
+    SESSION_IDLE_MINUTES: int = 30
+    SESSION_ABSOLUTE_HOURS: int = 8
+    # Marcar la cookie como "Secure" cuando el panel se sirva por HTTPS.
+    SESSION_COOKIE_SECURE: bool = False
+    # Límite de intentos de login por usuario+IP dentro de la ventana.
+    LOGIN_RATE_LIMIT: int = 5
+    LOGIN_RATE_WINDOW_SECONDS: int = 900
 
     # ---------------------------------- Docker --------------------------------
     DOCKER_SOCKET: str = "unix:///var/run/docker.sock"
@@ -54,8 +69,10 @@ class Settings(BaseSettings):
     SCAN_TIMEOUT_SECONDS: int = 120
 
     # --------------------------------- Agente IA ------------------------------
-    # Proveedor: "openai" | "anthropic" | "gemini" | "ollama"
-    AI_PROVIDER: str = "openai"
+    # Proveedor: "openai" | "anthropic" | "gemini" | "ollama".
+    # Vacío = sin proveedor: el asistente queda desactivado (es opcional y el
+    # resto del panel funciona igual).
+    AI_PROVIDER: str = ""
     AI_MODEL: str = "gpt-4o-mini"
     AI_TEMPERATURE: float = 0.2
     AI_MAX_TOOL_ITERATIONS: int = 4
@@ -74,10 +91,19 @@ class Settings(BaseSettings):
     # --------------------------- Propiedades derivadas ------------------------
     @property
     def allowed_origins_list(self) -> list[str]:
-        """Devuelve la lista de orígenes CORS a partir del CSV de configuración."""
-        if self.ALLOWED_ORIGINS.strip() == "*":
+        """Lista de orígenes CORS. Vacío = sin middleware CORS (same-origin)."""
+        raw = self.ALLOWED_ORIGINS.strip()
+        if not raw or raw == "*":
+            return []
+        return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+    @property
+    def allowed_hosts_list(self) -> list[str]:
+        """Lista de hosts aceptados por TrustedHostMiddleware ('*' = todos)."""
+        raw = self.ALLOWED_HOSTS.strip()
+        if not raw or raw == "*":
             return ["*"]
-        return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",") if origin.strip()]
+        return [host.strip() for host in raw.split(",") if host.strip()]
 
     @property
     def allowed_images_list(self) -> list[str]:
@@ -114,9 +140,12 @@ class Settings(BaseSettings):
 
         Si el proveedor es Gemini pero ``AI_MODEL`` conserva el valor de otro
         proveedor (por ejemplo tras cambiar de OpenAI), se usa automáticamente
-        ``GEMINI_MODEL`` para evitar peticiones inválidas.
+        ``GEMINI_MODEL`` para evitar peticiones inválidas. Sin proveedor,
+        devuelve cadena vacía.
         """
         provider = self.AI_PROVIDER.lower()
+        if not provider:
+            return ""
         if provider == "gemini" and not self.AI_MODEL.startswith("gemini"):
             return self.GEMINI_MODEL
         return self.AI_MODEL

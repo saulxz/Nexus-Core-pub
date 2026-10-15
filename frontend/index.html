@@ -3,27 +3,61 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Marca de JS: sin ella el CSS no oculta nada y la página se ve entera. -->
+  <script>document.documentElement.classList.add('js');</script>
   <meta name="description" content="Nexus-Core — Plataforma de orquestación de infraestructura y ciberseguridad con Agente de IA." />
   <title>Nexus-Core · Orquestación &amp; Ciberseguridad Edge</title>
+
+  <!-- Favicon SVG en línea, sin petición externa (mismo recurso que Politics Wiki) -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='6'%20fill='%234da6ff'/%3E%3Ctext%20x='16'%20y='23'%20font-family='Georgia,serif'%20font-size='19'%20font-weight='700'%20text-anchor='middle'%20fill='%23070c1a'%3EN%3C/text%3E%3C/svg%3E" />
+  <meta name="theme-color" content="#070c1a" />
 
   <!-- Tailwind CSS (Play CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    // Configuración de Tailwind: paleta oscura tipo panel cloud.
+    // Paleta reasignada al sistema de diseño azul marino de la variante local.
+    // Tailwind es la única fuente de color, así que reasignar sus tokens
+    // recolorea a la vez las utilidades del HTML y las clases que app.js
+    // asigna por código (status-dot, tempNote), sin tocar el JS.
     tailwind.config = {
       theme: {
         extend: {
-          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          fontFamily: {
+            sans: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+            serif: ['Iowan Old Style', 'Palatino Linotype', 'Palatino', 'Book Antiqua', 'Georgia', 'Times New Roman', 'serif']
+          },
           colors: {
-            nexus: {
-              950: '#020617',
-              900: '#0f172a',
-              800: '#1e293b',
-              700: '#334155'
-            }
+            // Marca: azul de acento sobre fondo azul marino.
+            brand: { DEFAULT: '#4da6ff', dark: '#2f7dcc' },
+            // Superficies: azul marino profundo.
+            nexus: { 950: '#070c1a', 900: '#0d1527', 800: '#1a2740', 700: '#2c4066' },
+            // "slate" pasa a ser la escala de tinta clara sobre azul marino.
+            slate: {
+              100: '#e9f1fd',
+              300: '#b9c7e2',
+              400: '#8497ba',
+              500: '#8497ba',
+              600: '#8497ba',
+              700: '#2c4066',
+              800: '#1a2740',
+              900: '#121d33',
+              950: '#0a111f'
+            },
+            // Acentos funcionales: cada uno es un token REAL de la paleta
+            // azul marina de referencia, sin inventar tonos nuevos.
+            //   cyan    -> --accent          #4da6ff
+            //   emerald -> --link-visited    #9d8cff
+            //   violet  -> --ink-tertiary    #8497ba
+            //   orange / red -> --danger      #ff6b6b
+            cyan:    { 300: '#4da6ff', 400: '#4da6ff', 500: '#4da6ff' },
+            emerald: { 400: '#9d8cff', 500: '#9d8cff' },
+            violet:  { 400: '#8497ba' },
+            orange:  { 400: '#ff6b6b' },
+            red:     { 400: '#ff6b6b', 500: '#ff6b6b' },
+            danger:  '#ff6b6b'
           },
           boxShadow: {
-            glow: '0 0 25px rgba(34, 211, 238, 0.15)'
+            glow: '0 1px 3px rgba(0, 0, 0, 0.55), 0 10px 24px -10px rgba(0, 0, 0, 0.6)'
           }
         }
       }
@@ -33,22 +67,20 @@
   <!-- Chart.js para las gráficas de telemetría -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
 
-  <!-- Tipografía Inter -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-
-  <!-- Estilos propios -->
-  <link rel="stylesheet" href="/css/styles.css" />
+  <!-- Tipografía: pilas del sistema, sin descargas externas -->
+  <link rel="stylesheet" href="/css/styles.css?v=3" />
 </head>
 
 <body class="min-h-screen bg-nexus-950 text-slate-100 font-sans antialiased">
+
+  <!-- Capa ambiental fija: gradiente base + retícula + foco del puntero -->
+  <div class="nx-ambient" aria-hidden="true"></div>
 
   <!-- ===================== CABECERA ===================== -->
   <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-nexus-950/80 backdrop-blur">
     <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
       <div class="flex items-center gap-3">
-        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-emerald-500 font-extrabold text-nexus-950 shadow-glow">
+        <div class="flex h-10 w-10 items-center justify-center rounded-md bg-brand font-extrabold text-nexus-950 shadow-glow">
           N
         </div>
         <div>
@@ -57,12 +89,15 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-3">
         <!-- Indicador de estado del backend -->
         <div class="flex items-center gap-2 rounded-full border border-slate-700/70 bg-nexus-900/70 px-3 py-1.5 text-xs">
           <span id="status-dot" class="h-2.5 w-2.5 rounded-full bg-slate-500"></span>
           <span id="status-text" class="text-slate-300">Comprobando…</span>
         </div>
+        <!-- Acceso a la configuración y cierre de sesión -->
+        <a href="/settings.html" class="btn-ghost text-xs">Ajustes</a>
+        <button id="logout-btn" type="button" class="btn-ghost text-xs">Salir</button>
       </div>
     </div>
 
@@ -71,6 +106,7 @@
       <button data-tab="dashboard" class="tab-btn tab-active">Dashboard</button>
       <button data-tab="containers" class="tab-btn">Contenedores</button>
       <button data-tab="network" class="tab-btn">Red</button>
+      <button data-tab="services" class="tab-btn">Servicios</button>
       <button data-tab="chat" class="tab-btn lg:hidden">Asistente IA</button>
     </nav>
   </header>
@@ -83,7 +119,7 @@
 
       <!-- SECCIÓN: DASHBOARD -->
       <section id="section-dashboard" class="tab-section space-y-6">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between" data-reveal>
           <h2 class="text-xl font-semibold">Telemetría del sistema</h2>
           <span id="metrics-updated" class="text-xs text-slate-500"></span>
         </div>
@@ -91,7 +127,7 @@
         <!-- Tarjetas de métricas -->
         <div id="metrics-cards" class="grid grid-cols-2 gap-4 xl:grid-cols-4">
           <!-- CPU -->
-          <article class="metric-card">
+          <article class="metric-card" data-reveal>
             <div class="flex items-center justify-between">
               <span class="metric-label">CPU</span>
               <span class="text-cyan-400" aria-hidden="true">▉</span>
@@ -101,7 +137,7 @@
           </article>
 
           <!-- RAM -->
-          <article class="metric-card">
+          <article class="metric-card" data-reveal>
             <div class="flex items-center justify-between">
               <span class="metric-label">RAM</span>
               <span class="text-emerald-400" aria-hidden="true">▤</span>
@@ -111,7 +147,7 @@
           </article>
 
           <!-- Temperatura -->
-          <article class="metric-card">
+          <article class="metric-card" data-reveal>
             <div class="flex items-center justify-between">
               <span class="metric-label">Temperatura</span>
               <span class="text-orange-400" aria-hidden="true">◉</span>
@@ -121,7 +157,7 @@
           </article>
 
           <!-- Disco -->
-          <article class="metric-card">
+          <article class="metric-card" data-reveal>
             <div class="flex items-center justify-between">
               <span class="metric-label">Disco</span>
               <span class="text-violet-400" aria-hidden="true">▣</span>
@@ -132,7 +168,7 @@
         </div>
 
         <!-- Gráfica en tiempo real -->
-        <div class="panel">
+        <div class="panel" data-reveal>
           <div class="mb-3 flex items-center justify-between">
             <h3 class="panel-title">Uso de recursos (tiempo real)</h3>
             <div class="flex items-center gap-4 text-xs text-slate-400">
@@ -147,15 +183,15 @@
 
         <!-- Información adicional -->
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div class="panel">
+          <div class="panel" data-reveal>
             <p class="metric-label">Núcleos</p>
             <p id="info-cpu-count" class="mt-1 text-2xl font-semibold">--</p>
           </div>
-          <div class="panel">
+          <div class="panel" data-reveal>
             <p class="metric-label">RAM usada</p>
             <p id="info-ram-used" class="mt-1 text-2xl font-semibold">--</p>
           </div>
-          <div class="panel">
+          <div class="panel" data-reveal>
             <p class="metric-label">Uptime</p>
             <p id="info-uptime" class="mt-1 text-2xl font-semibold">--</p>
           </div>
@@ -164,10 +200,10 @@
 
       <!-- SECCIÓN: CONTENEDORES -->
       <section id="section-containers" class="tab-section hidden space-y-6">
-        <h2 class="text-xl font-semibold">Contenedores Docker</h2>
+        <h2 class="text-xl font-semibold" data-reveal>Contenedores Docker</h2>
 
         <!-- Formulario de despliegue -->
-        <div class="panel">
+        <div class="panel" data-reveal>
           <h3 class="panel-title mb-4">Desplegar nuevo servicio</h3>
           <form id="deploy-form" class="grid grid-cols-1 gap-3 sm:grid-cols-4">
             <label class="flex flex-col gap-1 sm:col-span-2">
@@ -199,7 +235,7 @@
         </div>
 
         <!-- Tabla de contenedores -->
-        <div class="panel overflow-hidden">
+        <div class="panel overflow-hidden" data-reveal>
           <div class="mb-3 flex items-center justify-between">
             <h3 class="panel-title">Contenedores en el host</h3>
             <button id="refresh-containers" class="btn-ghost">↻ Refrescar</button>
@@ -226,9 +262,35 @@
 
       <!-- SECCIÓN: RED -->
       <section id="section-network" class="tab-section hidden space-y-6">
-        <h2 class="text-xl font-semibold">Ciberseguridad · Auditar red local</h2>
+        <h2 class="text-xl font-semibold" data-reveal>Ciberseguridad · Auditar red local</h2>
 
-        <div class="panel">
+        <!-- Interfaces de red de la propia máquina -->
+        <div class="panel overflow-hidden" data-reveal>
+          <div class="mb-3 flex items-center justify-between">
+            <h3 class="panel-title">Interfaces de red de esta máquina</h3>
+            <button id="refresh-network-state" class="btn-ghost">↻ Refrescar</button>
+          </div>
+          <p id="network-summary" class="mb-2 text-xs text-slate-500"></p>
+          <div class="overflow-x-auto">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Interfaz</th>
+                  <th>Estado</th>
+                  <th>Dirección IP</th>
+                  <th>Máscara</th>
+                  <th>MAC</th>
+                  <th>MTU</th>
+                </tr>
+              </thead>
+              <tbody id="network-interfaces-table">
+                <tr><td colspan="6" class="empty-row">Cargando interfaces…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel" data-reveal>
           <h3 class="panel-title mb-4">Escaneo de hosts activos</h3>
           <form id="scan-form" class="flex flex-col gap-3 sm:flex-row sm:items-end">
             <label class="flex flex-1 flex-col gap-1">
@@ -242,7 +304,7 @@
           </p>
         </div>
 
-        <div class="panel overflow-hidden">
+        <div class="panel overflow-hidden" data-reveal>
           <div class="mb-3 flex items-center justify-between">
             <h3 class="panel-title">Resultados</h3>
             <span id="scan-summary" class="text-xs text-slate-500">Sin datos</span>
@@ -263,15 +325,153 @@
             </table>
           </div>
         </div>
+
+        <!-- Configuración de IP con watchdog anti-autobloqueo -->
+        <div class="panel" data-reveal>
+          <div class="mb-3 flex items-center justify-between">
+            <h3 class="panel-title">Dirección IP de la máquina</h3>
+            <span id="netcfg-renderer" class="text-xs text-slate-500">—</span>
+          </div>
+          <div id="netcfg-state" class="mb-4 text-xs text-slate-400">Cargando estado de red…</div>
+
+          <form id="netcfg-form" class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <label class="flex flex-col gap-1">
+              <span class="metric-label">Interfaz</span>
+              <input id="netcfg-iface" class="input-field" placeholder="eth0" />
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="metric-label">Dirección IP</span>
+              <input id="netcfg-address" class="input-field" placeholder="192.168.1.50" />
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="metric-label">Prefijo</span>
+              <input id="netcfg-prefix" type="number" min="8" max="30" class="input-field" value="24" />
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="metric-label">Puerta de enlace</span>
+              <input id="netcfg-gateway" class="input-field" placeholder="192.168.1.1" />
+            </label>
+            <label class="flex flex-col gap-1 sm:col-span-2">
+              <span class="metric-label">DNS (separados por comas)</span>
+              <input id="netcfg-dns" class="input-field" placeholder="192.168.1.1" />
+            </label>
+          </form>
+
+          <div class="mt-3 flex flex-wrap items-center gap-3">
+            <button id="netcfg-plan" class="btn-ghost" type="button">Previsualizar</button>
+            <button id="netcfg-apply" class="btn-primary" type="button">Aplicar cambio</button>
+          </div>
+          <p id="netcfg-status" class="mt-3 hidden rounded-sm border px-3 py-2 text-xs"></p>
+
+          <div id="netcfg-confirm" class="mt-3 hidden rounded-sm border border-red-400/40 bg-red-400/10 px-3 py-2 text-xs text-red-400">
+            <p id="netcfg-countdown"></p>
+            <div class="mt-2 flex gap-2">
+              <button id="netcfg-confirm-btn" class="btn-primary" type="button">Confirmar cambio</button>
+              <button id="netcfg-revert-btn" class="btn-ghost" type="button">Revertir ya</button>
+            </div>
+          </div>
+
+          <details class="mt-3">
+            <summary class="cursor-pointer text-sm font-semibold">Vista previa netplan</summary>
+            <pre id="netcfg-preview" class="mt-2 max-h-72 overflow-auto rounded-sm border border-slate-800 bg-nexus-900/60 p-3 text-xs text-slate-300"></pre>
+          </details>
+        </div>
+      </section>
+
+      <!-- SECCIÓN: SERVICIOS -->
+      <section id="section-services" class="tab-section hidden space-y-6">
+        <div class="flex items-center justify-between" data-reveal>
+          <h2 class="text-xl font-semibold">Servicios del sistema</h2>
+          <button id="refresh-services" class="btn-ghost">↻ Refrescar</button>
+        </div>
+
+        <div class="panel overflow-hidden" data-reveal>
+          <div class="mb-3 flex items-center justify-between">
+            <h3 class="panel-title">Inventario (systemd)</h3>
+            <span class="text-xs text-slate-500">Los servicios del panel aparecen primero</span>
+          </div>
+          <div class="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <label class="flex flex-col gap-1">
+              <span class="metric-label">Buscar</span>
+              <input id="services-search" type="text" class="input-field" placeholder="smbd, dnsmasq, dhcp…" />
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="metric-label">Estado</span>
+              <select id="services-state" class="input-field">
+                <option value="all">Todos</option>
+                <option value="active">Activos</option>
+                <option value="inactive">Inactivos</option>
+                <option value="failed">Fallidos</option>
+              </select>
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="metric-label">Ámbito</span>
+              <select id="services-scope" class="input-field">
+                <option value="all">Todos los servicios</option>
+                <option value="target">Solo servicios del panel</option>
+              </select>
+            </label>
+          </div>
+          <p id="services-count" class="mb-2 text-xs text-slate-500"></p>
+          <div class="overflow-x-auto">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Servicio</th>
+                  <th>Estado</th>
+                  <th>Subestado</th>
+                  <th>Descripción</th>
+                  <th class="text-right">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="services-table">
+                <tr><td colspan="5" class="empty-row">Cargando servicios…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="service-detail" class="panel hidden">
+          <div class="mb-3 flex items-center justify-between">
+            <h3 class="panel-title">Detalle: <span id="service-detail-title">—</span></h3>
+            <button id="service-detail-close" class="btn-ghost text-xs">Cerrar</button>
+          </div>
+          <div id="service-detail-body"></div>
+          <details class="mt-4">
+            <summary class="cursor-pointer text-sm font-semibold">Últimos logs (journalctl)</summary>
+            <pre id="service-detail-logs" class="mt-2 max-h-72 overflow-auto rounded-sm border border-slate-800 bg-nexus-900/60 p-3 text-xs text-slate-300"></pre>
+          </details>
+        </div>
+
+        <!-- Editor de configuración guiada del servicio -->
+        <div id="config-panel" class="panel hidden">
+          <div class="mb-3 flex items-center justify-between">
+            <h3 class="panel-title">Configuración: <span id="config-title">—</span></h3>
+            <button id="config-close" class="btn-ghost text-xs" type="button">Cerrar</button>
+          </div>
+          <p id="config-note" class="mb-3 hidden rounded-sm border border-slate-700/70 bg-nexus-900/70 px-3 py-2 text-xs text-slate-300"></p>
+          <div id="config-form"></div>
+          <div class="mt-4 flex flex-wrap items-center gap-3">
+            <button id="config-validate" class="btn-ghost" type="button">Previsualizar / Validar</button>
+            <button id="config-save" class="btn-primary" type="button">Guardar y aplicar</button>
+            <button id="config-restore-toggle" class="btn-ghost text-xs" type="button">↻ Copias</button>
+          </div>
+          <p id="config-status" class="mt-3 hidden rounded-sm border px-3 py-2 text-xs"></p>
+          <details class="mt-3">
+            <summary class="cursor-pointer text-sm font-semibold">Vista previa del fichero</summary>
+            <pre id="config-preview" class="mt-2 max-h-72 overflow-auto rounded-sm border border-slate-800 bg-nexus-900/60 p-3 text-xs text-slate-300"></pre>
+          </details>
+          <div id="config-backups" class="mt-3 space-y-2 text-xs text-slate-300"></div>
+        </div>
       </section>
     </div>
 
     <!-- ------------------ Panel de CHAT ------------------ -->
-    <aside id="chat-panel" class="tab-section hidden lg:block lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)]">
-      <div class="flex h-full min-h-[520px] flex-col overflow-hidden rounded-2xl border border-slate-800 bg-nexus-900/60">
+    <aside id="chat-panel" class="tab-section hidden lg:block lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)]" data-reveal>
+      <div class="flex h-full min-h-[520px] flex-col overflow-hidden rounded-md border border-slate-800 bg-nexus-900/60">
         <!-- Cabecera del chat -->
         <div class="flex items-center gap-3 border-b border-slate-800 px-4 py-3">
-          <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-emerald-500 text-sm font-bold text-nexus-950">
+          <div class="flex h-9 w-9 items-center justify-center rounded-md bg-brand text-sm font-bold text-nexus-950">
             IA
           </div>
           <div class="flex-1">
@@ -307,6 +507,6 @@
   <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
 
   <!-- ===================== SCRIPTS ===================== -->
-  <script src="/js/app.js"></script>
+  <script src="/js/app.js?v=3"></script>
 </body>
 </html>

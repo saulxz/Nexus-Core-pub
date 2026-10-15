@@ -1,0 +1,25 @@
+# ============================================================
+#  Nexus-Core — Reglas sudoers para los helpers privilegiados.
+#
+#  Instalación (automática desde deploy/install.sh):
+#    visudo -cf deploy/sudoers.d/nexus
+#    install -m 0440 deploy/sudoers.d/nexus /etc/sudoers.d/nexus
+#
+#  Principios de diseño:
+#   * Se autorizan EXACTAMENTE los seis helpers, sin comodines: cada uno
+#     valida sus propios argumentos (acción, unidad, servicio, copia)
+#     contra listas controladas por root (/etc/nexus, /var/backups/nexus).
+#   * Nada de `systemctl` directo por sudo ni de shell genérica.
+#   * La auditoría de cada acción la realiza la aplicación (registro
+#     encadenado por hash) y queda reflejada en el journal de systemd.
+#
+#  Compatibilidad: sin log_input/log_output (no soportados por sudo-rs,
+#  el sudo por defecto en Ubuntu 25.10+) y sin Cmnd_Alias (lista de
+#  comandos en línea) para máxima portabilidad entre implementaciones.
+# ============================================================
+
+Defaults:nexus !lecture
+
+# Helpers autorizados EXACTAMENTE (sin comodines; cada uno valida sus
+# argumentos): control de servicios, configuración con rollback y red.
+nexus ALL=(root) NOPASSWD: /usr/local/lib/nexus/svc-ctl, /usr/local/lib/nexus/conf-apply, /usr/local/lib/nexus/conf-restore, /usr/local/lib/nexus/net-apply, /usr/local/lib/nexus/net-confirm, /usr/local/lib/nexus/net-revert

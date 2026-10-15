@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# ============================================================
+#  net-apply — aplica un plan de red con watchdog anti-autobloqueo.
+#
+#  Uso:  net-apply <token-hex12> <ttl-segundos>
+#
+#  Secuencia:
+#   1. Valida el token y el plan preparado en staging (net-<token>.yaml).
+#   2. Copia de seguridad del drop-in actual (/etc/netplan/90-nexus.yaml).
+#   3. Reemplazo atómico + `netplan generate` (validación previa).
+#   4. Programa la REVERSIÓN automática con una unidad transitoria de
+#      systemd (sobrevive a que Nexus-Core se reinicie o muera):
+#        systemd-run --on-active=<ttl> .../net-revert <token>
+#   5. Aplica con `netplan apply`.
+#
+#  Si el administrador no confirma (net-confirm) antes del TTL, la red
+#  vuelve sola a la configuración anterior.
+#
+#  Propiedad de root; solo autorizado vía /etc/sudoers.d/nexus.
+# ============================================================
+set -euo pipefail
+
+STAGING="/var/lib/nexus/staging"
+BACKUP_DIR="/var/backups/nexus/netplan"
+TARGET="/etc/netplan/90-nexus.yaml"
+
+TOKEN="${1:-}"
+TTL="${2:-90}"
+
+[[ "$TOKEN" =~ ^[a-f0-9]{12}$ ]] || { echo "token no válido" >&2; exit 64; }
+[[ "$TTL" =~ ^[0-9]{2,3}$ ]] || { echo "ttl no válido (90-300)" >&2; exit 65; }
+
+SRC="$STAGING/net-$TOKEN.yaml"
+if [[ ! -f "$SRC" ]]; then
+  echo "no hay plan preparado en $SRC" >&2
+  exit 66
+fi
+
+mkdir -p "$BACKUP_DIR"
+chmod 0750 "$BACKUP_DIR"
+if [[ -f "$TARGET" ]]; then
+  cp -a "$TARGET" "$BACKUP_DIR/90-nexus.yaml.$(date -u +%Y%m%dT%H%M%SZ)"
+fi
+
+TMP="$(mktemp /etc/netplan/.nexus-XXXXXX)"
+cat "$SRC" > "$TMP"
+chown root:root "$TMP"
+chmod 0600 "$TMP"
+mv -f "$TMP" "$TARGET"
+
+if ! /usr/sbin/netplan generate; then
+  rm -f "$TARGET"
+  echo "netplan rechazó el plan; no se aplicó nada" >&2
+  exit 67
+fi
+
+if ! /usr/bin/systemd-run \
+      --unit="nexus-netguard-$TOKEN" \
+      --on-active="${TTL}s" \
+      --collect \
+      /usr/local/lib/nexus/net-revert "$TOKEN"; then
+  echo "no se pudo programar el watchdog de reversión" >&2
+  exit 68
+fi
+
+/usr/sbin/netplan apply
+echo "OK: plan de red aplicado. Confirma antes de ${TTL}s o se revertirá automáticamente."

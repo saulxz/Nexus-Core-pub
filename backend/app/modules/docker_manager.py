@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import random
 import string
+import time
 from typing import Any
 
 import docker
@@ -27,6 +28,11 @@ from app.core.logging_conf import logger
 # Cliente Docker perezoso (singleton). Se crea en la primera llamada para no
 # bloquear el arranque de la aplicación si el socket no está disponible.
 _client: "docker.DockerClient | None" = None
+
+# Suprime el spam de errores: si el socket no es accesible, solo se registra
+# un aviso por minuto (el panel sondea cada pocos segundos).
+_ERROR_LOG_INTERVAL_SECONDS = 60.0
+_last_error_log = 0.0
 
 # Puerto interno por defecto de cada imagen, usado al publicar puertos.
 _IMAGE_PORT_MAP: dict[str, int] = {
@@ -127,7 +133,11 @@ def list_containers() -> list[dict[str, Any]]:
         containers = client.containers.list(all=True)
         return [_serialize_container(c) for c in containers]
     except (DockerException, APIError) as exc:
-        logger.error("No se pudieron listar los contenedores: {}", exc)
+        global _last_error_log
+        now = time.time()
+        if now - _last_error_log >= _ERROR_LOG_INTERVAL_SECONDS:
+            logger.error("No se pudieron listar los contenedores: {}", exc)
+            _last_error_log = now
         return []
 
 

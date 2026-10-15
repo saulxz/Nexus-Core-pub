@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# ============================================================
+#  conf-restore — restaura una copia de seguridad de Nexus-Core.
+#
+#  Uso:  conf-restore <samba|dnsmasq> <nombre-de-copia>
+#
+#  El nombre de la copia se valida (patrón estricto) y debe existir dentro
+#  de /var/backups/nexus/<servicio>/. Tras restaurar, recarga el servicio.
+#
+#  Propiedad de root; solo autorizado vía /etc/sudoers.d/nexus.
+# ============================================================
+set -euo pipefail
+
+BACKUP_ROOT="/var/backups/nexus"
+
+case "${1:-}" in
+  samba)
+    TARGET="/etc/samba/smb.conf"
+    reload_service() {
+      /usr/bin/smbcontrol all reload-config 2>/dev/null \
+        || /usr/bin/systemctl reload-or-restart smb.service
+    }
+    ;;
+  dnsmasq)
+    TARGET="/etc/dnsmasq.d/nexus.conf"
+    reload_service() { /usr/bin/systemctl reload-or-restart dnsmasq.service; }
+    ;;
+  *)
+    echo "servicio no soportado: '${1:-}'" >&2
+    exit 64
+    ;;
+esac
+
+SERVICE="$1"
+NAME="${2:-}"
+
+[[ "$NAME" =~ ^[A-Za-z0-9._-]{1,128}$ ]] || { echo "nombre de copia no válido" >&2; exit 65; }
+
+SRC="$BACKUP_ROOT/$SERVICE/$NAME"
+if [[ ! -f "$SRC" ]]; then
+  echo "copia no encontrada: $SRC" >&2
+  exit 66
+fi
+
+TARGET_DIR="$(dirname "$TARGET")"
+mkdir -p "$TARGET_DIR"
+TMP="$(mktemp "$TARGET_DIR/.nexus-XXXXXX")"
+cat "$SRC" > "$TMP"
+chown root:root "$TMP"
+chmod 0644 "$TMP"
+mv -f "$TMP" "$TARGET"
+
+if ! reload_service; then
+  echo "la recarga falló tras restaurar la copia" >&2
+  exit 67
+fi
+
+echo "OK: copia '$NAME' restaurada en $TARGET y servicio recargado"

@@ -26,9 +26,12 @@ from app.schemas.models import (
 )
 
 router = APIRouter(tags=["core"])
+# Router público: se registra SIN la dependencia de autenticación.
+# Solo contiene /health (healthcheck de Docker y monitorización).
+public_router = APIRouter(tags=["core"])
 
 
-@router.get("/health", response_model=HealthResponse, summary="Estado del servicio")
+@public_router.get("/health", response_model=HealthResponse, summary="Estado del servicio")
 async def health() -> HealthResponse:
     """Comprueba que la API está operativa (usado por el healthcheck de Docker)."""
     settings = get_settings()

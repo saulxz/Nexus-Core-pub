@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Marca de JS: sin ella el CSS no oculta nada y la página se ve entera. -->
+  <script>document.documentElement.classList.add('js');</script>
+  <title>Nexus-Core · Ajustes</title>
+
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='6'%20fill='%234da6ff'/%3E%3Ctext%20x='16'%20y='23'%20font-family='Georgia,serif'%20font-size='19'%20font-weight='700'%20text-anchor='middle'%20fill='%23070c1a'%3EN%3C/text%3E%3C/svg%3E" />
+  <meta name="theme-color" content="#070c1a" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Misma paleta que el panel (azul marino con acentos azules).
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+            serif: ['Iowan Old Style', 'Palatino Linotype', 'Palatino', 'Book Antiqua', 'Georgia', 'Times New Roman', 'serif']
+          },
+          colors: {
+            brand: { DEFAULT: '#4da6ff', dark: '#2f7dcc' },
+            nexus: { 950: '#070c1a', 900: '#0d1527', 800: '#1a2740', 700: '#2c4066' },
+            slate: {
+              100: '#e9f1fd', 300: '#b9c7e2', 400: '#8497ba', 500: '#8497ba',
+              600: '#8497ba', 700: '#2c4066', 800: '#1a2740', 900: '#121d33', 950: '#0a111f'
+            },
+            cyan:    { 300: '#4da6ff', 400: '#4da6ff', 500: '#4da6ff' },
+            emerald: { 400: '#9d8cff', 500: '#9d8cff' },
+            violet:  { 400: '#8497ba' },
+            orange:  { 400: '#ff6b6b' },
+            red:     { 400: '#ff6b6b', 500: '#ff6b6b' },
+            danger:  '#ff6b6b'
+          },
+          boxShadow: {
+            glow: '0 1px 3px rgba(0, 0, 0, 0.55), 0 10px 24px -10px rgba(0, 0, 0, 0.6)'
+          }
+        }
+      }
+    };
+  </script>
+
+  <link rel="stylesheet" href="/css/styles.css?v=3" />
+</head>
+
+<body class="min-h-screen bg-nexus-950 text-slate-100 font-sans antialiased">
+
+  <!-- Capa ambiental fija: gradiente base + retícula + foco del puntero -->
+  <div class="nx-ambient" aria-hidden="true"></div>
+
+  <!-- ===================== CABECERA ===================== -->
+  <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-nexus-950/80 backdrop-blur">
+    <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+      <div class="flex items-center gap-3">
+        <a href="/" class="flex h-10 w-10 items-center justify-center rounded-md bg-brand font-extrabold text-nexus-950 shadow-glow" title="Volver al panel">N</a>
+        <div>
+          <h1 class="text-lg font-bold leading-tight tracking-tight">Ajustes</h1>
+          <p class="text-xs text-slate-400">Configuración del agente de IA</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="/" class="btn-ghost text-xs">← Volver al panel</a>
+        <button id="logout-btn" class="btn-ghost text-xs">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================== CONTENIDO ===================== -->
+  <main class="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
+    <form id="ai-form" class="panel space-y-5" data-reveal>
+      <div>
+        <h2 class="panel-title">Agente de IA</h2>
+        <p class="mt-1 text-xs text-slate-400">
+          Los cambios se guardan directamente en el fichero de configuración del
+          servidor (permisos 0600) y se aplican al instante — sin reiniciar y sin
+          editar ficheros a mano. Las claves nunca se muestran de vuelta y nunca
+          se escriben en el registro de auditoría.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label class="flex flex-col gap-1">
+          <span class="metric-label">Proveedor</span>
+          <select id="ai-provider" class="input-field">
+            <option value="">Sin proveedor (asistente desactivado)</option>
+            <option value="openai">OpenAI</option>
+            <option value="anthropic">Anthropic (Claude)</option>
+            <option value="gemini">Google Gemini</option>
+            <option value="ollama">Ollama (local)</option>
+          </select>
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="metric-label">Modelo</span>
+          <input id="ai-model" type="text" class="input-field" placeholder="gpt-4o-mini" required />
+        </label>
+      </div>
+
+      <label class="flex flex-col gap-1 sm:max-w-[11rem]">
+        <span class="metric-label">Temperatura (0 – 2)</span>
+        <input id="ai-temperature" type="number" min="0" max="2" step="0.1" class="input-field" />
+      </label>
+
+      <fieldset class="space-y-4 rounded-sm border border-slate-800 p-4" data-reveal>
+        <legend class="metric-label px-1">Claves de API</legend>
+
+        <label class="flex flex-col gap-1">
+          <span class="flex items-center justify-between gap-2">
+            <span class="metric-label">OpenAI</span>
+            <span id="key-openai-state" class="text-xs text-slate-500">Sin configurar</span>
+          </span>
+          <input id="key-openai" type="password" class="input-field" placeholder="Dejar vacío para conservar la actual" autocomplete="off" />
+        </label>
+
+        <label class="flex flex-col gap-1">
+          <span class="flex items-center justify-between gap-2">
+            <span class="metric-label">Anthropic (Claude)</span>
+            <span id="key-anthropic-state" class="text-xs text-slate-500">Sin configurar</span>
+          </span>
+          <input id="key-anthropic" type="password" class="input-field" placeholder="Dejar vacío para conservar la actual" autocomplete="off" />
+        </label>
+
+        <label class="flex flex-col gap-1">
+          <span class="flex items-center justify-between gap-2">
+            <span class="metric-label">Google Gemini</span>
+            <span id="key-gemini-state" class="text-xs text-slate-500">Sin configurar</span>
+          </span>
+          <input id="key-gemini" type="password" class="input-field" placeholder="Dejar vacío para conservar la actual" autocomplete="off" />
+        </label>
+      </fieldset>
+
+      <details class="rounded-sm border border-slate-800 p-4" data-reveal>
+        <summary class="cursor-pointer text-sm font-semibold">Opciones avanzadas (URLs base)</summary>
+        <div class="mt-3 space-y-3">
+          <label class="flex flex-col gap-1">
+            <span class="metric-label">OpenAI / endpoints compatibles</span>
+            <input id="url-openai" type="text" class="input-field" placeholder="https://api.openai.com/v1" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="metric-label">Google Gemini</span>
+            <input id="url-gemini" type="text" class="input-field" placeholder="https://generativelanguage.googleapis.com/v1beta" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="metric-label">Ollama (host local)</span>
+            <input id="url-ollama" type="text" class="input-field" placeholder="http://host.docker.internal:11434/v1" />
+          </label>
+        </div>
+      </details>
+
+      <div class="flex flex-wrap items-center gap-3" data-reveal>
+        <button type="submit" class="btn-primary" id="save-btn">Guardar cambios</button>
+        <button type="button" class="btn-ghost" id="test-btn">Probar conexión</button>
+      </div>
+      <p id="save-status" class="mt-1 hidden rounded-sm border px-3 py-2 text-xs"></p>
+    </form>
+  </main>
+
+  <script>
+    // ===================== Sistema visual ambiental =====================
+    /* Motor del sistema portado de la variante local: el puntero que
+       alimenta el foco de .nx-ambient::after y el revelado de los bloques
+       [data-reveal] al entrar en pantalla.
+       Es el MISMO bloque que app.js y login.html: esta página no
+       carga app.js porque su arranque es exclusivo del panel, así que el
+       motor tiene que llegarle sin salir del <body>. */
+    function initAmbientPointer() {
+      window.addEventListener(
+        'pointermove',
+        (event) => {
+          document.documentElement.style.setProperty('--mx', `${event.clientX}px`);
+          document.documentElement.style.setProperty('--my', `${event.clientY}px`);
+        },
+        { passive: true }
+      );
+    }
+
+    function initScrollReveal() {
+      const items = Array.from(document.querySelectorAll('[data-reveal]'));
+      if (items.length === 0) return;
+
+      if (!('IntersectionObserver' in window)) {
+        items.forEach((item) => item.classList.add('is-visible'));
+        return;
+      }
+
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      if (!reducedMotion) {
+        const counts = Object.create(null);
+        items.forEach((item) => {
+          const parentKey = item.parentNode ? item.parentNode.nodeName : 'root';
+          const index = counts[parentKey] === undefined ? 0 : counts[parentKey];
+          counts[parentKey] = index + 1;
+          item.style.setProperty('--reveal-delay', `${Math.min(index, 5) * 80}ms`);
+        });
+      }
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          });
+        },
+        reducedMotion ? { threshold: 0.2 } : { threshold: 0.2, rootMargin: '0px 0px -8% 0px' }
+      );
+
+      items.forEach((item) => {
+        observer.observe(item);
+      });
+    }
+
+    initAmbientPointer();
+    initScrollReveal();
+  </script>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let csrf = "";
+    let currentKeys = {};
+
+    function setStatus(message, kind) {
+      const box = $("save-status");
+      const palette = {
+        ok: "border-emerald-400/40 bg-emerald-400/10 text-emerald-400",
+        error: "border-red-400/40 bg-red-400/10 text-red-400",
+        info: "border-slate-700/70 bg-nexus-900/70 text-slate-300",
+      };
+      box.textContent = message;
+      box.className = "mt-1 rounded-sm border px-3 py-2 text-xs " + (palette[kind] || palette.info);
+      box.classList.remove("hidden");
+    }
+
+    async function api(path, options = {}) {
+      const method = (options.method || "GET").toUpperCase();
+      const headers = { "Content-Type": "application/json" };
+      if (method !== "GET" && csrf) headers["X-CSRF-Token"] = csrf;
+      const response = await fetch(path, {
+        credentials: "same-origin",
+        headers,
+        ...options,
+      });
+      if (response.status === 401) {
+        window.location.href = "/login.html";
+        throw new Error("Sesión caducada");
+      }
+      let body = null;
+      try { body = await response.json(); } catch (_) { /* respuesta sin cuerpo */ }
+      if (!response.ok) {
+        const detail = body && body.detail ? body.detail : `Error ${response.status}`;
+        throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+      }
+      return body;
+    }
+
+    function renderKeyState(elementId, secret) {
+      const el = $(elementId);
+      if (secret && secret.configured) {
+        el.textContent = "Configurada · " + secret.masked;
+        el.className = "text-xs text-emerald-400";
+      } else {
+        el.textContent = "Sin configurar";
+        el.className = "text-xs text-slate-500";
+      }
+    }
+
+    function applyState(state) {
+      currentKeys = state.keys || {};
+      $("ai-provider").value = state.provider;
+      $("ai-model").value = state.model;
+      $("ai-temperature").value = state.temperature;
+      $("url-openai").value = state.openai_base_url;
+      $("url-gemini").value = state.gemini_base_url;
+      $("url-ollama").value = state.ollama_base_url;
+      renderKeyState("key-openai-state", state.keys.openai);
+      renderKeyState("key-anthropic-state", state.keys.anthropic);
+      renderKeyState("key-gemini-state", state.keys.gemini);
+      $("key-openai").value = "";
+      $("key-anthropic").value = "";
+      $("key-gemini").value = "";
+    }
+
+    async function init() {
+      try {
+        const session = await api("/api/auth/session");
+        csrf = session.csrf;
+      } catch (_) {
+        window.location.href = "/login.html";
+        return;
+      }
+      try {
+        applyState(await api("/api/settings/ai"));
+      } catch (error) {
+        setStatus("No se pudo cargar la configuración: " + error.message, "error");
+      }
+    }
+
+    $("ai-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      // Guardia anti-despiste: si pegas una clave de otro proveedor, ofrece cambiarlo.
+      const typedProvider =
+        ($("key-gemini").value.trim() && "gemini") ||
+        ($("key-anthropic").value.trim() && "anthropic") ||
+        ($("key-openai").value.trim() && "openai") ||
+        null;
+      const selectedProvider = $("ai-provider").value;
+      const names = { openai: "OpenAI", anthropic: "Anthropic", gemini: "Google Gemini", ollama: "Ollama" };
+      if (typedProvider && typedProvider !== selectedProvider) {
+        if (window.confirm(
+          `Has pegado una clave de ${names[typedProvider]} pero el proveedor seleccionado es ${names[selectedProvider]}. ¿Quieres activar ${names[typedProvider]} como proveedor?`
+        )) {
+          $("ai-provider").value = typedProvider;
+        }
+      }
+      // Si el proveedor elegido no tiene clave pero hay otra clave guardada,
+      // se ofrece activar el que sí funciona (un solo clic).
+      const chosen = $("ai-provider").value;
+      const chosenNeedsKey = ["openai", "anthropic", "gemini"].includes(chosen) &&
+        !(currentKeys[chosen] && currentKeys[chosen].configured);
+      const readyProviders = ["openai", "anthropic", "gemini"].filter(
+        (p) => currentKeys[p] && currentKeys[p].configured
+      );
+      if (chosenNeedsKey && readyProviders.length >= 1) {
+        const alt = readyProviders[0];
+        if (window.confirm(
+          `El proveedor seleccionado (${names[chosen]}) no tiene clave, pero tienes una clave de ${names[alt]} guardada. ¿Activar ${names[alt]}?`
+        )) {
+          $("ai-provider").value = alt;
+        }
+      }
+      const payload = {
+        provider: $("ai-provider").value,
+        model: $("ai-model").value.trim(),
+        temperature: parseFloat($("ai-temperature").value || "0.2"),
+        openai_base_url: $("url-openai").value.trim(),
+        gemini_base_url: $("url-gemini").value.trim(),
+        ollama_base_url: $("url-ollama").value.trim(),
+      };
+      const openaiKey = $("key-openai").value.trim();
+      const anthropicKey = $("key-anthropic").value.trim();
+      const geminiKey = $("key-gemini").value.trim();
+      if (openaiKey) payload.openai_api_key = openaiKey;
+      if (anthropicKey) payload.anthropic_api_key = anthropicKey;
+      if (geminiKey) payload.gemini_api_key = geminiKey;
+
+      $("save-btn").disabled = true;
+      try {
+        const state = await api("/api/settings/ai", {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        });
+        applyState(state);
+        const activeKey = state.keys[state.provider];
+        if (activeKey && !activeKey.configured) {
+          setStatus(
+            `Guardado, pero OJO: el proveedor activo (${state.provider}) todavía no tiene clave; el asistente responderá con un aviso hasta que se la añadas.`,
+            "error"
+          );
+        } else {
+          setStatus("Guardado y aplicado en caliente. No hace falta reiniciar nada.", "ok");
+        }
+      } catch (error) {
+        setStatus("Error al guardar: " + error.message, "error");
+      } finally {
+        $("save-btn").disabled = false;
+      }
+    });
+
+    $("test-btn").addEventListener("click", async () => {
+      setStatus("Probando conexión con el proveedor…", "info");
+      $("test-btn").disabled = true;
+      try {
+        const result = await api("/api/settings/ai/test", { method: "POST" });
+        if (result.ok) {
+          setStatus(`Conexión correcta: ${result.provider} / ${result.model} · ${result.latency_ms} ms.`, "ok");
+        } else {
+          setStatus("Fallo de conexión: " + result.detail, "error");
+        }
+      } catch (error) {
+        setStatus("Error al probar: " + error.message, "error");
+      } finally {
+        $("test-btn").disabled = false;
+      }
+    });
+
+    $("logout-btn").addEventListener("click", async () => {
+      try { await api("/api/auth/logout", { method: "POST" }); } catch (_) { /* ya cerrada */ }
+      window.location.href = "/login.html";
+    });
+
+    init();
+  </script>
+</body>
+</html>

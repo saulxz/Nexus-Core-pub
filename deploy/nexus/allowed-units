@@ -1,0 +1,14 @@
+# ============================================================
+#  Nexus-Core — Lista blanca de unidades que svc-ctl puede controlar.
+#
+#  Una unidad por línea, nombre EXACTO. La edita únicamente el
+#  administrador (fichero propiedad de root). El panel no puede
+#  añadir unidades por su cuenta.
+# ============================================================
+smbd.service
+nmbd.service
+smb.service
+isc-dhcp-server.service
+dnsmasq.service
+bind9.service
+named.service

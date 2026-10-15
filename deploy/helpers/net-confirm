@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# ============================================================
+#  net-confirm — confirma un cambio de red y cancela la reversión.
+#
+#  Uso:  net-confirm <token-hex12>
+#
+#  Detiene la unidad transitoria del watchdog (nexus-netguard-<token>),
+#  de forma que el cambio queda consolidado.
+#
+#  Propiedad de root; solo autorizado vía /etc/sudoers.d/nexus.
+# ============================================================
+set -euo pipefail
+
+TOKEN="${1:-}"
+[[ "$TOKEN" =~ ^[a-f0-9]{12}$ ]] || { echo "token no válido" >&2; exit 64; }
+
+systemctl stop "nexus-netguard-$TOKEN.timer" 2>/dev/null || true
+systemctl stop "nexus-netguard-$TOKEN.service" 2>/dev/null || true
+systemctl reset-failed "nexus-netguard-$TOKEN.service" 2>/dev/null || true
+
+echo "OK: cambio de red confirmado; la reversión automática fue cancelada"

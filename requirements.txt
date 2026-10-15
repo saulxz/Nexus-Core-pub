@@ -1,59 +1,45 @@
 # ============================================================
 #  Nexus-Core — Dependencias de Python
 #  TFG SMR: Plataforma de Orquestación de Infraestructura y
-#  Ciberseguridad con Agente de IA (Entorno Edge / Raspberry Pi)
-#  Python 3.12 · Debian Bookworm 64-bit (ARM64)
-#  Todas las versiones están FIJADAS para garantizar builds
-#  reproducibles sobre la arquitectura ARM de la Raspberry Pi.
+#  Ciberseguridad con Agente de IA (Entorno Edge / VM)
+#  Python 3.12 – 3.14 · Linux x86_64 / ARM64 (Raspberry Pi)
+#
+#  Versiones fijadas y verificadas. Para instalaciones sin
+#  internet, coloca las ruedas en un directorio `wheelhouse/`
+#  junto al proyecto: el instalador las usará automáticamente.
 # ============================================================
 
 # ------------------------- Web / API -------------------------
 # Framework principal de la API REST asíncrona.
-fastapi==0.115.6
-# Servidor ASGI de alto rendimiento (uvloop+httptools en ARM64).
-uvicorn[standard]==0.32.1
-# Servidor WSGI/ASGI para producción con workers.
-gunicorn==23.0.0
-# Soporte de formularios multipart en FastAPI.
-python-multipart==0.0.20
-# Serializador JSON ultrarrápido (respuestas de la API).
-orjson==3.10.13
-# Soporte de WebSockets (evolución de telemetría en tiempo real).
-websockets==14.1
+fastapi==0.143.0
+# Servidor ASGI (suficiente para el panel en LAN; sin extras binarios).
+uvicorn==0.54.0
 
 # -------------------- Validación / Config --------------------
 # Validación de modelos de datos y esquemas de la API.
-pydantic==2.10.4
+pydantic==2.14.1
 # Gestión de configuración por variables de entorno / .env.
-pydantic-settings==2.7.0
+pydantic-settings==2.15.0
 # Carga de ficheros .env en desarrollo.
-python-dotenv==1.0.1
+python-dotenv==1.2.4
 
 # ----------------- Cliente HTTP / Resiliencia ----------------
-# Cliente HTTP asíncrono para hablar con los proveedores LLM.
+# Cliente HTTP asíncrono usado por el agente para TODOS los
+# proveedores LLM (OpenAI, Anthropic, Gemini y Ollama).
 httpx==0.28.1
-# Reintentos con backoff exponencial ante fallos de red.
-tenacity==9.0.0
 
 # -------------- Integración con el Sistema Operativo ---------
 # SDK oficial de Docker: listar/crear/destruir contenedores.
 docker==7.1.0
 # Telemetría del sistema: CPU, RAM, disco, sensores térmicos.
-psutil==6.1.1
+psutil==7.2.2
 
 # ------------------- Redes y Ciberseguridad ------------------
 # Envoltorio Python de Nmap para descubrimiento de hosts.
 python-nmap==0.7.1
 
-# ------------------------- Agentes de IA ---------------------
-# SDK compatible con OpenAI y con cualquier endpoint OpenAI-like
-# (incluido Ollama en el borde).
-openai==1.59.6
-# SDK oficial de Anthropic (Claude) como proveedor alternativo.
-anthropic==0.42.0
-
-# --------------------- Utilidades / Seguridad ----------------
+# --------------- Utilidades / Seguridad (panel) --------------
 # Logging estructurado y con colores.
 loguru==0.7.3
-# Limitación de peticiones (rate limiting) por IP.
-slowapi==0.1.9
+# Hash de contraseñas con argon2id (autenticación del panel).
+argon2-cffi==25.1.0

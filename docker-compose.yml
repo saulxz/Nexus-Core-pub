@@ -48,7 +48,7 @@ services:
       SCAN_DEFAULT_SUBNET: "${SCAN_DEFAULT_SUBNET:-192.168.1.0/24}"
       SCAN_TIMEOUT_SECONDS: "${SCAN_TIMEOUT_SECONDS:-120}"
       # --------------------- Agente de IA -----------------------
-      AI_PROVIDER: "${AI_PROVIDER:-openai}"
+      AI_PROVIDER: "${AI_PROVIDER:-}"
       AI_MODEL: "${AI_MODEL:-gpt-4o-mini}"
       AI_TEMPERATURE: "${AI_TEMPERATURE:-0.2}"
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
@@ -60,7 +60,10 @@ services:
       GEMINI_MODEL: "${GEMINI_MODEL:-gemini-2.5-flash}"
       OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://host.docker.internal:11434/v1}"
       # -------------------------- CORS --------------------------
-      ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-*}"
+      # Vacío = sin CORS (same-origin), modo recomendado para el panel.
+      ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-}"
+      # Hosts aceptados por TrustedHostMiddleware (csv); "*" en LAN.
+      ALLOWED_HOSTS: "${ALLOWED_HOSTS:-*}"
 
     ports:
       - "8000:8000"
