@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Nexus-Core â€” Guía educativa y técnica</title>
+<style>
+  @page {
+    size: A4;
+    margin: 17mm 15mm 18mm 15mm;
+  }
+
+  :root {
+    --ink: #1f2933;
+    --muted: #5f6b76;
+    --rule: #d9d2c7;
+    --accent: #0b3954;
+    --accent-2: #b5543a;
+    --paper: #fffdf9;
+    --soft: #f5f1e9;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    color: var(--ink);
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.55;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .cover {
+    height: 257mm;
+    margin: 0;
+    padding: 26mm 22mm;
+    background: linear-gradient(145deg, #071f31 0%, #0b3954 62%, #12506f 100%);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    page-break-after: always;
+  }
+
+  .cover__kicker {
+    margin: 0;
+    font-size: 10pt;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #c9b8a0;
+  }
+
+  .cover h1 {
+    margin: 10mm 0 0;
+    font-size: 42pt;
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    color: #fff;
+  }
+
+  .cover__sub {
+    margin: 4mm 0 0;
+    font-size: 17pt;
+    color: #f1e9dc;
+  }
+
+  .cover__desc {
+    max-width: 125mm;
+    margin: 7mm 0 0;
+    font-size: 11.5pt;
+    line-height: 1.55;
+    color: #cfe0e8;
+  }
+
+  .cover__meta {
+    font-size: 10pt;
+    color: #c9b8a0;
+    border-top: 1px solid rgba(255,255,255,.22);
+    padding-top: 5mm;
+  }
+
+  .cover__bar {
+    width: 28mm;
+    height: 3px;
+    margin-top: 7mm;
+    background: var(--accent-2);
+  }
+
+  .content {
+    padding: 0 2mm;
+  }
+
+  .cover h1 { page-break-before: avoid; break-before: avoid; }
+
+  h1 {
+    page-break-before: always;
+    margin: 0 0 4mm;
+    padding-bottom: 2.5mm;
+    font-size: 22pt;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+    border-bottom: 2px solid var(--accent-2);
+  }
+
+  h2 {
+    margin: 7mm 0 2.5mm;
+    font-size: 14pt;
+    line-height: 1.25;
+    color: var(--accent);
+    page-break-after: avoid;
+  }
+
+  h3 {
+    margin: 5mm 0 2mm;
+    font-size: 11.5pt;
+    color: #243746;
+    page-break-after: avoid;
+  }
+
+  p { margin: 0 0 3mm; }
+
+  a { color: #0b5f86; text-decoration: none; }
+
+  strong { color: #102a3a; }
+
+  em { color: #3d4c57; }
+
+  ul, ol { margin: 0 0 3.5mm 5mm; padding: 0; }
+  li { margin-bottom: 1.2mm; }
+
+  blockquote {
+    margin: 4mm 0;
+    padding: 3mm 4mm;
+    background: var(--soft);
+    border-left: 3px solid var(--accent-2);
+    color: #33424d;
+    page-break-inside: avoid;
+  }
+
+  blockquote p { margin: 0; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 3.5mm 0 5mm;
+    font-size: 9.3pt;
+    page-break-inside: avoid;
+  }
+
+  th {
+    background: var(--accent);
+    color: #fff;
+    text-align: left;
+    padding: 2mm 2.5mm;
+    font-weight: 600;
+  }
+
+  td {
+    padding: 1.8mm 2.5mm;
+    border-bottom: 0.6pt solid var(--rule);
+    vertical-align: top;
+  }
+
+  tr:nth-child(even) td { background: #fbf8f2; }
+
+  code {
+    font-family: "Consolas", "Cascadia Mono", monospace;
+    font-size: 9pt;
+    background: #f1ece3;
+    padding: 0.4mm 1.1mm;
+    border-radius: 2px;
+  }
+
+  pre {
+    margin: 3mm 0 4mm;
+    padding: 3mm 3.5mm;
+    background: #f6f2eb;
+    border: 0.6pt solid var(--rule);
+    border-left: 3px solid var(--accent);
+    border-radius: 2px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    page-break-inside: avoid;
+  }
+
+  pre code {
+    background: transparent;
+    padding: 0;
+    font-size: 8.6pt;
+    line-height: 1.45;
+  }
+
+  .toc {
+    margin: 2mm 0 6mm;
+    padding: 4mm 5mm;
+    background: var(--soft);
+    border: 0.6pt solid var(--rule);
+    page-break-after: always;
+  }
+
+  .toc > ul { margin: 0 0 0 4mm; }
+  .toc ul { margin: 0 0 0 4mm; }
+  .toc li { margin-bottom: 1mm; }
+  .toc a { color: #243746; }
+
+  hr {
+    border: 0;
+    border-top: 0.6pt solid var(--rule);
+    margin: 6mm 0;
+  }
+
+  .content > h1:first-of-type { page-break-before: auto; }
+
+  @media print {
+    .cover { break-after: page; }
+  }
+</style>
+</head>
+<body>
+  <section class="cover">
+    <div>
+      <p class="cover__kicker">Trabajo Fin de Grado · SMR</p>
+      <h1>Nexus-Core</h1>
+      <div class="cover__bar"></div>
+      <p class="cover__sub">Guía educativa y técnica</p>
+      <p class="cover__desc">
+        Monitorización, administración y seguridad de infraestructura con agentes remotos.
+        Arquitectura, datos, redes, seguridad y laboratorios para clase.
+      </p>
+    </div>
+    <div class="cover__meta">
+      Saúl Moreno · Málaga · Octubre de 2026<br>
+      Documento educativo · Versión 1.0
+    </div>
+  </section>
+
+  <main class="content">
+    <h2 id="como-usar-esta-guia">Cómo usar esta guía</h2>
+<p>Esta guía está pensada para que un profesor pueda explicar Nexus-Core en clase y para que el
+alumnado entienda <strong>qué hace</strong>, <strong>cómo está construido</strong> y, sobre todo, <strong>por qué</strong> se tomaron
+cada una de las decisiones. No es un manual de usuario: es un recorrido por la arquitectura,
+los datos, la seguridad y las redes de una plataforma real, con ejercicios seguros de laboratorio.</p>
+<p>Los ejemplos usan nombres reservados para documentación (<code>nexus.example.com</code>, <code>192.0.2.10</code>) y
+marcadores como <code>&lt;TOKEN&gt;</code>. Ninguna credencial real aparece en este documento.</p>
+<div class="toc">
+<ul>
+<li><a href="#como-usar-esta-guia">Cómo usar esta guía</a></li>
+<li><a href="#1-que-es-nexus-core">1. Qué es Nexus-Core</a><ul>
+<li><a href="#11-el-problema-que-resuelve">1.1 El problema que resuelve</a></li>
+<li><a href="#12-objetivos-de-diseno">1.2 Objetivos de diseño</a></li>
+</ul>
+</li>
+<li><a href="#2-arquitectura-general">2. Arquitectura general</a><ul>
+<li><a href="#21-por-que-hub-agentes">2.1 Por qué hub + agentes</a></li>
+<li><a href="#22-el-protocolo-agente-hub">2.2 El protocolo agente-hub</a></li>
+<li><a href="#23-que-ocurre-cuando-el-hub-esta-apagado">2.3 Qué ocurre cuando el hub está apagado</a></li>
+</ul>
+</li>
+<li><a href="#3-funciones-del-panel">3. Funciones del panel</a><ul>
+<li><a href="#31-alertas-del-dato-a-la-decision">3.1 Alertas: del dato a la decisión</a></li>
+<li><a href="#32-monitores-y-pagina-de-estado">3.2 Monitores y página de estado</a></li>
+<li><a href="#33-ia-con-human-in-the-loop">3.3 IA con human-in-the-loop</a></li>
+</ul>
+</li>
+<li><a href="#4-datos-y-persistencia">4. Datos y persistencia</a><ul>
+<li><a href="#41-muestreo-y-agregacion">4.1 Muestreo y agregación</a></li>
+<li><a href="#42-copias-de-seguridad">4.2 Copias de seguridad</a></li>
+</ul>
+</li>
+<li><a href="#5-multi-host-una-flota-un-panel">5. Multi-host: una flota, un panel</a><ul>
+<li><a href="#51-alta-de-un-host">5.1 Alta de un host</a></li>
+<li><a href="#52-seleccion-de-host">5.2 Selección de host</a></li>
+<li><a href="#53-limites-del-agente">5.3 Límites del agente</a></li>
+</ul>
+</li>
+<li><a href="#6-seguridad">6. Seguridad</a><ul>
+<li><a href="#61-capas-de-proteccion">6.1 Capas de protección</a></li>
+<li><a href="#62-autenticacion-y-2fa">6.2 Autenticación y 2FA</a></li>
+<li><a href="#63-sesiones-csrf-y-cookies">6.3 Sesiones, CSRF y cookies</a></li>
+<li><a href="#64-superficie-de-ataque-y-privilegios">6.4 Superficie de ataque y privilegios</a></li>
+<li><a href="#65-secretos-y-configuracion">6.5 Secretos y configuración</a></li>
+<li><a href="#66-despliegue-en-internet">6.6 Despliegue en Internet</a></li>
+</ul>
+</li>
+<li><a href="#7-redes">7. Redes</a><ul>
+<li><a href="#71-escaneo-de-la-red-local">7.1 Escaneo de la red local</a></li>
+<li><a href="#72-agentes-y-nat">7.2 Agentes y NAT</a></li>
+<li><a href="#73-docker-y-puertos">7.3 Docker y puertos</a></li>
+<li><a href="#74-cabeceras-de-proxy-y-https">7.4 Cabeceras de proxy y HTTPS</a></li>
+</ul>
+</li>
+<li><a href="#8-instalacion-y-operacion">8. Instalación y operación</a><ul>
+<li><a href="#81-hub-nativo-recomendado">8.1 Hub nativo (recomendado)</a></li>
+<li><a href="#82-primer-arranque">8.2 Primer arranque</a></li>
+<li><a href="#83-agente-en-otra-maquina">8.3 Agente en otra máquina</a></li>
+<li><a href="#84-backups-y-actualizacion">8.4 Backups y actualización</a></li>
+<li><a href="#85-diagnostico-rapido">8.5 Diagnóstico rápido</a></li>
+</ul>
+</li>
+<li><a href="#9-laboratorios-para-el-aula">9. Laboratorios para el aula</a><ul>
+<li><a href="#laboratorio-1-arquitectura">Laboratorio 1 — Arquitectura</a></li>
+<li><a href="#laboratorio-2-monitorizar-una-vm">Laboratorio 2 — Monitorizar una VM</a></li>
+<li><a href="#laboratorio-3-alerta-de-disco">Laboratorio 3 — Alerta de disco</a></li>
+<li><a href="#laboratorio-4-servicio-caido">Laboratorio 4 — Servicio caído</a></li>
+<li><a href="#laboratorio-5-inventario-de-red">Laboratorio 5 — Inventario de red</a></li>
+<li><a href="#laboratorio-6-2fa-y-recuperacion">Laboratorio 6 — 2FA y recuperación</a></li>
+<li><a href="#laboratorio-7-backup-y-restauracion">Laboratorio 7 — Backup y restauración</a></li>
+<li><a href="#laboratorio-8-publicacion-segura">Laboratorio 8 — Publicación segura</a></li>
+</ul>
+</li>
+<li><a href="#10-preguntas-de-repaso">10. Preguntas de repaso</a></li>
+<li><a href="#11-glosario">11. Glosario</a></li>
+<li><a href="#12-apendices">12. Apéndices</a><ul>
+<li><a href="#121-endpoints-principales">12.1 Endpoints principales</a></li>
+<li><a href="#122-herramientas-del-agente">12.2 Herramientas del agente</a></li>
+<li><a href="#123-estructura-del-proyecto">12.3 Estructura del proyecto</a></li>
+<li><a href="#124-buenas-practicas-de-operacion">12.4 Buenas prácticas de operación</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<hr />
+<h1 id="1-que-es-nexus-core">1. Qué es Nexus-Core</h1>
+<p>Nexus-Core convierte un servidor Linux en un <strong>centro de control</strong> para vigilar y administrar
+otras máquinas. Desde una única página web se puede ver la telemetría del sistema, gestionar
+contenedores Docker, revisar servicios, lanzar un escaneo de la red local, consultar puertos,
+actualizaciones y discos, recibir alertas y ejecutar acciones con confirmación.</p>
+<p>La plataforma nace como Trabajo Fin de Grado de SMR, pero está construida como un producto
+real: un <em>hub</em> central, agentes que se instalan en otras máquinas y una interfaz que funciona
+en local y a través de Internet.</p>
+<blockquote>
+<p><strong>La idea en una frase:</strong> un panel único, ligero y comprensible, que convierte datos sueltos
+(CPU, RAM, servicios, contenedores, red) en decisiones y en acciones auditables.</p>
+</blockquote>
+<h2 id="11-el-problema-que-resuelve">1.1 El problema que resuelve</h2>
+<p>En un aula o en una pequeña infraestructura, la información está repartida: métricas en una
+herramienta, servicios en otra, contenedores en la terminal, la red en un escaneo manual y las
+alertas en el correo. Nexus-Core reúne esas señales en un solo lugar y añade tres cosas que
+suelen faltar en un TFG:</p>
+<ol>
+<li><strong>Contexto</strong>: no solo muestra un número, explica si está bien, regular o mal.</li>
+<li><strong>Acción controlada</strong>: permite actuar (reiniciar un servicio, desplegar un contenedor)
+   con lista blanca, confirmación y auditoría.</li>
+<li><strong>Trazabilidad</strong>: cada acción queda registrada; el administrador puede reconstruir qué pasó.</li>
+</ol>
+<h2 id="12-objetivos-de-diseno">1.2 Objetivos de diseño</h2>
+<table>
+<thead>
+<tr>
+<th>Objetivo</th>
+<th>Decisión</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Funcionar en una máquina modesta (Raspberry Pi, VM)</td>
+<td>Backend Python ligero, SQLite, frontend sin compilación</td>
+</tr>
+<tr>
+<td>No depender de la nube</td>
+<td>Todo el núcleo funciona en local; Internet es opcional</td>
+</tr>
+<tr>
+<td>Poder vigilar máquinas detrás de NAT</td>
+<td>El agente inicia la conexión <strong>hacia fuera</strong>; no se abren puertos</td>
+</tr>
+<tr>
+<td>Ser entendible para un alumno</td>
+<td>Código modular, nombres explícitos, documentación y auditoría</td>
+</tr>
+<tr>
+<td>No convertir la IA en un riesgo</td>
+<td>La IA <strong>propone</strong>; una persona confirma acciones sensibles</td>
+</tr>
+<tr>
+<td>Poder desplegarse de forma segura</td>
+<td>TLS en el borde, cookies Secure, 2FA, rate limiting y backups</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="2-arquitectura-general">2. Arquitectura general</h1>
+<p>Nexus-Core tiene tres piezas:</p>
+<pre><code class="language-text">┌────────────────────┐        HTTPS (saliente)        ┌──────────────────────────┐
+│  Navegador / móvil │ ─────────────────────────────▶ │  Hub Nexus-Core          │
+│  del administrador │                                │  FastAPI + SQLite        │
+└────────────────────┘                                │  Panel web + API         │
+                                                      └────────────┬─────────────┘
+                                                                   │ long-poll / comandos
+                                      ┌────────────────────────────┼───────────────────────────┐
+                                      │                            │                           │
+                              ┌───────▼────────┐          ┌────────▼───────┐          ┌────────▼───────┐
+                              │ Agente Linux 1 │          │ Agente Linux 2 │          │ Agente Windows │
+                              │ systemd        │          │ Docker         │          │ (limitado)     │
+                              └────────────────┘          └────────────────┘          └────────────────┘
+</code></pre>
+<ul>
+<li><strong>Hub</strong>: servidor central. Ejecuta el panel, la API, la base de datos, el motor de alertas,
+  los monitores y el despachador de comandos.</li>
+<li><strong>Agentes</strong>: procesos instalados en cada máquina vigilada. Recogen métricas y ejecutan
+  herramientas bajo demanda. <strong>Solo abren conexiones salientes</strong> hacia el hub.</li>
+<li><strong>Navegador</strong>: consume el panel. No necesita instalar nada.</li>
+</ul>
+<h2 id="21-por-que-hub-agentes">2.1 Por qué hub + agentes</h2>
+<p>Un panel que “entra” en cada máquina necesitaría abrir puertos, configurar cortafuegos y
+gestionar credenciales en cada host. El modelo de agente invierte la dirección: cada máquina
+abre una conexión saliente al hub. Esto permite funcionar detrás de NAT, en redes de aula o
+en un servidor doméstico sin IP fija. Es el mismo patrón que usan herramientas comerciales
+de monitorización.</p>
+<h2 id="22-el-protocolo-agente-hub">2.2 El protocolo agente-hub</h2>
+<ol>
+<li><strong>Alta (<code>enroll</code>)</strong>: el agente presenta un token de enrolamiento y recibe un token propio
+   para ese host. El token de enrolamiento es un secreto de alta; el token del host identifica
+   a la máquina en cada petición.</li>
+<li><strong>Latido (<code>heartbeat</code>)</strong>: cada pocos segundos el agente informa de que sigue vivo y envía
+   su inventario (contenedores, servicios, versión).</li>
+<li><strong>Long-poll de comandos</strong>: el agente mantiene una petición abierta esperando órdenes. El
+   hub responde en cuanto hay una herramienta que ejecutar, sin que el agente tenga que
+   sondear agresivamente.</li>
+<li><strong>Resultado</strong>: el agente devuelve <code>done</code> o <code>error</code>. El hub guarda el comando y su resultado.</li>
+</ol>
+<blockquote>
+<p><strong>Por qué long-poll y no WebSocket:</strong> el long-poll es más simple de operar (HTTP normal,
+proxies, TLS) y suficiente para una herramienta de administración. Un WebSocket añadiría
+estado y reconexiones que este proyecto no necesita.</p>
+</blockquote>
+<h2 id="23-que-ocurre-cuando-el-hub-esta-apagado">2.3 Qué ocurre cuando el hub está apagado</h2>
+<p>Los agentes siguen funcionando: reintentan con una espera que crece de 2 a 30 segundos. No
+se pierde la configuración ni los servicios de la máquina. Cuando el hub vuelve, los agentes
+reconectan solos. Las métricas del periodo de caída no se backfillean (el agente no guarda un
+búfer histórico); es una limitación consciente y una posible mejora futura.</p>
+<hr />
+<h1 id="3-funciones-del-panel">3. Funciones del panel</h1>
+<table>
+<thead>
+<tr>
+<th>Pestaña</th>
+<th>Qué enseña</th>
+<th>Por qué importa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Resumen</strong></td>
+<td>Sensores (CPU, RAM, swap, disco, carga, temperatura), veredicto global, alarmas y uso de recursos</td>
+<td>Es la vista de un vistazo; el color y el texto evitan tener que interpretar números</td>
+</tr>
+<tr>
+<td><strong>Contenedores</strong></td>
+<td>Lista Docker, estado, puertos, logs, consumo, despliegue y borrado con lista blanca</td>
+<td>Docker es el corazón de muchos despliegues; se gestiona sin terminal</td>
+</tr>
+<tr>
+<td><strong>Servicios</strong></td>
+<td>Inventario systemd, estado, logs del journal y acciones start/stop/restart/reload</td>
+<td>Permite diagnosticar y recuperar un servicio desde el navegador</td>
+</tr>
+<tr>
+<td><strong>Red</strong></td>
+<td>Interfaces, IP/CIDR, MAC, MTU, puerta de enlace, escaneo de hosts y configuración guiada</td>
+<td>La red es la base de todo; el escaneo ayuda a inventariar el aula</td>
+</tr>
+<tr>
+<td><strong>Sistema</strong></td>
+<td>Puertos en escucha, actualizaciones apt y estado SMART</td>
+<td>Tres preguntas clásicas de soporte: qué escucha, qué falta actualizar y cómo está el disco</td>
+</tr>
+<tr>
+<td><strong>Alertas</strong></td>
+<td>Reglas por umbral, duración, histéresis, acknowledgment, snooze y notificaciones</td>
+<td>Convierte la telemetría en avisos accionables, no en ruido</td>
+</tr>
+<tr>
+<td><strong>Monitores</strong></td>
+<td>HTTP, TCP y SSL con latidos, uptime y página de estado</td>
+<td>Vigila servicios desde el punto de vista del usuario</td>
+</tr>
+<tr>
+<td><strong>Histórico</strong></td>
+<td>Series temporales con rangos y exportación CSV</td>
+<td>Permite explicar tendencias y justificar decisiones</td>
+</tr>
+<tr>
+<td><strong>Auditoría</strong></td>
+<td>Registro encadenado de accesos y acciones</td>
+<td>Sin trazabilidad no hay administración responsable</td>
+</tr>
+<tr>
+<td><strong>Seguridad</strong></td>
+<td>Tokens de API, sesiones, 2FA TOTP y códigos de recuperación</td>
+<td>Protege el panel y las credenciales</td>
+</tr>
+<tr>
+<td><strong>Asistente</strong></td>
+<td>Chat con IA y propuestas de acciones pendientes de confirmar</td>
+<td>Acelera el diagnóstico sin dar autonomía peligrosa a la IA</td>
+</tr>
+<tr>
+<td><strong>Hosts</strong></td>
+<td>Inventario de la flota, alta de agentes, estado y comandos</td>
+<td>Es la puerta al modelo multi-máquina</td>
+</tr>
+</tbody>
+</table>
+<h2 id="31-alertas-del-dato-a-la-decision">3.1 Alertas: del dato a la decisión</h2>
+<p>Una alerta no es “CPU al 90 %”. Una regla define un umbral, una duración mínima para evitar
+falsos positivos, un umbral de recuperación (histéresis) y unos canales de notificación. El
+estado pasa por <code>ok → aviso → crítico → recuperada</code>; el administrador puede reconocerla o
+silenciarla durante un mantenimiento.</p>
+<blockquote>
+<p><strong>Por qué la histéresis:</strong> sin ella, un valor que oscila alrededor del umbral generaría
+decenas de eventos. Con ella, la alerta se abre cuando se cruza el umbral y se cierra solo
+cuando baja del umbral de recuperación.</p>
+</blockquote>
+<h2 id="32-monitores-y-pagina-de-estado">3.2 Monitores y página de estado</h2>
+<p>Los monitores comprueban HTTP, TCP y certificados SSL. Su resultado alimenta una página pública
+de estado y un endpoint de métricas para Prometheus. Es una separación deliberada: la
+telemetría del host no es lo mismo que la disponibilidad de un servicio.</p>
+<h2 id="33-ia-con-human-in-the-loop">3.3 IA con human-in-the-loop</h2>
+<p>El asistente usa <em>function calling</em>: el modelo no ejecuta código libre, solo puede pedir
+herramientas declaradas. Las acciones sensibles se convierten en <strong>propuestas pendientes</strong> que
+el administrador confirma o rechaza. El objetivo es que la IA ayude a diagnosticar sin quitar
+el control.</p>
+<hr />
+<h1 id="4-datos-y-persistencia">4. Datos y persistencia</h1>
+<p>Nexus-Core usa <strong>SQLite</strong> para simplificar el despliegue: un solo archivo, sin servidor de base
+de datos, fácil de copiar y restaurar. El esquema evoluciona con migraciones versionadas.</p>
+<table>
+<thead>
+<tr>
+<th>Tabla</th>
+<th>Contenido</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>metric_samples</code></td>
+<td>Muestras de CPU, RAM, swap, disco, carga y temperatura, por host</td>
+</tr>
+<tr>
+<td><code>metric_rollups</code></td>
+<td>Agregados por minuto y hora para históricos largos</td>
+</tr>
+<tr>
+<td><code>hosts</code></td>
+<td>Inventario de la flota (local y agentes), estado y token</td>
+</tr>
+<tr>
+<td><code>host_state</code></td>
+<td>Último inventario del agente (contenedores, servicios, versión)</td>
+</tr>
+<tr>
+<td><code>commands</code></td>
+<td>Órdenes enviadas a un agente, estado, resultado y error</td>
+</tr>
+<tr>
+<td><code>alert_rules</code> / <code>alert_events</code></td>
+<td>Reglas, umbrales, estados y acknowledgments</td>
+</tr>
+<tr>
+<td><code>notification_channels</code></td>
+<td>Telegram, webhook o correo</td>
+</tr>
+<tr>
+<td><code>maintenance_windows</code></td>
+<td>Ventanas de silencio planificadas</td>
+</tr>
+<tr>
+<td><code>monitors</code></td>
+<td>Comprobaciones HTTP/TCP/SSL y su historial</td>
+</tr>
+</tbody>
+</table>
+<h2 id="41-muestreo-y-agregacion">4.1 Muestreo y agregación</h2>
+<ul>
+<li>El colector muestrea cada <strong>5 segundos</strong>.</li>
+<li>Se calculan agregados por minuto y por hora para que el histórico no crezca sin límite.</li>
+<li>La retención y los rollups permiten mantener meses de tendencia con un peso pequeño.</li>
+<li>El histórico se consulta por host y por rango; el CSV exporta exactamente lo que se ve.</li>
+</ul>
+<h2 id="42-copias-de-seguridad">4.2 Copias de seguridad</h2>
+<p>El script <code>deploy/production/backup-nexus.py</code> usa la <strong>API de backup de SQLite</strong>: crea un
+snapshot consistente aunque el servicio esté en marcha, comprueba <code>PRAGMA integrity_check</code>,
+incluye la configuración y rota las copias. Un backup que no se ha probado a restaurar no es
+un backup.</p>
+<hr />
+<h1 id="5-multi-host-una-flota-un-panel">5. Multi-host: una flota, un panel</h1>
+<h2 id="51-alta-de-un-host">5.1 Alta de un host</h2>
+<ol>
+<li>El administrador abre <strong>Hosts</strong> y copia el <strong>token de enrolamiento</strong>.</li>
+<li>En la máquina destino instala el agente con ese token y un nombre.</li>
+<li>El agente se enrola, recibe su token propio y empieza a latir.</li>
+<li>El hub lo muestra como un host más y permite elegirlo en el selector.</li>
+</ol>
+<blockquote>
+<p><strong>Por qué hay dos tokens:</strong> el de enrolamiento sirve para dar de alta máquinas nuevas; el
+token del host identifica a una máquina concreta y puede revocarse sin afectar a las demás.</p>
+</blockquote>
+<h2 id="52-seleccion-de-host">5.2 Selección de host</h2>
+<p>El selector global decide qué host alimenta el <strong>Resumen</strong> y el <strong>Histórico</strong>. Las pestañas de
+<strong>Contenedores, Servicios, Red y Sistema</strong> ejecutan la operación en el host seleccionado:</p>
+<ul>
+<li>Si es el host local del hub, se usan los módulos locales.</li>
+<li>Si es un agente, la orden viaja por el despachador (<code>POST /api/hosts/{id}/command</code>) y el
+  agente la ejecuta con una <strong>allowlist</strong> de herramientas.</li>
+</ul>
+<h2 id="53-limites-del-agente">5.3 Límites del agente</h2>
+<p>El agente puede ejecutar: métricas, Docker (listar, logs, stats, desplegar, eliminar, prune),
+servicios (listar, detalle, logs, acciones), red (interfaces, escaneo) y sistema (puertos,
+actualizaciones, SMART). No ejecuta código arbitrario. Un host Windows no tiene systemd ni
+Docker accesible con la misma semántica: la UI muestra un aviso claro en lugar de fingir.</p>
+<hr />
+<h1 id="6-seguridad">6. Seguridad</h1>
+<p>La seguridad no es una pestaña: es una propiedad del diseño. Estas son las capas, de fuera
+hacia dentro.</p>
+<h2 id="61-capas-de-proteccion">6.1 Capas de protección</h2>
+<table>
+<thead>
+<tr>
+<th>Capa</th>
+<th>Medida</th>
+<th>Por qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Borde</td>
+<td>TLS (Caddy o Cloudflare Tunnel)</td>
+<td>Cifra el tráfico y evita credenciales en claro</td>
+</tr>
+<tr>
+<td>Red</td>
+<td>Firewall: solo SSH de entrada; el resto sale</td>
+<td>El hub no necesita puertos abiertos hacia Internet</td>
+</tr>
+<tr>
+<td>Aplicación</td>
+<td>Cookies <code>Secure</code> + <code>HttpOnly</code> + <code>SameSite</code>, CSRF</td>
+<td>Evita robo de sesión y peticiones cruzadas</td>
+</tr>
+<tr>
+<td>Identidad</td>
+<td>Contraseña fuerte + <strong>2FA TOTP</strong> + códigos de recuperación</td>
+<td>Una contraseña filtrada no basta para entrar</td>
+</tr>
+<tr>
+<td>Sesiones</td>
+<td>Caducidad por inactividad y absoluta</td>
+<td>Limita el daño de un equipo desatendido</td>
+</tr>
+<tr>
+<td>Fuerza bruta</td>
+<td>Rate limiting por usuario e IP</td>
+<td>Frena ataques automatizados</td>
+</tr>
+<tr>
+<td>Autorización</td>
+<td>Lista blanca de herramientas e imágenes</td>
+<td>El panel no es una shell remota</td>
+</tr>
+<tr>
+<td>Privilegios</td>
+<td>Servicio como usuario no root + helpers sudo acotados</td>
+<td>Un fallo en la app no es root directo</td>
+</tr>
+<tr>
+<td>Auditoría</td>
+<td>Registro encadenado por hash</td>
+<td>Detecta manipulación y permite reconstruir acciones</td>
+</tr>
+<tr>
+<td>Datos</td>
+<td>Backups con integridad y permisos 0600</td>
+<td>La copia también es un secreto</td>
+</tr>
+<tr>
+<td>IA</td>
+<td>Propuestas pendientes de confirmación</td>
+<td>La IA no actúa sin una persona</td>
+</tr>
+</tbody>
+</table>
+<h2 id="62-autenticacion-y-2fa">6.2 Autenticación y 2FA</h2>
+<ul>
+<li>La contraseña se almacena con un hash fuerte (Argon2id) y nunca se registra.</li>
+<li>El login tiene límite de intentos por usuario y por IP.</li>
+<li><strong>2FA TOTP</strong>: Google Authenticator (o cualquier app compatible) genera un código de 6
+  dígitos cada 30 segundos. El servidor guarda el secreto y verifica una ventana corta.</li>
+<li><strong>Códigos de recuperación</strong>: se muestran una sola vez, se guardan hasheados y sirven si se
+  pierde el móvil. Deben guardarse fuera del teléfono.</li>
+<li>El panel exige el código en el <strong>mismo formulario de login</strong>, no en una pantalla opcional.</li>
+</ul>
+<blockquote>
+<p><strong>Por qué TOTP y no SMS:</strong> TOTP no depende de la operadora, funciona sin cobertura y no
+expone el número de teléfono a terceros. Es el estándar de las cuentas profesionales.</p>
+</blockquote>
+<h2 id="63-sesiones-csrf-y-cookies">6.3 Sesiones, CSRF y cookies</h2>
+<p>Las sesiones caducan por inactividad (30 minutos por defecto) y por tiempo absoluto (8 horas).
+Cada petición que modifica datos exige un token CSRF. La cookie de sesión se marca <code>Secure</code>
+cuando el panel se sirve por HTTPS; sin HTTPS, el navegador no la envía y el login no persiste,
+lo que evita un falso sentido de seguridad.</p>
+<h2 id="64-superficie-de-ataque-y-privilegios">6.4 Superficie de ataque y privilegios</h2>
+<ul>
+<li>La aplicación corre como usuario <code>nexus</code>, no como root.</li>
+<li>Las operaciones que requieren privilegios pasan por <strong>helpers</strong> concretos con reglas sudo
+  validadas (<code>visudo</code>) y una lista blanca de unidades.</li>
+<li>El socket de Docker es potente: montarlo da un privilegio equivalente a root sobre el host.
+  Por eso el despliegue con Docker se documenta como opción de laboratorio y se recomienda el
+  servicio nativo en producción.</li>
+<li>El escaneo de red se limita a rangos privados y requiere autorización.</li>
+</ul>
+<h2 id="65-secretos-y-configuracion">6.5 Secretos y configuración</h2>
+<ul>
+<li><code>.env</code> y los tokens nunca se suben al repositorio; el repositorio público solo contiene
+  ejemplos con marcadores.</li>
+<li>El token de enrolamiento se puede rotar; los hosts ya enrolados conservan su token propio.</li>
+<li>La configuración de producción vive en <code>/etc/nexus/nexus.env</code> con permisos 0600.</li>
+<li>Los backups incluyen secretos: se guardan cifrados o fuera del servidor y con permisos 0600.</li>
+</ul>
+<h2 id="66-despliegue-en-internet">6.6 Despliegue en Internet</h2>
+<p>Dos opciones habituales:</p>
+<ol>
+<li><strong>Cloudflare Tunnel</strong>: <code>cloudflared</code> abre una conexión saliente y Cloudflare publica el
+   panel con HTTPS. Un <strong>Quick Tunnel</strong> es gratis, no requiere cuenta y cambia de URL; sirve
+   para pruebas. Un <strong>Named Tunnel</strong> con dominio y <strong>Cloudflare Access</strong> es la opción estable
+   y añade login por email antes de llegar al panel.</li>
+<li><strong>VPS con Caddy</strong>: el hub escucha en <code>127.0.0.1:8000</code>, Caddy termina TLS y añade HSTS y
+   cabeceras de seguridad. El firewall solo permite SSH, 80 y 443.</li>
+</ol>
+<p>En ambos casos el panel <strong>no</strong> debe escuchar en <code>0.0.0.0</code> cuando se publica; se enlaza a
+localhost y el proxy/túnel hace de puerta.</p>
+<hr />
+<h1 id="7-redes">7. Redes</h1>
+<h2 id="71-escaneo-de-la-red-local">7.1 Escaneo de la red local</h2>
+<p>El escaneo busca hosts activos en una subred privada (RFC 1918). Usa <code>nmap</code> si está
+disponible y, si no, un barrido con tabla ARP como respaldo. El resultado muestra IP, estado,
+MAC y nombre. Solo debe usarse en redes propias o con autorización expresa.</p>
+<blockquote>
+<p><strong>Por qué se limita a rangos privados:</strong> escanear redes ajenas es intrusión. La herramienta
+educativa debe enseñar el límite, no solo la técnica.</p>
+</blockquote>
+<h2 id="72-agentes-y-nat">7.2 Agentes y NAT</h2>
+<p>El agente no necesita IP fija ni puertos abiertos: inicia una conexión HTTPS saliente y
+mantiene un long-poll. Funciona detrás de NAT, en una VM de aula o en una Raspberry Pi. El
+hub solo necesita ser alcanzable por el agente (por LAN o por el túnel).</p>
+<h2 id="73-docker-y-puertos">7.3 Docker y puertos</h2>
+<p>El panel muestra el estado de los contenedores y los puertos publicados. El despliegue usa una
+lista blanca de imágenes y un límite de contenedores gestionados. Es una decisión de
+seguridad: no se permite desplegar cualquier imagen desde el panel.</p>
+<h2 id="74-cabeceras-de-proxy-y-https">7.4 Cabeceras de proxy y HTTPS</h2>
+<p>Cuando hay un proxy (Caddy, Cloudflare), uvicorn debe confiar en las cabeceras reenviadas
+(<code>--proxy-headers --forwarded-allow-ips=127.0.0.1</code>). Así la IP del cliente, el esquema HTTPS
+y las cookies Secure se comportan correctamente. Sin esa confianza, el panel vería todo el
+tráfico como localhost.</p>
+<hr />
+<h1 id="8-instalacion-y-operacion">8. Instalación y operación</h1>
+<h2 id="81-hub-nativo-recomendado">8.1 Hub nativo (recomendado)</h2>
+<pre><code class="language-bash">sudo apt install -y git python3 python3-venv
+git clone &lt;repo&gt; nexus-core
+cd nexus-core
+sudo bash deploy/install.sh
+</code></pre>
+<p>El instalador crea el usuario <code>nexus</code>, los directorios, el entorno virtual, los helpers, la
+unidad systemd y el token de primer arranque. El panel escucha en el puerto 8000.</p>
+<h2 id="82-primer-arranque">8.2 Primer arranque</h2>
+<pre><code class="language-bash">sudo cat /var/lib/nexus/setup_token
+</code></pre>
+<p>Se abre el panel, se pega el token, se crea el administrador y se guarda la contraseña en un
+gestor. Después se activa el 2FA y se guardan los códigos de recuperación.</p>
+<h2 id="83-agente-en-otra-maquina">8.3 Agente en otra máquina</h2>
+<pre><code class="language-bash">sudo bash deploy/agent/install-agent.sh \
+  --hub https://nexus.example.com \
+  --enroll-token '&lt;TOKEN&gt;' \
+  --name &quot;vm-aula-01&quot;
+</code></pre>
+<p>El agente se instala como servicio systemd, se enrola y empieza a latir. No hay que abrir
+puertos en la máquina vigilada.</p>
+<h2 id="84-backups-y-actualizacion">8.4 Backups y actualización</h2>
+<pre><code class="language-bash">sudo systemctl enable --now nexus-backup.timer
+sudo systemctl start nexus-backup.service
+</code></pre>
+<p>Actualizar el hub:</p>
+<pre><code class="language-bash">cd nexus-core &amp;&amp; git pull
+sudo bash deploy/update.sh
+</code></pre>
+<h2 id="85-diagnostico-rapido">8.5 Diagnóstico rápido</h2>
+<table>
+<thead>
+<tr>
+<th>Síntoma</th>
+<th>Comprobación</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>El panel no carga</td>
+<td><code>systemctl status nexus</code>; <code>curl http://127.0.0.1:8000/api/health</code></td>
+</tr>
+<tr>
+<td>Un host no aparece</td>
+<td><code>systemctl status nexus-agent</code>; token, URL del hub y salida HTTPS</td>
+</tr>
+<tr>
+<td>El túnel da 530/502</td>
+<td>El túnel no está conectado o el hub no escucha en localhost</td>
+</tr>
+<tr>
+<td>La sesión no persiste</td>
+<td>HTTPS y cookie Secure; usa la URL HTTPS, no HTTP</td>
+</tr>
+<tr>
+<td>Docker no lista</td>
+<td>El usuario del servicio no está en el grupo docker o el socket no existe</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="9-laboratorios-para-el-aula">9. Laboratorios para el aula</h1>
+<blockquote>
+<p>Todos los ejercicios se hacen en una red de laboratorio propia y con autorización. No se
+escanean redes ajenas ni se usan credenciales reales.</p>
+</blockquote>
+<h2 id="laboratorio-1-arquitectura">Laboratorio 1 — Arquitectura</h2>
+<p>Dibuja el flujo navegador → hub → agente. Identifica qué viaja por HTTPS y qué por long-poll.
+<strong>Pregunta:</strong> ¿por qué el agente no necesita abrir el puerto 22?</p>
+<h2 id="laboratorio-2-monitorizar-una-vm">Laboratorio 2 — Monitorizar una VM</h2>
+<p>Instala un agente en una VM del aula y compárala con el host local. <strong>Objetivo:</strong> ver dos
+hosts en el selector y entender el concepto de flota.</p>
+<h2 id="laboratorio-3-alerta-de-disco">Laboratorio 3 — Alerta de disco</h2>
+<p>Crea una regla de disco &gt; 80 % con recuperación al 70 % y duración 5 minutos. Llena un archivo
+temporal hasta cruzar el umbral. <strong>Observa:</strong> cuándo se abre, cuándo se cierra y qué queda en
+Auditoría.</p>
+<h2 id="laboratorio-4-servicio-caido">Laboratorio 4 — Servicio caído</h2>
+<p>Detén un servicio no crítico del laboratorio y comprueba el estado, los logs y la acción de
+reinicio. <strong>Pregunta:</strong> ¿qué privilegios necesita el panel y por qué no corre como root?</p>
+<h2 id="laboratorio-5-inventario-de-red">Laboratorio 5 — Inventario de red</h2>
+<p>Escanea la subred del laboratorio. Compara el resultado de nmap con el respaldo ARP.
+<strong>Pregunta:</strong> ¿qué diferencia hay entre un host que responde a ping y uno que bloquea ICMP?</p>
+<h2 id="laboratorio-6-2fa-y-recuperacion">Laboratorio 6 — 2FA y recuperación</h2>
+<p>Activa TOTP, cierra sesión y entra con el código. Después usa un código de recuperación.
+<strong>Pregunta:</strong> ¿por qué el servidor guarda los códigos de recuperación hasheados?</p>
+<h2 id="laboratorio-7-backup-y-restauracion">Laboratorio 7 — Backup y restauración</h2>
+<p>Ejecuta el script de backup, inspecciona el archivo y restaura en una copia de la base.
+<strong>Objetivo:</strong> comprobar integridad y entender que un backup sin restauración no es una garantía.</p>
+<h2 id="laboratorio-8-publicacion-segura">Laboratorio 8 — Publicación segura</h2>
+<p>Publica el panel con un túnel o un proxy TLS en el laboratorio. Verifica HSTS, cookies Secure
+y que el puerto 8000 no es accesible desde fuera. <strong>Pregunta:</strong> ¿qué añade Cloudflare Access?</p>
+<hr />
+<h1 id="10-preguntas-de-repaso">10. Preguntas de repaso</h1>
+<ol>
+<li>¿Por qué el agente inicia la conexión y no el hub?</li>
+<li>¿Qué diferencia hay entre el token de enrolamiento y el token de un host?</li>
+<li>¿Por qué se usa histéresis en las alertas?</li>
+<li>¿Qué protege el CSRF y qué no protege?</li>
+<li>¿Por qué la cookie Secure impide iniciar sesión por HTTP?</li>
+<li>¿Qué riesgo tiene montar el socket de Docker en un contenedor?</li>
+<li>¿Por qué los rollups son importantes para el histórico?</li>
+<li>¿Qué significa que la IA esté en modo <em>human-in-the-loop</em>?</li>
+<li>¿Por qué el escaneo se limita a rangos privados?</li>
+<li>¿Qué diferencia un Quick Tunnel de un Named Tunnel?</li>
+</ol>
+<hr />
+<h1 id="11-glosario">11. Glosario</h1>
+<ul>
+<li><strong>Hub</strong>: servidor central que recibe telemetría y reparte órdenes.</li>
+<li><strong>Agente</strong>: proceso en una máquina vigilada que envía métricas y ejecuta herramientas.</li>
+<li><strong>Long-poll</strong>: petición HTTP que el servidor mantiene abierta hasta que hay una orden.</li>
+<li><strong>TOTP</strong>: código temporal de 6 dígitos basado en tiempo (Google Authenticator).</li>
+<li><strong>CSRF</strong>: ataque que fuerza a un navegador autenticado a enviar una petición no deseada.</li>
+<li><strong>TLS</strong>: cifrado de la conexión (HTTPS).</li>
+<li><strong>Reverse proxy</strong>: servidor que recibe el tráfico y lo reenvía al backend (Caddy, Nginx).</li>
+<li><strong>CIDR</strong>: notación de subred, por ejemplo <code>192.0.2.0/24</code>.</li>
+<li><strong>NAT</strong>: traducción de direcciones que permite salir a Internet sin IP pública.</li>
+<li><strong>Allowlist</strong>: lista explícita de lo permitido (herramientas, imágenes, unidades).</li>
+<li><strong>Rollup</strong>: agregado de datos para conservar histórico sin crecer indefinidamente.</li>
+<li><strong>SSRF</strong>: forzar al servidor a hacer peticiones a destinos internos no previstos.</li>
+<li><strong>Human-in-the-loop</strong>: la IA propone y una persona confirma.</li>
+</ul>
+<hr />
+<h1 id="12-apendices">12. Apéndices</h1>
+<h2 id="121-endpoints-principales">12.1 Endpoints principales</h2>
+<table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Ruta</th>
+<th>Uso</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/health</code></td>
+<td>Estado del hub</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/login</code></td>
+<td>Login (contraseña + TOTP si está activo)</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/metrics</code></td>
+<td>Métricas del host local</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/containers</code></td>
+<td>Contenedores del host local</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/services</code></td>
+<td>Servicios systemd</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/network/state</code></td>
+<td>Interfaces y estado de red</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/network-scan</code></td>
+<td>Escaneo de subred</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/system/ports</code></td>
+<td>Puertos en escucha</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/system/updates</code></td>
+<td>Actualizaciones apt</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/system/smart</code></td>
+<td>Estado SMART</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/alerts/rules</code></td>
+<td>Reglas de alerta</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/monitors</code></td>
+<td>Monitores HTTP/TCP/SSL</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/hosts</code></td>
+<td>Inventario de la flota</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/hosts/{id}/command</code></td>
+<td>Comando a un agente</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/agent/enroll</code></td>
+<td>Alta de un agente</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/agent/heartbeat</code></td>
+<td>Latido</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/agent/commands</code></td>
+<td>Long-poll de comandos</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/agent/commands/{id}/result</code></td>
+<td>Resultado</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/metrics/prometheus</code></td>
+<td>Exportación Prometheus</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/status/page</code></td>
+<td>Página pública de estado</td>
+</tr>
+</tbody>
+</table>
+<h2 id="122-herramientas-del-agente">12.2 Herramientas del agente</h2>
+<ul>
+<li><code>metrics</code></li>
+<li><code>docker.list</code>, <code>docker.logs</code>, <code>docker.stats</code>, <code>docker.deploy</code>, <code>docker.remove</code>, <code>docker.prune</code></li>
+<li><code>services.list</code>, <code>services.detail</code>, <code>services.logs</code>, <code>services.action</code></li>
+<li><code>network.interfaces</code>, <code>network.scan</code></li>
+<li><code>system.ports</code>, <code>system.updates</code>, <code>system.smart</code></li>
+</ul>
+<h2 id="123-estructura-del-proyecto">12.3 Estructura del proyecto</h2>
+<pre><code class="language-text">backend/
+  agent.py              agente remoto (enroll/run, allowlist, backoff)
+  app/
+    api/                rutas HTTP (auth, hosts, alerts, monitors, sistema, seguridad)
+    core/               configuración, seguridad, flota, SQLite, TOTP, auditoría
+    modules/            colector, Docker, systemd, red, SMART, FIM, diagnósticos
+    ai/                 proveedor, herramientas y acciones pendientes
+frontend/               panel, login, ajustes y estilos
+deploy/                 instalación, agentes, systemd, Caddy, producción y backups
+docs/                   memoria del TFG y esta guía
+</code></pre>
+<h2 id="124-buenas-practicas-de-operacion">12.4 Buenas prácticas de operación</h2>
+<ul>
+<li>Cambia la contraseña inicial y activa 2FA antes de publicar el panel.</li>
+<li>Usa HTTPS; nunca publiques el puerto 8000 directamente.</li>
+<li>Guarda el token de enrolamiento como un secreto y rótalo si se filtra.</li>
+<li>Prueba la restauración de backups, no solo su creación.</li>
+<li>Mantén el servidor actualizado y con el firewall cerrado salvo lo imprescindible.</li>
+<li>Revisa la auditoría cuando ocurra algo raro.</li>
+<li>No escanees redes sin autorización.</li>
+<li>Trata las respuestas de la IA como propuestas, no como órdenes.</li>
+</ul>
+<hr />
+<p><em>Nexus-Core es un proyecto educativo y profesional. Esta guía puede copiarse y adaptarse para
+clase citando el proyecto. Las marcas y nombres de terceros pertenecen a sus propietarios.</em></p>
+  </main>
+</body>
+</html>

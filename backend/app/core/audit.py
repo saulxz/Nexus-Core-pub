@@ -155,3 +155,61 @@ def verify_chain() -> dict[str, Any]:
     except OSError as exc:
         return {"valid": False, "events": count, "error": f"no se pudo leer: {exc}"}
     return {"valid": True, "events": count, "error": None}
+
+
+def read_events(
+    limit: int = 50,
+    offset: int = 0,
+    action: str | None = None,
+    since: str | None = None,
+    max_lines: int = 20_000,
+) -> dict[str, Any]:
+    """Lee las entradas del registro para mostrarlas en el panel.
+
+    No modifica nada: solo recorre el fichero y devuelve los eventos **del más
+    reciente al más antiguo** (orden natural de un log), ya filtrados y
+    paginados. Se leen como máximo las últimas ``max_lines`` líneas para que un
+    fichero muy largo no bloquee la petición.
+
+    Returns:
+        ``{events, total, limit, offset, count, chain}``, donde ``chain`` es el
+        resultado de :func:`verify_chain` (permite ver en el panel si la cadena
+        de hashes sigue intacta).
+    """
+    entries: list[dict[str, Any]] = []
+    chain = verify_chain()
+    path = audit_path()
+    if path.exists():
+        try:
+            with path.open("r", encoding="utf-8") as fh:
+                for line in fh:
+                    stripped = line.strip()
+                    if not stripped:
+                        continue
+                    try:
+                        record = json.loads(stripped)
+                    except json.JSONDecodeError:
+                        continue
+                    if action and record.get("action") != action:
+                        continue
+                    if since and str(record.get("ts", "")) < since:
+                        continue
+                    entries.append(record)
+        except OSError as exc:
+            logger.warning("No se pudo leer el fichero de auditoría: {}", exc)
+
+    entries.reverse()  # Del más reciente al más antiguo.
+    if len(entries) > max_lines:
+        entries = entries[:max_lines]
+    total = len(entries)
+    start = max(0, int(offset))
+    page = entries[start : start + max(1, min(int(limit), 500))]
+    return {
+        "events": page,
+        "total": total,
+        "limit": max(1, min(int(limit), 500)),
+        "offset": start,
+        "count": len(page),
+        "chain": chain,
+    }
+

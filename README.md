@@ -1,262 +1,145 @@
 # Nexus-Core
 
-> **Plataforma Web de Administración de Infraestructura y Ciberseguridad con Agente de IA.**
-> Trabajo Fin de Grado — Ciclo Formativo de Grado Superior en Sistemas Microinformáticos y Redes (SMR).
+> **Plataforma web de administración de infraestructura y ciberseguridad con agentes remotos.**
+> Trabajo Fin de Grado · Ciclo Formativo de Grado Superior en Sistemas Microinformáticos y Redes (SMR).
 
-Nexus-Core convierte un servidor Linux (máquina virtual o Raspberry Pi) en un
-**panel de control centralizado** desde el que administrar los **servicios del
-sistema** (Samba, DHCP, DNS…), **contenedores Docker**, la **red** (interfaces,
-cambio de IP seguro) y la **telemetría** — con un **agente de IA** que propone
-acciones en lenguaje natural y un administrador que las confirma.
+Nexus-Core convierte un servidor Linux en un **centro de control** para vigilar y
+administrar otras máquinas. Desde una única página web se consulta la telemetría,
+se gestionan contenedores Docker y servicios systemd, se inventaría la red, se revisan
+puertos, actualizaciones y discos, se reciben alertas y se ejecutan acciones con
+confirmación y auditoría.
+
+El diseño prioriza tres ideas: **funcionar en local**, **no abrir puertos en las
+máquinas vigiladas** y **mantener el control humano** sobre la IA.
 
 ---
 
-## Tabla de contenidos
+## Documentación
 
-- [Características](#características)
-- [Requisitos](#requisitos)
-- [Instalación en VM (recomendada)](#instalación-en-vm-recomendada)
-- [Primer arranque](#primer-arranque)
-- [Actualización](#actualización)
-- [Instalación con Docker](#instalación-con-docker-alternativa)
-- [Panel web](#panel-web)
-- [Agente de IA](#agente-de-ia)
-- [API REST](#api-rest)
-- [Seguridad](#seguridad)
-- [Estructura del proyecto](#estructura-del-proyecto)
+| Documento | Contenido |
+|---|---|
+| [`docs/GUIA-EDUCATIVA.md`](docs/GUIA-EDUCATIVA.md) | Guía completa: arquitectura, datos, redes, seguridad, operación y laboratorios |
+| [`Nexus-Core-Guia-Educativa.pdf`](Nexus-Core-Guia-Educativa.pdf) | La misma guía maquetada para imprimir o proyectar |
+| [`deploy/PRODUCCION.md`](deploy/PRODUCCION.md) | TLS con Caddy, Cloudflare Tunnel, firewall, backups y agentes |
+
+Los ejemplos de esta documentación usan dominios reservados (`nexus.example.com`) y
+direcciones de documentación (`192.0.2.10`). No hay credenciales ni datos reales.
 
 ---
 
 ## Características
 
-- **Autenticación integrada** (argon2id, sesiones con CSRF, límite de intentos)
-  y **auditoría encadenada por hash** de cada acción.
-- **Ajustes de IA desde la web**: proveedor, modelo y claves se guardan en el
-  servidor y se aplican en caliente. El asistente es **opcional**.
-- **Inventario y control de servicios** (systemd): buscador, filtros, estado,
-  logs del journal y acciones *start/stop/restart/reload* con lista blanca y
-  helper privilegiado auditado.
-- **Configuración guiada** de Samba y dnsmasq: validación previa con la
-  herramienta oficial del servicio, copia de seguridad, reemplazo atómico,
-  recarga y **rollback automático** si algo falla. Copias restaurables.
-- **DHCP con sonda previa**: detecta otros servidores DHCP en la red antes de
-  activar el propio y avisa de concesiones fuera de rango.
-- **Red**: tabla de interfaces (IP/CIDR, máscara, MAC, MTU, puerta de enlace) y
-  **cambio de IP de la máquina con watchdog**: si no se confirma en 90 segundos
-  desde la nueva dirección, la red se revierte automáticamente.
-- **Contenedores Docker**: listar, desplegar y eliminar con lista blanca de
-  imágenes y límite de contenedores.
-- **Telemetría**: CPU, RAM, swap, disco raíz, temperatura, carga y uptime.
-- **Escaneo de red** (nmap ping sweep) restringido a rangos privados RFC1918.
-- **Agente de IA multi-proveedor** (OpenAI, Anthropic, Gemini, Ollama) con
-  patrón *propose-only*: nunca ejecuta acciones mutantes sin confirmación humana.
+- **Flota multi-host**: un hub central y agentes en Linux/Windows. Alta con token,
+  latido, reconexión automática y comandos con lista blanca.
+- **Panel unificado**: resumen de sensores, histórico, contenedores, servicios, red,
+  puertos, actualizaciones, SMART, auditoría y seguridad.
+- **Alertas**: umbrales con duración e histéresis, acknowledgment, snooze,
+  notificaciones y monitores HTTP/TCP/SSL con página de estado.
+- **Seguridad**: 2FA TOTP con códigos de recuperación, sesiones con CSRF, cookies
+  `Secure`, rate limiting, tokens de API, auditoría encadenada y backups verificados.
+- **IA con control humano**: el asistente propone acciones; las sensibles quedan
+  pendientes de confirmación.
+- **Despliegue**: servicio systemd, Docker opcional, Caddy con TLS y Cloudflare
+  Tunnel (Quick o Named) para acceso remoto sin abrir puertos.
+- **Sin dependencias de nube**: el núcleo funciona en una VM o Raspberry Pi.
 
 ---
 
-## Requisitos
+## Arquitectura
 
-| Elemento | Recomendado |
-|---|---|
-| Sistema | Debian/Ubuntu con systemd (probado en Ubuntu 26.04, x86_64 y ARM64) |
-| Python | 3.12 – 3.14 |
-| Privilegios | `sudo` (la instalación crea un usuario de sistema y helpers root) |
-| Red | LAN de confianza; puerto 8000 accesible desde el navegador |
+```text
+Navegador ──HTTPS──▶ Hub (FastAPI + SQLite + panel)
+                         ▲
+                         │ long-poll / comandos (saliente desde cada host)
+                         │
+          ┌──────────────┼──────────────┐
+          │              │              │
+     Agente Linux   Agente Linux   Agente Windows
+     (systemd)      (Docker)       (limitado)
+```
 
-Las funciones de gestión de servicios y red requieren que esos servicios existan
-en la máquina (por ejemplo `sudo apt install samba dnsmasq`). Nexus los
-**gestiona**, no los instala.
+- **Hub**: panel, API, base de datos, motor de alertas, monitores, auditoría y
+  despachador de comandos.
+- **Agente**: proceso ligero que envía métricas, mantiene un long-poll y ejecuta
+  herramientas permitidas. Solo abre conexiones salientes: funciona detrás de NAT.
+- **Datos**: SQLite con muestras cada 5 s, agregados por minuto/hora y copias de
+  seguridad consistentes.
+- **Seguridad**: el hub escucha en localhost tras un proxy TLS; las cookies son
+  `Secure`; el servicio no corre como root; las operaciones privilegiadas pasan por
+  helpers acotados.
+
+La guía educativa explica cada decisión y propone laboratorios de aula.
 
 ---
 
-## Instalación en VM (recomendada)
+## Inicio rápido
+
+### Hub (Linux)
 
 ```bash
-git clone https://github.com/<usuario>/Nexus-Core.git
-cd Nexus-Core
+sudo apt install -y git python3 python3-venv
+git clone <URL_DEL_REPOSITORIO> nexus-core
+cd nexus-core
 sudo bash deploy/install.sh
 ```
 
-El instalador, paso a paso:
-
-1. Crea el usuario de sistema `nexus` y los directorios de datos
-   (`/var/lib/nexus`, `/var/backups/nexus`).
-2. Copia el proyecto a `/opt/nexus-core` y crea el entorno virtual con las
-   dependencias fijadas.
-3. Instala los **seis helpers privilegiados** (`svc-ctl`, `conf-apply`,
-   `conf-restore`, `net-apply`, `net-confirm`, `net-revert`), la lista blanca de
-   unidades y las reglas sudoers (validadas con `visudo` **antes** de
-   instalarse).
-4. Registra el servicio systemd `nexus.service` y lo deja corriendo.
-
-**Sin Internet:** coloca las ruedas `.whl` necesarias en `wheelhouse/` junto al
-proyecto antes de instalar; el instalador las usará automáticamente (también
-sabe crear el entorno con `virtualenv` embebido si el sistema no trae
-`python3-venv`).
-
----
-
-## Primer arranque
-
-1. Abre en el navegador `http://<IP-DE-LA-VM>:8000/login.html`.
-2. Lee el **token de configuración** que generó el servicio:
-
-   ```bash
-   sudo cat /var/lib/nexus/setup_token
-   # o bien:
-   sudo journalctl -u nexus | grep -i token
-   ```
-
-3. Pega el token en el asistente, crea tu usuario administrador y entra.
-   A partir de ahí **todo se hace desde la web**: servicios, configuración,
-   red y la API del asistente (Ajustes → Guardar → Probar conexión).
-
----
-
-## Actualización
+El instalador crea el usuario `nexus`, el entorno virtual, los helpers, la unidad
+systemd y el token de primer arranque. El panel queda en `http://<IP>:8000`.
 
 ```bash
-cd ~/Nexus-Core
-git pull
-sudo bash deploy/update.sh   # copia el código, arregla el acceso a Docker y reinicia
+sudo cat /var/lib/nexus/setup_token
 ```
 
----
+Abre el panel, pega el token, crea el administrador y activa el 2FA.
 
-## Instalación con Docker (alternativa)
-
-Para desarrollo o despliegues donde solo se necesiten telemetría, contenedores
-y escaneo:
+### Agente en otro host
 
 ```bash
-cp .env.example .env     # opcional: configura proveedor de IA y claves
-docker compose up -d --build
+sudo bash deploy/agent/install-agent.sh \
+  --hub https://nexus.example.com \
+  --enroll-token '<TOKEN>' \
+  --name "host-remoto"
 ```
 
-> **Nota:** dentro del contenedor no hay acceso al systemd del host, así que las
-> funciones de servicios/red/helpers requieren la instalación nativa. En Docker
-> el panel queda accesible igualmente en `http://<IP>:8000` (login incluido).
+No hay que abrir puertos en el host vigilado. El agente sale hacia el hub por HTTPS
+y reconecta solo si el hub se reinicia.
 
----
+### Publicación segura
 
-## Panel web
-
-| Pestaña | Qué ofrece |
-|---|---|
-| **Dashboard** | Telemetría en tiempo real con gráfica CPU/RAM |
-| **Contenedores** | Listar, desplegar y eliminar contenedores del host |
-| **Red** | Interfaces de la máquina (IP/máscara/MAC/MTU), escaneo de hosts y cambio de IP con reversión automática |
-| **Servicios** | Inventario systemd con buscador y filtros, logs, control (start/stop/restart/reload) y configuración guiada de Samba y dnsmasq con copias de seguridad |
-| **Ajustes** | Configuración del agente de IA: proveedor, modelo, claves y prueba de conexión en caliente |
-| **Asistente IA** | Chat en lenguaje natural: consulta datos reales y **propone** acciones que tú confirmas |
-
----
-
-## Agente de IA
-
-Herramientas expuestas al modelo:
-
-| Herramienta | Tipo | Qué hace |
-|---|---|---|
-| `escanear_red_local(subnet)` | lectura | Descubre hosts activos en la subred |
-| `obtener_estado_sistema()` | lectura | Telemetría del sistema |
-| `desplegar_servicio(imagen, puerto)` | mutante | Despliega un contenedor validado |
-| `listar_servicios()` | lectura | Inventario systemd |
-| `estado_servicio(unidad)` | lectura | Detalle de una unidad |
-| `proponer_accion_servicio(unidad, accion)` | propuesta | Crea una propuesta que el humano confirma (caduca en 120 s) |
-| `leer_config_servicio(servicio)` | lectura | Configuración gestionada de Samba o dnsmasq |
-
-Las herramientas `proponer_*` **no ejecutan nada**: el panel muestra una tarjeta
-de confirmación y la acción solo corre cuando la persona autenticada la acepta.
-El autorizador real es el código (defensa frente a *prompt injection*).
-
-Proveedores (se eligen en la web, o por entorno con `AI_PROVIDER`):
-
-| `AI_PROVIDER` | Servicio | Clave |
-|---|---|---|
-| `openai` | OpenAI o cualquier API compatible | `OPENAI_API_KEY` |
-| `anthropic` | Anthropic (Claude) | `ANTHROPIC_API_KEY` |
-| `gemini` | Google Gemini | `GEMINI_API_KEY` |
-| `ollama` | Modelo local, sin nube | — |
-| *(vacío)* | Asistente desactivado (opcional) | — |
-
----
-
-## API REST
-
-Prefijo base: `/api`. Documentación interactiva en `/docs`.
-
-| Método | Ruta | Descripción |
-|---|---|---|
-| `GET` | `/api/health` | Estado del servicio (público) |
-| `POST` | `/api/auth/login` `/logout` | Sesión del panel |
-| `GET` `PUT` | `/api/settings/ai` | Configuración de IA (enmascarada) |
-| `POST` | `/api/settings/ai/test` | Prueba de conexión con el proveedor |
-| `GET` | `/api/metrics` | Telemetría del sistema |
-| `GET` `POST` `DELETE` | `/api/containers` | Gestión de contenedores Docker |
-| `POST` | `/api/network-scan` | Escaneo de hosts (solo rangos privados) |
-| `GET` | `/api/services` | Inventario systemd |
-| `GET` | `/api/services/{name}` `/logs` | Detalle y logs de una unidad |
-| `POST` | `/api/services/{name}/action` | Control con lista blanca |
-| `GET` `PUT` | `/api/config/samba` `/api/config/dnsmasq` | Configuración guiada |
-| `POST` | `/api/config/{s}/validate` `/restore` | Validación previa y restauración |
-| `GET` | `/api/config/{s}/backups` | Copias de seguridad |
-| `POST` | `/api/config/dnsmasq/dhcp-check` | Sonda de servidores DHCP |
-| `GET` | `/api/network/state` | Interfaces, IPs, máscaras, MAC, rutas |
-| `POST` | `/api/network/plan` `/apply` `/confirm` `/revert` | Cambio de IP con watchdog |
-| `POST` | `/api/chat` | Agente de IA (propone acciones) |
-| `GET` `POST` | `/api/chat/actions/...` | Propuestas de la IA: listar, confirmar, cancelar |
-
----
-
-## Seguridad
-
-- **Autenticación obligatoria** para todo el panel (argon2id, sesiones con
-  caducidad y CSRF); `/api/health` es público para el healthcheck.
-- **Auditoría** en JSONL encadenada por hash: cualquier manipulación del
-  registro es detectable. Las claves nunca se escriben en la auditoría.
-- **Helpers privilegiados**: la aplicación corre como usuario sin privilegios y
-  solo puede ejecutar seis scripts root con lista blanca (sudoers exacto, sin
-  comodines). Cada helper valida sus propios argumentos.
-- **Configuración con rollback**: validación con la herramienta oficial del
-  servicio antes y después de aplicar; copia previa y restauración automática.
-- **Cambio de IP con watchdog**: reversión automática si no se confirma.
-- **IA *propose-only*** con confirmación humana y defensa anti *prompt injection*.
-- **Socket Docker**: equivale a root sobre el host. Despliega Nexus-Core solo en
-  redes de confianza y **nunca lo expongas directamente a Internet** sin TLS y
-  autenticación adicional (p. ej. tras un proxy inverso).
-- **Escaneos** restringidos a rangos privados RFC1918.
+- **Caddy + dominio**: TLS automático, HSTS y cabeceras; ver `deploy/PRODUCCION.md`.
+- **Cloudflare Tunnel**: Quick Tunnel para pruebas o Named Tunnel + Cloudflare Access
+  para una URL fija y protegida.
+- **Nunca** expongas el puerto 8000 directamente a Internet.
 
 ---
 
 ## Estructura del proyecto
 
-```
-Nexus-Core/
-├── backend/
-│   ├── app/
-│   │   ├── main.py            # Entrypoint FastAPI, routers, middleware, ciclo de vida
-│   │   ├── core/              # Configuración, seguridad (auth/sesiones), auditoría, helpers
-│   │   ├── api/               # Routers REST (auth, servicios, configuración, red, ajustes)
-│   │   ├── ai/                # Agente, herramientas, propuestas (propose-only)
-│   │   ├── modules/           # systemd, configurador, red, docker, nmap, telemetría
-│   │   └── schemas/           # Modelos Pydantic de la API
-│   └── tests/                 # Suite de pruebas (pytest)
-├── frontend/                  # Panel: HTML + CSS + JS vanilla (Tailwind CDN)
-├── deploy/
-│   ├── install.sh             # Instalación nativa completa (VM)
-│   ├── update.sh              # Actualización y reinicio del servicio
-│   ├── helpers/               # Seis helpers privilegiados (root)
-│   ├── nexus/allowed-units    # Lista blanca de unidades systemd
-│   ├── sudoers.d/nexus        # Reglas sudoers (compatibles con sudo-rs)
-│   └── systemd/nexus.service  # Unidad systemd
-├── docs/                      # Memoria del TFG
-├── requirements.txt           # Dependencias fijadas (Python 3.12 – 3.14)
-├── Dockerfile
-├── docker-compose.yml
-└── Makefile
+```text
+backend/            API FastAPI, agentes, datos, alertas, seguridad y módulos
+frontend/           panel web, login, ajustes y estilos
+deploy/             instalación, systemd, agentes, Caddy, producción y backups
+docs/               guía educativa y memoria del TFG
+tests/              pruebas automatizadas del backend
 ```
 
+## Tests
+
+```bash
+python -m pytest backend/tests -q
+```
+
+El proyecto incluye pruebas de autenticación, alertas, métricas, monitores,
+multi-host, seguridad y sistema. La suite actual pasa con **221 tests y 1 omitido**.
+
 ---
+
+## Uso educativo
+
+La guía incluye explicaciones y ocho laboratorios seguros para clase: arquitectura,
+monitorización de una VM, alertas de disco, servicio caído, inventario de red, 2FA,
+backup/restauración y publicación segura. Todos los ejercicios deben realizarse en
+redes propias y con autorización.
 
 ## Licencia
 

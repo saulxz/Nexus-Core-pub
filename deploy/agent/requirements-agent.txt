@@ -1,0 +1,26 @@
+# ============================================================
+#  Nexus-Core — Dependencias del AGENTE (subset de requirements.txt)
+#
+#  El agente reutiliza los módulos del panel, así que necesita las
+#  mismas librerías, pero NO el stack web (FastAPI, uvicorn,
+#  pydantic, argon2) ni el cliente de IA: en el host vigilado no
+#  hay panel, solo salen datos y se ejecutan herramientas.
+#
+#  Instalación:  pip install -r requirements-agent.txt
+#  (Sin dependencias nuevas respecto al proyecto completo.)
+# ============================================================
+
+# Cliente HTTP del agente hacia el hub (conexión saliente).
+httpx==0.28.1
+
+# Telemetría del sistema: CPU, RAM, disco, sensores, red.
+psutil==7.2.2
+
+# SDK de Docker: inventario y gestión de contenedores del host vigilado.
+docker==7.1.0
+
+# Logging estructurado y con colores (mismo que el panel).
+loguru==0.7.3
+
+# Envoltorio de Nmap para el escaneo de red (herramienta network.scan).
+python-nmap==0.7.1

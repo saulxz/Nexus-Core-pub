@@ -7,13 +7,15 @@ la acción por el mismo camino auditado que el resto del panel.
 
 from __future__ import annotations
 
+import asyncio
+
 from fastapi import APIRouter, HTTPException, Request, status
 
 from app.ai import pending
 from app.ai.agent import run_agent
 from app.core.audit import audit
 from app.core.logging_conf import logger
-from app.modules import service_control
+from app.modules import docker_manager, service_control
 from app.schemas.models import (
     ChatRequest,
     ChatResponse,
@@ -117,6 +119,20 @@ async def confirm_action(action_id: str, request: Request) -> dict:
             str(args.get("unidad", "")),
             str(args.get("accion", "")),
             f"ia-confirmado:{actor}",
+        )
+    elif tool == "docker_prune_images":
+        # Autorremediación propuesta por una regla de alerta (nunca automática).
+        result = docker_manager.prune(images=True)
+    elif tool == "container_restart":
+        restarted = await asyncio.to_thread(
+            docker_manager.restart_container, str(args.get("contenedor", ""))
+        )
+        result = {"success": restarted["success"], "message": restarted["message"]}
+    elif tool == "service_restart":
+        result = service_control.control(
+            str(args.get("unidad", "")),
+            str(args.get("accion") or "restart"),
+            f"remediacion-confirmada:{actor}",
         )
     else:
         result = {

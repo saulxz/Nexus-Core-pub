@@ -26,10 +26,14 @@ Type=exec
 User=nexus
 Group=nexus
 WorkingDirectory=/opt/nexus-core
+Environment=NEXUS_BIND_HOST=0.0.0.0
+Environment=NEXUS_BIND_PORT=8000
 Environment=NEXUS_DATA_DIR=/var/lib/nexus
 Environment=PYTHONUNBUFFERED=1
 Environment=PYTHONDONTWRITEBYTECODE=1
-ExecStart=/opt/nexus-core/.venv/bin/uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port 8000 --workers 1
+# Producción: /etc/nexus/nexus.env (0600) sobreescribe estos valores.
+EnvironmentFile=-/etc/nexus/nexus.env
+ExecStart=/opt/nexus-core/.venv/bin/uvicorn app.main:app --app-dir backend --host ${NEXUS_BIND_HOST} --port ${NEXUS_BIND_PORT} --proxy-headers --forwarded-allow-ips=127.0.0.1 --workers 1
 Restart=on-failure
 RestartSec=2
 UMask=0077

@@ -100,6 +100,33 @@ async def login(
             status.HTTP_401_UNAUTHORIZED, "Usuario o contraseña incorrectos."
         )
 
+    # --- Segundo factor (TOTP) ---
+    # Solo se exige si la cuenta lo tiene activo. El límite de intentos ya está
+    # registrado arriba, así que un ataque de fuerza bruta sobre los códigos
+    # también acaba bloqueado por IP y por usuario.
+    if security.get_totp_state(username)["enabled"]:
+        if not payload.totp:
+            audit("auth.login.2fa", actor=username, result="denied", details={"motivo": "sin código"})
+            raise HTTPException(
+                status.HTTP_401_UNAUTHORIZED,
+                "Esta cuenta tiene verificación en dos pasos: introduce el código "
+                "de 6 dígitos (o uno de recuperación).",
+            )
+        outcome = security.verify_second_factor(username, payload.totp)
+        if not outcome["ok"]:
+            audit("auth.login.2fa", actor=username, result="denied", details={"ip": ip})
+            raise HTTPException(
+                status.HTTP_401_UNAUTHORIZED, "El código de verificación no es válido."
+            )
+        audit(
+            "auth.login.2fa",
+            actor=username,
+            details={
+                "metodo": outcome["method"],
+                "codigos_restantes": outcome["recovery_left"],
+            },
+        )
+
     security.clear_login_attempts(user_key)
     audit("auth.login", actor=username, result="ok", details={"ip": ip})
     return _open_session(username, response, reason="login")

@@ -1,124 +1,319 @@
 /* ============================================================
-   Nexus-Core — Estilos propios
+   Nexus-Core — Sistema visual
    ------------------------------------------------------------
-   Recolor y retexturizado siguiendo el sistema de diseño azul
-   marino: papel #070c1a, superficies #0d1527, acento #4da6ff.
-   Cada clase conserva la estructura del original; solo el color cambia.
+   Software de monitorización para un servidor Linux / Raspberry Pi.
+   El sistema se sostiene sobre seis decisiones y nada más:
 
-   Correspondencia con el original (fichero css/wiki.css):
-     .panel / .metric-card   <- .pw-card          (L758)
-     h2                      <- .pw-h2            (L1027)
-     .tab-btn                <- .pw-spectrum-chip (L3576)
-     .tab-active             <- [aria-checked=true]
-     .input-field            <- .pw-search-input  (L368)
-     .btn-ghost              <- .pw-btn-text      (L2138)
-     .btn-primary            <- relleno de acento (chip marcado)
-     .data-table             <- .pw-wtable        (L1229)
-     .badge                  <- .pw-tag           (L923)
-     .action-chip            <- .pw-chip          (L3009)
-     .toast                  <- .pw-note          (L1159)
+     1. FORMA ANTES QUE COLOR. El panel se lee como un instrumento:
+        una tabla de sensores densa, filetes de 1px, radios de 2-3px,
+        paso de fila de 28px y una escala tipográfica que NO tiene
+        ningún tamaño protagonista. Nada de cifras de 34px: en una
+        consola real el número es un dato de una columna, no un titular.
 
-   IMPORTANTE: los nombres de clase son contrato con app.js
-   (.tab-btn, .tab-active, .panel, .progress-fill.warn/.danger,
-   .chat-bubble.user/.assistant/.system, .toast.success/.error…).
-   No renombrar sin revisar frontend/js/app.js.
+     2. LOS FILESES SON LA ESTRUCTURA. Cabecera de panel, cabecera
+        de tabla y fila se separan con una regla de 1px. Un panel no
+        necesita borde si su contenido ya está dividido por reglas:
+        por eso se evitan los doble filete (panel + caja interior).
+
+     3. DATO EN MONO, TABULAR, A LA DERECHA. Cifras, IPs, puertos,
+        IDs, unidades y tiempos en pila monoespaciada con
+        `tabular-nums`; toda columna numérica alineada a la derecha
+        para que la columna no baile al actualizarse.
+
+     4. GEOMETRÍA CUADRADA. Panel 2px, control 3px, chip 2px. Solo
+        son redondos los LEDs, las barras y las etiquetas de estado,
+        porque ahí la forma ES el componente.
+
+     5. LA ETIQUETA ES PEQUEÑA. 10.5px en versalitas con tracking
+        abierto es el tamaño de todo micro-rótulo (columnas de tabla,
+        etiqueta de campo, overline). Base 13px. Títulos de panel
+        13px semibold, de sección 14px. Nada pasa de 16px salvo el
+        lockup de marca.
+
+     6. ESTADOS DISEÑADOS, SEMPRE DISEÑADOS. Cada control tiene
+        rest / hover / focus-visible / active / disabled, y la
+        severidad tiene cinco posiciones fijas (ok, aviso, crítico,
+        sin dato, pausado). El estado viaja en el LED, la tinta y el
+        lavado; el filete de color queda reservado al anillo de foco.
+
+    Paleta: grafito neutro + un único azul corporativo (papel #0d1117,
+    superficie #161b22 / #1c2128, hundido #0a0d13, acento #2f81f7,
+    secundario #9d8cff, peligro #ff6b6b). Los pasos que no estaban en
+    la paleta se DERIVAN con color-mix de esos mismos tokens.
+
+    FONDO PLANO. Ni retícula, ni halo, ni capa que siga al puntero: el
+    lienzo es el color de <body>.
+
+    IMPORTANTE: los nombres de clase son contrato con app.js
+    (.tab-btn, .tab-active, .panel, .progress-fill.ok/.warn/.danger,
+    .badge-running/.badge-stopped/.badge-error/.badge-warn,
+    .chat-bubble.user/.assistant/.system, .toast.success/.error,
+    .empty-row, .action-chip, .typing, .spinner, .input-field,
+    .btn-primary/.btn-ghost/.btn-danger/.btn-text/.btn-sm, .hidden,
+    .nx-led--*, .nx-live--*, .nx-count--*, .nx-statusbar--allclear,
+    .nx-sensor[data-status], .nx-stat-foot, .nx-alarm*, .nx-seg*,
+    .nx-seg-count, .nx-counts, .nx-poll-btn). No renombrar sin revisar
+    frontend/js/app.js.
    ============================================================ */
 
-/* ------------------- Tokens -------------------
-   Cada valor es literal de la variante azul marina de referencia:
-   papel #070c1a, superficies #0d1527 y acento #4da6ff. */
+/* ------------------- Tipografía empotrada -------------------
+   Inter Variable (interfaz) + Roboto Mono (datos): la dupla que usan
+   Grafana, Portainer, Zabbix, Checkmk, Linear y Tailscale, elegida
+   tras comparar 14 consolas profesionales (ver informe de fuentes).
+   Build OFICIAL de Inter desde rsms.me: el empaquetado de Google
+   Fonts carece de features que necesitamos — numerales tabulares —
+   según aviso textual del propio Grafana. Todo empotrado en
+   ../fonts/ (woff2): cero peticiones externas y funciona sin red.
+   Licencias: fonts/Inter-OFL.txt · fonts/RobotoMono-OFL.txt */
+@font-face {
+  font-family: 'InterVariable';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/InterVariable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Roboto Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/roboto-mono-latin-ext-400.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Roboto Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/roboto-mono-latin-400.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Roboto Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../fonts/roboto-mono-latin-ext-500.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Roboto Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../fonts/roboto-mono-latin-500.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Desambiguación heredada de Checkmk: la "l" con cola (cv05) no se
+   confunde con el "1" en identificadores. Las fuentes que no tengan
+   ese eje ignoran el ajuste sin efecto. */
+body {
+  font-feature-settings: 'cv05' 1;
+}
+
+/* ------------------- Tokens ------------------- */
 :root {
   color-scheme: dark;
 
-  /* Superficies */
-  --nx-bg: #070c1a;
-  --nx-surface: #0d1527;
-  --nx-surface-2: #121d33;
-  --nx-wash: #121d33;
-  /* Un escalón de acento para las hovers de superficie (tablas, filas).
-     Es el mismo acento del sistema a un 7%, no un color nuevo. */
-  --nx-surface-hover: color-mix(in srgb, var(--nx-link) 7%, var(--nx-surface));
+  /* Superficies. Tres planos y ninguno más: lienzo, superficie de
+     panel y plano hundido (cromo de la cabecera, cabeceras de tabla,
+     campos y redactor). El cromo hundido arriba y el panel elevado
+     abajo es lo que da profundidad sin sombras. */
+  --nx-bg: #0d1117;
+  --nx-surface: #161b22;
+  --nx-surface-2: #1c2128;
+  --nx-surface-3: #0a0d13;
+  --nx-wash: #1c2128;
+  --nx-surface-hover: color-mix(in srgb, var(--nx-accent) 7%, var(--nx-surface));
 
-  /* Tinta */
-  --nx-ink: #e9f1fd;
-  --nx-ink-soft: #b9c7e2;
-  --nx-ink-muted: #8497ba;
-  --nx-ink-faint: #2c4066;
-  --nx-on-accent: #070c1a;
+  /* Tinta. Cinco pasos de gris neutro con contraste real sobre
+     --nx-surface: 14.64 · 9.01 · 5.62 · 4.84 · 2.63 */
+  --nx-ink: #e6edf3;
+  --nx-ink-soft: #b3bcc8;
+  --nx-ink-muted: #8b949e;
+  --nx-ink-quiet: #7d8994;
+  --nx-ink-faint: #565e68;
+  --nx-on-accent: #0d1117;
 
-  /* Enlace y estados */
-  --nx-link: #4da6ff;
-  --nx-link-hover: #7cbdff;
-  --nx-link-visited: #9d8cff;
-  --nx-missing: #ff6b6b;
+  /* Enlace y estados. Un único azul corporativo. */
+  --nx-accent: #2f81f7;
+  --nx-accent-hover: #58a6ff;
+  --nx-accent-2: #9d8cff;
+  --nx-danger: #ff6b6b;
+  --nx-danger-wash: color-mix(in srgb, var(--nx-danger) 12%, var(--nx-surface));
 
-  /* Filetes */
-  --nx-border: #1a2740;
-  --nx-border-soft: #131e33;
-  --nx-border-strong: #2c4066;
+  /* ==========================================================
+     PALETA DE ESTADO (monitorización)
+     ------------------------------------------------------------
+     Cinco posiciones, y solo cinco:
 
-  --nx-focus: #4da6ff;
-  --nx-focus-halo: rgba(77, 166, 255, 0.25);
-  /* Acento lavado: selección de texto y arranque del gradiente base
-     de la capa ambiental. Mismo rgba que la variante de referencia. */
-  --nx-accent-wash: rgba(77, 166, 255, 0.10);
+       ok        → sano                verde
+       warn      → requiere atención   ámbar
+       crit      → crítico             rojo
+       unknown   → sin dato            gris de tinta apagada
+       paused    → pausado             índigo (NO azul de marca)
 
-  /* Tipografía: pilas del sistema, sin descargas externas. */
-  --nx-font-serif: "Iowan Old Style", "Palatino Linotype", Palatino,
-    "Book Antiqua", Georgia, "Times New Roman", Times, serif;
-  --nx-font-sans: system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+     El gris significa SIEMPRE "sin dato", nunca "bien": un sensor
+     que no existe no puede verse como correcto. El índigo de pausa
+     se aparta del azul de marca a propósito.
 
-  /* Escala tipográfica */
-  --nx-fs-xs: 0.75rem;
-  --nx-fs-sm: 0.8125rem;
-  --nx-fs-base: 1rem;
-  --nx-fs-lg: 1.125rem;
-  --nx-fs-xl: 1.3125rem;
-  --nx-fs-2xl: clamp(1.4rem, 1.18rem + 0.9vw, 1.75rem);
+     Contrastes medidos sobre --nx-surface (#161b22):
+       #5cdd8b  → 10.03:1   #f8a306 →  8.43:1
+       #ff6b6b  →  6.23:1   #7d8994 →  4.53:1 sobre #1c2128
+       #9aa8ff  →  7.76:1   #1747f5 →  2.68:1 (solo relleno/LED)
 
-  /* Espaciado */
+     Los washes van al 10%: a esa dilución el propio color de estado
+     conserva ≥4.5:1 como texto sobre su fondo, así que una etiqueta
+     de alarma puede ir teñida.
+
+     ESTA PALETA NO SE TOCA al cambiar el grafito: es semántica de
+     monitorización, no identidad.
+     ========================================================== */
+  --nx-ok: #5cdd8b;
+  --nx-status-ok: var(--nx-ok);
+  --nx-status-warn: #f8a306;
+  --nx-status-crit: var(--nx-danger);
+  --nx-status-unknown: var(--nx-ink-quiet);
+  --nx-status-paused: #1747f5;
+  --nx-status-paused-ink: #9aa8ff;
+  --nx-wash-ok: color-mix(in srgb, var(--nx-status-ok) 10%, var(--nx-surface));
+  --nx-wash-warn: color-mix(in srgb, var(--nx-status-warn) 10%, var(--nx-surface));
+  --nx-wash-crit: color-mix(in srgb, var(--nx-status-crit) 10%, var(--nx-surface));
+  --nx-wash-unknown: color-mix(in srgb, var(--nx-status-unknown) 10%, var(--nx-surface));
+  --nx-wash-paused: color-mix(in srgb, var(--nx-status-paused-ink) 10%, var(--nx-surface));
+
+  /* Filetes. Tres escalones neutros: el blando separa filas dentro de
+     un bloque, el de por defecto acota superficies, el fuerte marca
+     el límite de un control. Ninguno lleva tinte. */
+  --nx-border: #30363d;
+  --nx-border-soft: #21262d;
+  --nx-border-strong: #444c56;
+
+  --nx-focus: #2f81f7;
+  --nx-focus-halo: rgba(47, 129, 247, 0.35);
+  --nx-accent-wash: rgba(47, 129, 247, 0.12);
+
+  /* Series: identidad cromática de cada métrica (leyenda de la
+     gráfica y sparkline, no estado). */
+  --nx-series-cpu: var(--nx-accent);
+  --nx-series-ram: var(--nx-accent-2);
+  --nx-series-disk: color-mix(in srgb, var(--nx-accent) 45%, var(--nx-ink-soft));
+  --nx-series-temp: var(--nx-ink-muted);
+  /* Extensión para el histórico, que dibuja SEIS series a la vez y se
+     quedaba sin dos tonos propios. Se derivan de tokens que ya
+     existen, nunca de un color nuevo: swap es el azul de marca
+     acercado al verde de "sano" (un cielo, #3D9DD7) y load es la
+     tinta suave calentada una gota con el ámbar de aviso (una arena
+     desaturada, #C1B7A1). El criterio es el del resto de la paleta:
+     identities frías en la mitad superior, neutros en la inferior, y
+     NINGÚN tono nuevo se parece a un color de estado. load1 es
+     justamente la métrica que dispara avisos, así que su tono tiene
+     que leerse como "dato apagado", no como "ámbar de alarma". */
+  --nx-series-swap: color-mix(in srgb, var(--nx-accent) 70%, var(--nx-status-ok));
+  --nx-series-load: color-mix(in srgb, var(--nx-ink-soft) 80%, var(--nx-status-warn));
+  --nx-warn: var(--nx-status-warn);
+
+  /* Tipografía: Inter Variable + Roboto Mono empotradas (ver arriba);
+     la pila del sistema queda como respaldo por si algún fichero no carga. */
+  --nx-font-sans: "InterVariable", "Inter", system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --nx-font-mono: "Roboto Mono", ui-monospace, SFMono-Regular, "SF Mono",
+    "JetBrains Mono", "Cascadia Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
+
+  /* Escala tipográfica. El techo son 16px: no hay titular en esta
+     aplicación. El tamaño se baja en la tabla y se sube un peldaño en
+     el micro-rótulo; nunca al revés. */
+  --nx-fs-micro: 0.65625rem;   /* 10.5px · micro-rótulos */
+  --nx-fs-caption: 0.75rem;    /* 12px · metadatos y controles */
+  --nx-fs-row: 0.78125rem;     /* 12.5px · texto de tabla */
+  --nx-fs-body: 0.8125rem;     /* 13px · base */
+  --nx-fs-panel: 0.8125rem;    /* 13px · título de panel */
+  --nx-fs-section: 0.875rem;   /* 14px · título de sección */
+  --nx-fs-brand: 0.9375rem;    /* 15px · lockup de marca */
+  --nx-fs-hero: 1rem;          /* 16px · techo de la escala */
+
+  --nx-fw-normal: 400;
+  --nx-fw-medium: 500;
+  --nx-fw-semibold: 600;
+  --nx-track-tight: -0.012em;
+  --nx-track-micro: 0.07em;    /* tracking de versalitas */
+
+  /* Espaciado. Escala corta: en una consola el aire es un lujo que
+     se nota en el scroll. */
   --nx-space-1: 0.25rem;
-  --nx-space-2: 0.5rem;
-  --nx-space-3: 0.75rem;
-  --nx-space-4: 1rem;
-  --nx-space-5: 1.5rem;
-  --nx-space-6: 2rem;
+  --nx-space-2: 0.4375rem;
+  --nx-space-3: 0.625rem;
+  --nx-space-4: 0.875rem;
+  --nx-space-5: 1.125rem;
+  --nx-space-6: 1.5rem;
+  --nx-gap-section: 0.625rem;   /* 10px · ritmo entre paneles */
+  --nx-pad-card: 0.625rem;      /* 10px · relleno de panel */
+  --nx-pad-tight: 0.5rem;      /* 8px · relleno de cabecera/región */
 
-  /* Radios / sombras / ritmo */
-  --nx-radius-sm: 2px;
-  --nx-radius: 4px;
-  --nx-radius-lg: 6px;
-  --nx-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
-  --nx-shadow: 0 1px 3px rgba(0, 0, 0, 0.55),
-    0 8px 20px -8px rgba(0, 0, 0, 0.6);
-  --nx-shadow-pop: 0 8px 28px -8px rgba(0, 0, 0, 0.65);
-  --nx-lh-tight: 1.25;
-  --nx-lh-body: 1.7;
-  --nx-lh-loose: 1.75;
+  /* Layout. La cabecera tiene TRES filas (barra + pestañas + franja de
+     estado); su alto se compone con tokens para que los números no
+     puedan separarse y el workbench sticky sepa dónde termina. */
+  --nx-shell: 1440px;
+  --nx-shell-narrow: 46rem;
+  --nx-gutter: 1rem;
+  --nx-header-bar-h: 2.5rem;   /* 40px */
+  --nx-nav-h: 2.125rem;        /* 34px */
+  --nx-strip-h: 2.25rem;       /* 36px */
+  --nx-header-h: calc(var(--nx-header-bar-h) + var(--nx-nav-h) + var(--nx-strip-h));
 
-  /* Movimiento: un solo escalón para hover, como el original. */
-  --nx-dur-1: 180ms;
-  --nx-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Radios. Cuadrados por decisión: panel 2px, control 3px, chip 2px.
+     Solo los LEDs, las barras y las etiquetas de estado conservan el
+     radio completo. */
+  --nx-radius-xs: 2px;
+  --nx-radius-sm: 3px;
+  --nx-radius: 2px;
+  --nx-radius-pill: 999px;
 
-  /* Escalón fino del sistema ambiental (puerto de la variante local):
-     140ms para tinta, bordes y botones; 240ms para superficies; 600ms
-     para el revelado al hacer scroll. La curva es su ease-out. */
-  --nx-dur-micro: 140ms;
-  --nx-dur-standard: 240ms;
-  --nx-dur-reveal: 600ms;
+  /* Dimensiones de fila y de cromo. */
+  --nx-row-h: 1.75rem;         /* 28px · paso de fila de tabla */
+  --nx-head-h: 1.5rem;         /* 24px · cabecera de tabla */
+  --nx-toolbar-h: 2.125rem;    /* 34px · barra de herramientas */
+
+  /* Profundidad: solo un inset de 1px de luz en los controles. Los
+     paneles no llevan sombra: los separa el filete, no un halo. */
+  --nx-inset-hi: inset 0 1px 0 rgba(255, 255, 255, 0.028);
+  --nx-inset-field: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+  --nx-shadow-pop: 0 10px 28px -10px rgba(1, 4, 9, 0.7), 0 2px 6px rgba(1, 4, 9, 0.4);
+
+  --nx-lh-tight: 1.2;
+  --nx-lh-heading: 1.3;
+  --nx-lh-body: 1.45;
+  --nx-lh-loose: 1.55;
+
+  /* Movimiento */
+  --nx-dur-micro: 120ms;
+  --nx-dur-standard: 200ms;
+  --nx-dur-reveal: 520ms;
+  --nx-dur-fill: 600ms;
   --nx-ease-glide: cubic-bezier(0.16, 1, 0.3, 1);
-  /* Alias que ya usaban botones, pestañas y badges: ahora marca el
-     ritmo corto de la referencia sin tocar ninguna regla. */
+  --nx-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --nx-transition: var(--nx-dur-micro) var(--nx-ease-glide);
-  --nx-transition-card: var(--nx-dur-standard) var(--nx-ease-glide);
 
-  /* Colores funcionales del panel: NO se inventa ninguno.
-     Salen de tokens reales de la variante azul marina de referencia. */
-  --nx-metric-cpu: var(--nx-link);           /* #4da6ff */
-  --nx-metric-ram: var(--nx-link-visited);   /* #9d8cff */
-  --nx-metric-disk: var(--nx-ink-muted);     /* #8497ba */
-  --nx-warn: color-mix(in srgb, var(--nx-missing) 55%, var(--nx-surface-2));
+  /* Controles: 28px el principal, 26px el secundario, 27px el campo. */
+  --nx-btn-h: 1.75rem;
+  --nx-btn-h-sm: 1.625rem;
+  --nx-btn-px: 0.625rem;
+  --nx-btn-px-sm: 0.5rem;
+  --nx-btn-fs: var(--nx-fs-caption);
+  --nx-field-h: 1.6875rem;
+
+  /* Iconos vectoriales en línea: cero emoji, cero dingbats. */
+  --nx-icon-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%238b949e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.75 6 7.75l3-3'/%3E%3C/svg%3E");
+}
+
+@media (min-width: 40rem) {
+  :root { --nx-gutter: 1.5rem; }
 }
 
 /* ------------------- Reset / base ------------------- */
@@ -126,530 +321,1760 @@ body {
   background-color: var(--nx-bg);
   color: var(--nx-ink);
   font-family: var(--nx-font-sans);
+  font-size: var(--nx-fs-body);
+  line-height: var(--nx-lh-body);
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ------------------- Capa ambiental -------------------
-   Una sola capa fija con tres pasadas: gradiente base, retícula de
-   46px y foco que sigue al puntero. Va en z-index:-1 porque el color
-   de <body> se propaga al canvas del documento (no pinta la caja del
-   body), así que la capa queda por encima del fondo y por debajo de
-   todo el contenido: paneles, tarjetas, cabecera con backdrop-blur
-   (z-40) y toasts (z-50). Verificado contra el orden de pintado de
-   CSS 2.1 apéndice E. */
-.nx-ambient {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background: radial-gradient(
-    58% 42% at 68% 12%,
-    var(--nx-accent-wash) 0%,
-    rgba(77, 166, 255, 0.045) 45%,
-    rgba(77, 166, 255, 0) 100%
-  );
+:where(h1, h2, h3, h4) {
+  margin: 0;
+  color: var(--nx-ink);
+  font-weight: var(--nx-fw-semibold);
+  line-height: var(--nx-lh-heading);
+  letter-spacing: var(--nx-track-tight);
 }
 
-/* Retícula de 1px cada 46px: una mancha de tinta, no un patrón.
-   La máscara radial la derrite hacia abajo. */
-.nx-ambient::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(to right, rgba(77, 166, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(77, 166, 255, 0.08) 1px, transparent 1px);
-  background-size: 46px 46px;
-  mask-image: radial-gradient(ellipse 100% 80% at 50% 0%, #000 25%, transparent 78%);
-  -webkit-mask-image: radial-gradient(ellipse 100% 80% at 50% 0%, #000 25%, transparent 78%);
-}
+:where(p) { line-height: var(--nx-lh-body); }
 
-/* Foco que sigue al puntero. La opacidad no pasa de 0.12: se nota,
-   no se ve. --mx / --my llevan valores por defecto que cubren el
-   primer pintado, los dispositivos táctiles y el caso de que el JS
-   no llegue a ejecutarse. */
-.nx-ambient::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(
-    600px circle at var(--mx, 50%) var(--my, 40%),
-    rgba(77, 166, 255, 0.12),
-    rgba(77, 166, 255, 0.05) 40%,
-    rgba(77, 166, 255, 0) 65%
-  );
+html { background-color: var(--nx-bg); }
+
+/* Todo dato numérico o técnico: mono + cifras tabulares. Es la regla que
+   más se nota en una consola: la columna deja de saltar al actualizarse. */
+.mono,
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
 }
+code { font-size: 0.95em; }
 
 /* ------------------- Selección de texto ------------------- */
 ::selection {
-  background-color: var(--nx-accent-wash);
+  background-color: color-mix(in srgb, var(--nx-accent) 26%, transparent);
   color: var(--nx-ink);
 }
 
+/* ------------------- Scrollbars -------------------
+   Temáticas y finas en todo el documento. En grafito: el pulgar es el
+   filete fuerte y al pasar por encima sube un escalón de tinta. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--nx-border-strong) transparent;
+}
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background-color: var(--nx-border-strong);
+  background-clip: content-box;
+  border: 3px solid transparent;
+  border-radius: var(--nx-radius-pill);
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--nx-ink-quiet) 55%, var(--nx-border-strong));
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-corner { background: transparent; }
+
 /* ------------------- Revelado al hacer scroll -------------------
    `.js` lo añade el script en línea del <head>: sin JavaScript el
-   atributo no hace nada y la página se ve entera desde el principio.
-   El estado oculto se acota a :not(.is-visible) para que la regla
-   desaparezca al revelarse y no tape el desplazamiento de hover
-   que llevan las tarjetas. */
+   atributo no hace nada y la página se ve entera desde el principio. */
 .js [data-reveal]:not(.is-visible) {
   opacity: 0;
-  transform: translateY(12px);
+  transform: translateY(8px);
   transition:
     opacity var(--nx-dur-reveal) var(--nx-ease-glide),
     transform var(--nx-dur-reveal) var(--nx-ease-glide);
   transition-delay: var(--reveal-delay, 0ms);
   will-change: opacity, transform;
 }
-
 .js [data-reveal].is-visible {
   opacity: 1;
   will-change: auto;
 }
 
-/* Encabezados de sección: copia de .pw-h2 (wiki.css L1027). */
-h2 {
-  padding-bottom: var(--nx-space-2);
-  border-bottom: 1px solid var(--nx-border);
-  font-family: var(--nx-font-serif);
-  font-size: var(--nx-fs-2xl);
-  font-weight: 600;
-  line-height: var(--nx-lh-tight);
-  letter-spacing: -0.015em;
-}
-/* En el dashboard el h2 comparte fila con la marca de tiempo:
-   se le da el ancho sobrante para que el filete recorra la fila. */
-.tab-section > .flex > h2 {
-  flex: 1 1 auto;
-  margin-right: var(--nx-space-4);
-}
-
-/* Foco visible (anillo global del original). */
-:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+/* ------------------- Foco visible -------------------
+   El anillo de foco es el ÚNICO filete de color del sistema. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
   outline: 2px solid var(--nx-focus);
   outline-offset: 1px;
+  border-radius: var(--nx-radius-xs);
+}
+:where(input, select, textarea, .tab-btn, .nx-summary):focus-visible {
+  outline-offset: 0;
+  box-shadow: 0 0 0 2px var(--nx-focus-halo);
 }
 
-/* Respaldo de `.hidden`: app.js lo usa para alternar pestañas y esta regla
-   la aporta Tailwind. Si el CDN no carga, sin esto se verían todas las
-   secciones apiladas a la vez. */
-.hidden { display: none; }
-
-/* ------------------- Navegación (tabs) -------------------
-   Copia de .pw-spectrum-chip (wiki.css L3576), incluido su estado
-   marcado: el único relleno de acento del sistema es la selección. */
-.tab-btn {
-  border: 1px solid var(--nx-border-strong);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--nx-ink);
-  padding: var(--nx-space-2) var(--nx-space-3);
-  font-family: inherit;
-  font-size: 0.9375rem;
-  line-height: 1.2;
-  cursor: pointer;
-  transition: color var(--nx-transition), background-color var(--nx-transition),
-    border-color var(--nx-transition);
+/* Solo para lectores de pantalla (cabecera de la columna del LED). */
+.nx-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
   white-space: nowrap;
-}
-.tab-btn:hover {
-  border-color: var(--nx-link);
-  color: var(--nx-link);
-}
-.tab-active {
-  background: var(--nx-link);
-  border-color: var(--nx-link);
-  color: var(--nx-on-accent);
-}
-.tab-active:hover {
-  background: var(--nx-link-hover);
-  border-color: var(--nx-link-hover);
-  color: var(--nx-on-accent);
+  border: 0;
 }
 
-/* ------------------- Paneles -------------------
-   Copia de .pw-card (wiki.css L758): radio 4px y SIN sombra en
-   reposo; la sombra solo aparece al pasar por encima. */
-.panel {
-  border: 1px solid var(--nx-border);
-  border-radius: var(--nx-radius);
-  background: var(--nx-surface);
-  padding: var(--nx-space-4);
-  color: var(--nx-ink);
-  line-height: var(--nx-lh-body);
-  transition: border-color var(--nx-transition-card),
-    background-color var(--nx-transition-card), box-shadow var(--nx-transition-card);
-}
-/* El comentario de arriba dice que la sombra solo aparece al pasar por
-   encima: aquí se cumple. El borde se afina y la superficie sube un
-   escalón, sin desplazamiento (las tarjetas de métricas ya suben). */
-.panel:hover {
-  border-color: var(--nx-border-strong);
-  background: var(--nx-surface-2);
-  box-shadow: var(--nx-shadow);
-}
-.panel-title {
-  font-family: var(--nx-font-serif);
-  font-size: var(--nx-fs-lg);
-  font-weight: 600;
-  line-height: var(--nx-lh-tight);
-  letter-spacing: -0.01em;
-  color: var(--nx-ink);
-}
+/* ============================================================
+   Tipografía — primitivas
+   ============================================================ */
 
-/* ------------------- Tarjetas de métricas ------------------- */
-.metric-card {
-  border: 1px solid var(--nx-border);
-  border-radius: var(--nx-radius);
-  background: var(--nx-surface);
-  padding: var(--nx-space-4);
-  color: var(--nx-ink);
-  line-height: var(--nx-lh-body);
-  transition: border-color var(--nx-transition-card), box-shadow var(--nx-transition-card),
-    transform var(--nx-transition-card), background-color var(--nx-transition-card);
-}
-.metric-card:hover {
-  border-color: var(--nx-border-strong);
-  background: var(--nx-surface-2);
-  box-shadow: var(--nx-shadow);
-  transform: translateY(-2px);
-}
-/* Copia de .pw-card-meta (wiki.css L802). */
-.metric-label {
+/* Micro-rótulo: 10.5px en versalitas con tracking abierto. Es el
+   tamaño de TODO rótulo pequeño del panel: cabecera de tabla,
+   etiqueta de campo, overline de bloque. Sustituye al antiguo
+   .metric-label, que ya no emite ni el HTML ni app.js. */
+.nx-eyebrow {
   color: var(--nx-ink-muted);
-  font-size: var(--nx-fs-xs);
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: var(--nx-fs-micro);
+  font-weight: var(--nx-fw-semibold);
+  letter-spacing: var(--nx-track-micro);
   text-transform: uppercase;
   line-height: var(--nx-lh-tight);
-}
-/* Cifra destacada en serif, como los títulos del original. */
-.metric-value {
-  margin-top: var(--nx-space-1);
-  font-family: var(--nx-font-serif);
-  font-size: var(--nx-fs-2xl);
-  font-weight: 600;
-  line-height: var(--nx-lh-tight);
-  letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
-  color: var(--nx-ink);
-}
-.metric-unit {
-  margin-left: 0.15rem;
-  font-family: var(--nx-font-sans);
-  font-size: var(--nx-fs-sm);
-  font-weight: 500;
-  color: var(--nx-ink-muted);
 }
 
-/* ------------------- Barras de progreso -------------------
-   Medida y radio de la franja del original (.pw-card-flag, L2932):
-   4px de alto y radio 2px. */
-.progress-track {
-  margin-top: var(--nx-space-3);
-  height: 4px;
-  width: 100%;
+/* Título de sección: 14px semibold y filete debajo que recorre el
+   ancho de la fila. */
+.nx-section-title {
+  font-size: var(--nx-fs-section);
+  font-weight: var(--nx-fw-semibold);
+  letter-spacing: var(--nx-track-tight);
+  color: var(--nx-ink);
+  padding-bottom: var(--nx-space-2);
+  border-bottom: 1px solid var(--nx-border);
+}
+
+/* Título de panel: 13px semibold. Sin display, sin tracking abierto. */
+.panel-title {
+  font-size: var(--nx-fs-panel);
+  font-weight: var(--nx-fw-semibold);
+  letter-spacing: var(--nx-track-tight);
+  color: var(--nx-ink);
+  line-height: 1.25;
+}
+
+/* Texto de apoyo bajo un título: 12px apagado, nunca compite. */
+.panel-note {
+  margin-top: 2px;
+  color: var(--nx-ink-quiet);
+  font-size: var(--nx-fs-caption);
+  line-height: 1.4;
+  max-width: 92ch;
+  text-wrap: pretty;
+}
+/* Variante en línea: en la cabecera de panel la descripción va a la
+   derecha del título, separada por un filete, para que la cabecera
+   quepa en una sola línea de 34px. */
+.panel-note--inline {
+  margin-top: 0;
+  padding-left: var(--nx-space-3);
+  border-left: 1px solid var(--nx-border);
+  min-width: 0;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: none;
+}
+
+/* Metadato en vivo (timestamps, contadores, resúmenes). Mono, chico,
+   apagado: es contexto, no contenido. */
+.nx-meta {
+  color: var(--nx-ink-quiet);
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nx-fs-caption);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   Layout — contenedor, cabecera, marca, navegación
+   ============================================================ */
+.nx-shell {
+  width: 100%;
+  max-width: var(--nx-shell);
+  margin-inline: auto;
+  padding-inline: var(--nx-gutter);
+}
+.nx-shell-narrow { max-width: var(--nx-shell-narrow); }
+/* Medida de formulario: la pantalla de acceso es una columna corta. */
+.nx-shell-form { max-width: 21rem; }
+
+/* Cabecera: chrome hundido, opaco, dividido en tres filas por
+   filetes. Sin desenfoque: el cromo de una herramienta no se
+   transparenta sobre el contenido. */
+.nx-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--nx-surface-3);
+  border-bottom: 1px solid var(--nx-border);
+}
+
+.nx-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nx-space-4);
+  min-height: var(--nx-header-bar-h);
+}
+
+/* Mandos de la barra de marca, a la derecha. */
+.nx-header-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-1);
+  flex: none;
+}
+
+/* --- Lockup de marca --- */
+.nx-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-2);
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--nx-radius-xs);
+}
+.nx-mark {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: none;
+  border-radius: var(--nx-radius-xs);
+  background: var(--nx-accent-wash);
+  color: var(--nx-accent);
+}
+.nx-mark svg { width: 100%; height: 100%; display: block; }
+.nx-mark--lg { width: 2rem; height: 2rem; }
+.nx-mark--sm { width: 1.25rem; height: 1.25rem; }
+
+.nx-brand-text { display: flex; align-items: baseline; gap: var(--nx-space-2); min-width: 0; }
+.nx-brand-name {
+  font-size: var(--nx-fs-brand);
+  font-weight: var(--nx-fw-semibold);
+  letter-spacing: -0.015em;
+  color: var(--nx-ink);
+  line-height: 1.15;
+}
+.nx-brand-sub {
+  font-size: var(--nx-fs-micro);
+  font-weight: var(--nx-fw-medium);
+  letter-spacing: var(--nx-track-micro);
+  text-transform: uppercase;
+  color: var(--nx-ink-faint);
+  line-height: 1.2;
+}
+
+/* --- Módulo de estado en vivo: plano, sin píldora --- */
+.nx-live {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-1);
+  height: 1.375rem;
+  padding-inline: var(--nx-space-1);
+  border-radius: var(--nx-radius-xs);
+}
+.nx-live-label {
+  font-size: var(--nx-fs-caption);
+  font-weight: var(--nx-fw-medium);
+  color: var(--nx-ink-soft);
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+}
+/* La cabecera hereda el mismo código de estado que el resto del
+   panel: verde en línea, rojo sin conexión, gris antes de saber. */
+.nx-live--ok { color: var(--nx-status-ok); }
+.nx-live--off { color: var(--nx-status-crit); }
+.nx-live--idle { color: var(--nx-ink-faint); }
+.nx-live--ok .nx-live-label { color: var(--nx-status-ok); }
+.nx-live--off .nx-live-label { color: var(--nx-status-crit); }
+
+/* LED: punto de 7px con halo. El halo va por ::after para que el
+   color de fondo (asignado por app.js) y la luz no se mezclen. */
+.nx-led {
+  position: relative;
+  display: inline-block;
+  width: 0.4375rem;
+  height: 0.4375rem;
+  flex: none;
+  border-radius: var(--nx-radius-pill);
+  background: var(--nx-ink-faint);
+}
+.nx-led::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 3px currentColor;
+  opacity: 0.16;
+}
+/* `.nx-led--on` / `--off` / `--idle` / `--warn` son contrato con
+   app.js (cabecera y módulo de estado). Los cinco estados de
+   monitorización se añaden como alias semánticos. */
+.nx-led--on,
+.nx-led--ok { background: var(--nx-status-ok); color: var(--nx-status-ok); }
+.nx-led--off,
+.nx-led--crit { background: var(--nx-status-crit); color: var(--nx-status-crit); }
+.nx-led--idle { background: var(--nx-ink-faint); color: var(--nx-ink-faint); }
+.nx-led--warn { background: var(--nx-status-warn); color: var(--nx-status-warn); }
+.nx-led--unknown { background: var(--nx-status-unknown); color: var(--nx-status-unknown); }
+.nx-led--paused {
+  background: var(--nx-status-paused);
+  color: var(--nx-status-paused);
+}
+/* El crítico late y solo el crítico: es el único punto del panel que
+   tiene que encontrar el ojo sin leer nada. */
+.nx-led--crit { animation: nx-led-pulse 2.4s var(--nx-ease-out) infinite; }
+
+@keyframes nx-led-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--nx-status-crit) 45%, transparent); }
+  50%      { box-shadow: 0 0 0 4px transparent; }
+}
+
+/* --- Riel de pestañas ---
+   Subrayado de 2px en lugar de pastillas con borde: menos ruido,
+   más consola. El estado activo gana peso + tinta, no un relleno. */
+.nx-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: var(--nx-space-1);
+  min-height: var(--nx-nav-h);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.nx-tabs::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  position: relative;
+  flex: none;
+  padding-inline: var(--nx-space-3);
+  border: 0;
+  background: transparent;
+  color: var(--nx-ink-muted);
+  font-family: inherit;
+  font-size: var(--nx-fs-caption);
+  font-weight: var(--nx-fw-medium);
+  letter-spacing: 0.005em;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  border-radius: 0;
+  transition: color var(--nx-transition);
+}
+.tab-btn::after {
+  content: "";
+  position: absolute;
+  left: var(--nx-space-2);
+  right: var(--nx-space-2);
+  bottom: 0;
+  height: 2px;
+  background: transparent;
+  transition: background-color var(--nx-transition);
+}
+.tab-btn:hover { color: var(--nx-ink); }
+.tab-btn:hover::after { background: var(--nx-border-strong); }
+.tab-active { color: var(--nx-ink); font-weight: var(--nx-fw-semibold); }
+.tab-active::after { background: var(--nx-accent); }
+.tab-active:hover { color: var(--nx-ink); }
+.tab-active:hover::after { background: var(--nx-accent); }
+.tab-btn:focus-visible { outline-offset: -3px; }
+
+/* Fila de pestañas: solo pestañas, con filete superior que la separa
+   de la barra de marca. */
+.nx-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nx-space-4);
+  border-top: 1px solid var(--nx-border-soft);
+}
+.nx-nav-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-2);
+  flex: none;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   Franja de estado global (franja plana bajo las pestañas)
+   ------------------------------------------------------------
+   Sustituye a la tarjeta flotante redondeada. Es una tira de ancho
+   completo, sin radio, con filete inferior y fondo de cromo: el
+   veredicto a la izquierda, los contadores de severidad y los
+   mandos de sondeo a la derecha.
+   ============================================================ */
+.nx-statusbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nx-space-2) var(--nx-space-4);
+  min-height: var(--nx-strip-h);
+  padding: var(--nx-space-1) var(--nx-gutter);
+  border-top: 1px solid var(--nx-border-soft);
+  background: var(--nx-surface-3);
+  transition: background-color var(--nx-dur-standard) var(--nx-ease-out);
+}
+/* Todo en orden no grita: un lavado de verde al 4 % sobre la franja
+   entera. Cuando algo falla, la franja se queda neutra y el chip rojo
+   es el único punto saturado de la pantalla. */
+.nx-statusbar--allclear {
+  background: color-mix(in srgb, var(--nx-status-ok) 4%, var(--nx-surface-3));
+}
+
+.nx-verdict {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-2);
+  min-width: 0;
+  flex: 1 1 14rem;
+}
+/* Veredicto en una sola línea: título en tinta, detalle en mono
+   apagado y un filete vertical que los separa. */
+.nx-verdict-title {
+  font-size: var(--nx-fs-caption);
+  font-weight: var(--nx-fw-semibold);
+  letter-spacing: -0.005em;
+  line-height: 1.2;
+  color: var(--nx-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nx-verdict-sub {
+  padding-left: var(--nx-space-2);
+  border-left: 1px solid var(--nx-border);
+  color: var(--nx-ink-quiet);
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nx-fs-caption);
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Mandos de la franja, a la derecha. */
+.nx-strip-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-2);
+  flex: none;
+}
+.nx-strip-sep {
+  width: 1px;
+  height: 14px;
+  flex: none;
+  background: var(--nx-border);
+}
+
+.nx-counts { display: flex; align-items: center; gap: var(--nx-space-1); }
+/* Contador de severidad: texto plano con su LED. Sin píldora, sin
+   borde: el estado ya lo dan el punto y la cifra. */
+.nx-count {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nx-space-1);
+  height: 1.375rem;
+  padding-inline: var(--nx-space-1);
+  border: 0;
+  border-radius: var(--nx-radius-xs);
+  background: transparent;
+  color: var(--nx-ink-muted);
+  font-family: inherit;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--nx-transition), color var(--nx-transition),
+    opacity var(--nx-transition);
+}
+.nx-count:hover { background: var(--nx-surface-hover); color: var(--nx-ink); }
+.nx-count-label {
+  font-size: var(--nx-fs-caption);
+  font-weight: var(--nx-fw-medium);
+  letter-spacing: 0.005em;
+}
+.nx-count-value {
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nx-fs-caption);
+  font-weight: var(--nx-fw-semibold);
+  letter-spacing: -0.015em;
+  color: var(--nx-ink-soft);
+}
+/* Cero no es un problema: el contador baja de tono en vez de
+   desaparecer, así la franja no salta cuando algo se resuelve. */
+.nx-count.is-zero { opacity: 0.55; }
+/* La selección se codifica con fondo e tinta, nunca con un filete de
+   color: el único borde coloreado del panel es el anillo de foco. */
+.nx-count[aria-pressed="true"] {
+  background: var(--nx-surface-2);
+  opacity: 1;
+}
+.nx-count[aria-pressed="true"] .nx-count-value { color: var(--nx-count-ink); }
+.nx-count--ok { --nx-count-ink: var(--nx-status-ok); }
+.nx-count--warn { --nx-count-ink: var(--nx-status-warn); }
+.nx-count--crit { --nx-count-ink: var(--nx-status-crit); }
+
+/* Control de sondeo + cuenta atrás. Un botón, dos iconos: el estado
+   se lee del glifo, sin reescribir el texto en cada muestra. */
+.nx-poll-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nx-space-1);
+  height: var(--nx-btn-h-sm);
+  padding-inline: var(--nx-space-2);
+  border: 1px solid var(--nx-border);
   border-radius: var(--nx-radius-sm);
   background: var(--nx-surface-2);
+  color: var(--nx-ink-soft);
+  font-family: inherit;
+  font-size: var(--nx-fs-caption);
+  font-weight: var(--nx-fw-medium);
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--nx-transition), border-color var(--nx-transition),
+    color var(--nx-transition);
+}
+.nx-poll-btn:hover {
+  color: var(--nx-ink);
+  border-color: var(--nx-border-strong);
+  background: var(--nx-surface);
+}
+.nx-poll-btn svg { width: 0.6875rem; height: 0.6875rem; flex: none; }
+/* Pausado se marca con lavado + tinta índigo: el estado va en el
+   relleno, no en un borde de color. */
+.nx-icon-play { display: none; }
+.nx-poll-btn[aria-pressed="true"] {
+  color: var(--nx-status-paused-ink);
+  border-color: var(--nx-border-strong);
+  background: var(--nx-wash-paused);
+}
+.nx-poll-btn[aria-pressed="true"] .nx-icon-pause { display: none; }
+.nx-poll-btn[aria-pressed="true"] .nx-icon-play { display: block; }
+.nx-meta-sep { color: var(--nx-ink-faint); }
+
+/* ============================================================
+   Superficies
+   ============================================================ */
+.panel {
+  position: relative;
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius);
+  background: var(--nx-surface);
+  padding: var(--nx-pad-card);
+  color: var(--nx-ink);
+}
+.panel--flush { padding: 0; overflow: hidden; }
+.panel--quiet { background: var(--nx-surface-3); }
+
+/* Cabecera de panel: una sola fila de 34px con título, nota al lado
+   y acciones a la derecha, cerrada por un filete inferior. Es una
+   barra de herramientas, no un encabezado de página: por eso la nota
+   va en línea (título | descripción | mando) en lugar de apilada. */
+.nx-card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-3);
+  min-height: var(--nx-toolbar-h);
+  padding: 0 var(--nx-pad-card);
+  border-bottom: 1px solid var(--nx-border);
+  background: var(--nx-surface-2);
+}
+/* El título no se parte nunca: si no cabe, lo que se recorta es la
+   descripción, no el nombre del panel. */
+.nx-card-head > .panel-title { flex: 0 0 auto; white-space: nowrap; }
+.nx-card-head--plain {
+  background: transparent;
+  padding: 0 0 var(--nx-space-2);
+  border-bottom-color: var(--nx-border-soft);
+}
+.nx-card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-2);
+  flex: none;
+  margin-left: auto;
+}
+.nx-card-body { padding: var(--nx-pad-card); }
+/* Grupos consecutivos dentro del mismo panel: los separa un filete,
+   no un hueco de blanco. */
+.nx-card-body + .nx-card-body { border-top: 1px solid var(--nx-border-soft); }
+
+/* ============================================================
+   Panel de sensores — tabla densa (anatomía PRTG)
+   ------------------------------------------------------------
+   Una fila por sensor, 28px de paso, filete entre filas:
+
+     LED | Nombre | Valor (mono, tabular, a la derecha) | micro-barra
+         | micro-sparkline | Umbrales | Estado | Actualizado
+
+   No hay tarjeta, ni cifra protagonista, ni caja dentro de caja: la
+   tabla ES la tarjeta.
+   ============================================================ */
+.nx-sr-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--nx-fs-row);
+  line-height: 1.35;
+}
+.nx-sr-table thead th {
+  height: var(--nx-head-h);
+  padding: 0 var(--nx-space-2);
+  border-bottom: 1px solid var(--nx-border);
+  background: var(--nx-surface-3);
+  text-align: left;
+  font-size: var(--nx-fs-micro);
+  font-weight: var(--nx-fw-semibold);
+  letter-spacing: var(--nx-track-micro);
+  text-transform: uppercase;
+  color: var(--nx-ink-muted);
+  white-space: nowrap;
+}
+.nx-sr-table thead th:first-child { padding-left: var(--nx-pad-card); }
+.nx-sr-table thead th:last-child { padding-right: var(--nx-pad-card); }
+
+.nx-sr-table tbody td {
+  height: var(--nx-row-h);
+  padding: 0 var(--nx-space-2);
+  border-bottom: 1px solid var(--nx-border-soft);
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+  color: var(--nx-ink-soft);
+}
+.nx-sr-table tbody td:first-child { padding-left: var(--nx-pad-card); }
+.nx-sr-table tbody td:last-child { padding-right: var(--nx-pad-card); }
+.nx-sr-table tbody tr:last-child td { border-bottom: 0; }
+.nx-sr-table tbody tr:hover td { background: var(--nx-surface-hover); }
+
+/* Anchos de columna: fija y corta el resto, como una tabla real. */
+.nx-sr-c-led { width: 1.5rem; }
+.nx-sr-c-name { width: auto; min-width: 6.5rem; }
+.nx-sr-c-val { width: 5.5rem; text-align: right; }
+.nx-sr-c-bar { width: 4.5rem; }
+.nx-sr-c-spark { width: 5.5rem; }
+.nx-sr-c-thr { width: 13rem; }
+.nx-sr-c-state { width: 5.25rem; }
+.nx-sr-c-fresh { width: 5rem; text-align: right; }
+
+/* Nombre del sensor: es la columna de texto, la que crece. */
+.nx-sr-name { color: var(--nx-ink); font-weight: var(--nx-fw-medium); }
+
+/* Valor: 13px mono con cifras tabulares. La unidad va al lado, más
+   pequeña y apagada — "16.3 %", no "16.3%" en grande. */
+.nx-sr-val {
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nx-fs-body);
+  font-weight: var(--nx-fw-medium);
+  letter-spacing: -0.02em;
+  color: var(--nx-ink);
+}
+.nx-sr-unit {
+  padding-left: 2px;
+  font-family: var(--nx-font-sans);
+  font-size: var(--nx-fs-micro);
+  font-weight: var(--nx-fw-medium);
+  letter-spacing: 0;
+  color: var(--nx-ink-faint);
+}
+
+/* Estado corto por fila: Correcto · Aviso · Crítico · Sin dato. */
+.nx-sr-st {
+  font-size: var(--nx-fs-caption);
+  font-weight: var(--nx-fw-medium);
+  letter-spacing: -0.005em;
+  color: var(--nx-ink-muted);
+}
+.nx-sr-st--ok { color: var(--nx-status-ok); }
+.nx-sr-st--warn { color: var(--nx-status-warn); }
+.nx-sr-st--crit { color: var(--nx-status-crit); }
+.nx-sr-st--unknown { color: var(--nx-status-unknown); }
+
+/* Frescura: "hace 3 s". Es el dato que vuelve honesto el valor de al
+   lado (un 39 % congelado no es un 39 %). */
+.nx-fresh {
+  color: var(--nx-ink-quiet);
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nx-fs-micro);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* Nota de umbral. app.js reescribe el className de #metric-load-note y
+   #metric-temp-note a `.nx-stat-foot`, así que esta clase ES contrato:
+   por eso el texto de umbral es mono de 11px y se recorta con puntos
+   suspensivos en vez de romper el paso de fila. */
+.nx-stat-foot {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--nx-ink-quiet);
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nx-fs-micro);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.nx-note--warn { color: var(--nx-danger); }
+
+/* ============================================================
+   Riel de contexto del host
+   ------------------------------------------------------------
+   Una sola fila de 24px con separadores verticales, como el pie de
+   datos de PRTG: no es otra tarjeta, es una tira de contexto del
+   mismo sistema de "superficie de dato".
+   ============================================================ */
+.nx-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius);
+  background: var(--nx-surface);
+  overflow: hidden;
+}
+.nx-fact {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-1);
+  min-height: 24px;
+  padding: 0 var(--nx-space-2);
+  border-left: 1px solid var(--nx-border-soft);
+  min-width: 0;
+}
+.nx-fact:first-child { border-left: 0; }
+.nx-fact-label {
+  color: var(--nx-ink-faint);
+  font-size: var(--nx-fs-micro);
+  font-weight: var(--nx-fw-semibold);
+  letter-spacing: var(--nx-track-micro);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.nx-fact-value {
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nx-fs-caption);
+  font-weight: var(--nx-fw-medium);
+  letter-spacing: -0.02em;
+  color: var(--nx-ink-soft);
+  white-space: nowrap;
+}
+
+/* ============================================================
+   Gráficas — micro-barra y sparkline
+   ============================================================ */
+.progress-track {
+  width: 100%;
+  height: 3px;
+  overflow: hidden;
+  border-radius: var(--nx-radius-pill);
+  background: color-mix(in srgb, var(--nx-ink-faint) 46%, var(--nx-surface-3));
 }
 .progress-fill {
   height: 100%;
-  border-radius: var(--nx-radius-sm);
-  transition: width 0.6s var(--nx-ease-out), background-color 0.3s var(--nx-ease-out);
+  border-radius: var(--nx-radius-pill);
+  transition: width var(--nx-dur-fill) var(--nx-ease-out),
+    background-color var(--nx-dur-standard) var(--nx-ease-out);
 }
+.nx-fill--cpu { background: var(--nx-series-cpu); }
+.nx-fill--ram { background: var(--nx-series-ram); }
+.nx-fill--disk { background: var(--nx-series-disk); }
 
-/* Umbrales con los colores reales de la paleta. */
-.progress-fill.warn { background-color: var(--nx-warn) !important; }
-.progress-fill.danger { background-color: var(--nx-missing) !important; }
+/* El relleno de la barra deja de ser "color de serie" y pasa a ser
+   "estado actual", como en PRTG: la misma barra para todos los
+   sensores y el color dice en qué zona del umbral está. `.warn` y
+   `.danger` son nombres de contrato con app.js; `.ok` y `.unknown` son
+   las dos posiciones que faltaban. */
+.progress-fill.ok { background-color: var(--nx-status-ok) !important; }
+.progress-fill.warn { background-color: var(--nx-status-warn) !important; }
+.progress-fill.danger { background-color: var(--nx-status-crit) !important; }
+.progress-fill.unknown { background-color: var(--nx-status-unknown) !important; }
 
-/* ------------------- Formularios -------------------
-   Copia de .pw-search-input (wiki.css L368). */
-.input-field {
+/* Sparkline: un <polyline> + un área + el punto actual, tres atributos
+   por muestra y cero librerías. El trazo lleva
+   vector-effect="non-scaling-stroke" porque el viewBox se estira a lo
+   ancho de la celda: sin él el grosor dependería del ancho. */
+.nx-spark {
+  display: block;
   width: 100%;
-  padding: 0.4rem 0.7rem;
-  border: 1px solid var(--nx-border);
-  border-radius: var(--nx-radius);
-  background: var(--nx-surface);
-  color: var(--nx-ink);
-  font-family: inherit;
-  font-size: var(--nx-fs-sm);
-  line-height: 1.5;
+  height: 1rem;
+  overflow: visible;
 }
-.input-field::placeholder { color: var(--nx-ink-muted); }
-.input-field:focus {
-  border-color: var(--nx-focus);
-  box-shadow: 0 0 0 3px var(--nx-focus-halo);
-  outline: none;
+.nx-spark-line {
+  fill: none;
+  stroke: var(--nx-spark, var(--nx-ink-faint));
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
 }
+.nx-spark-area { fill: var(--nx-spark, var(--nx-ink-faint)); opacity: 0.06; stroke: none; }
+.nx-spark-dot {
+  fill: var(--nx-spark, var(--nx-ink-faint));
+  vector-effect: non-scaling-stroke;
+}
+/* El color de la sparkline ES el estado del sensor. */
+.nx-sensor[data-status="ok"] { --nx-spark: var(--nx-status-ok); }
+.nx-sensor[data-status="warn"] { --nx-spark: var(--nx-status-warn); }
+.nx-sensor[data-status="crit"] { --nx-spark: var(--nx-status-crit); }
+.nx-sensor[data-status="unknown"] { --nx-spark: var(--nx-status-unknown); }
+/* Cinturón de seguridad para pantallas muy estrechas: si la tabla no
+   cabe, se desplaza en horizontal en vez de perder columnas. */
+.nx-sr-scroll { overflow-x: auto; }
 
-/* ------------------- Botones ------------------- */
-
-/* Acción principal: el relleno de acento es el que el sistema reserva a
-   lo seleccionado/activo (chip marcado del espectro). */
-.btn-primary {
-  border: 1px solid var(--nx-link);
-  border-radius: var(--nx-radius);
-  background: var(--nx-link);
-  color: var(--nx-on-accent);
-  padding: 0.2rem 0.6rem;
-  font-family: inherit;
-  font-size: var(--nx-fs-sm);
-  font-weight: 600;
-  line-height: 1.6;
-  cursor: pointer;
-  transition: background var(--nx-transition), color var(--nx-transition),
-    border-color var(--nx-transition);
-}
-.btn-primary:hover { background: var(--nx-link-hover); border-color: var(--nx-link-hover); }
-.btn-primary:disabled {
-  cursor: not-allowed;
+/* Punto de serie: la identidad del color en la leyenda de la gráfica. */
+.nx-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  flex: none;
+  border-radius: var(--nx-radius-pill);
   background: var(--nx-ink-faint);
-  border-color: var(--nx-ink-faint);
-  color: var(--nx-surface);
+}
+.nx-dot--cpu { background: var(--nx-series-cpu); }
+.nx-dot--ram { background: var(--nx-series-ram); }
+.nx-dot--disk { background: var(--nx-series-disk); }
+.nx-dot--temp { background: var(--nx-series-temp); }
+
+/* ============================================================
+   Leyenda de la gráfica — plana
+   ------------------------------------------------------------
+   Sin caja, sin píldora: una muestra de color de 10x2px y la
+   etiqueta al lado. Una leyenda no necesita un borde alrededor.
+   ============================================================ */
+.nx-legend { display: flex; align-items: center; gap: var(--nx-space-3); }
+.nx-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nx-space-1);
+  color: var(--nx-ink-muted);
+  font-size: var(--nx-fs-caption);
+  font-weight: var(--nx-fw-medium);
+  letter-spacing: 0.005em;
+  line-height: 1;
+}
+.nx-swatch {
+  width: 0.625rem;
+  height: 0.125rem;
+  flex: none;
+  border-radius: var(--nx-radius-pill);
+}
+.nx-swatch--cpu { background: var(--nx-series-cpu); }
+.nx-swatch--ram { background: var(--nx-series-ram); }
+.nx-swatch--disk { background: var(--nx-series-disk); }
+.nx-swatch--swap { background: var(--nx-series-swap); }
+.nx-swatch--load1 { background: var(--nx-series-load); }
+.nx-swatch--temp { background: var(--nx-series-temp); }
+
+.nx-chart-frame { height: 13.5rem; padding: var(--nx-space-3) var(--nx-space-2) var(--nx-space-1); }
+/* Chart.js gestiona su propio tamaño; solo se le quita el hueco inline. */
+.nx-chart-frame canvas { display: block; }
+
+/* ============================================================
+   Monitorización — panel de alarmas
+   ============================================================ */
+/* Filtros: riel de pestañas plano dentro de la cabecera del panel, no
+   grupo de pastillas redondeadas. El estado activo se marca con
+   subrayado de acento, igual que las pestañas principales. Es un
+   <fieldset> (agrupación semántica de un grupo de controles) con el
+   estilo defieldset del navegador puesto a cero. */
+.nx-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nx-space-1);
+  height: var(--nx-toolbar-h);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.nx-seg > legend {
+  padding: 0;
+  border: 0;
+}
+.nx-seg-btn {
+  position: relative;
+  height: 100%;
+  padding-inline: var(--nx-space-2);
+  border: 0;
+  background: transparent;
+  color: var(--nx-ink-muted);
+  font-family: inherit;
+  font-size: var(--nx-fs-caption);
+  font-weight: var(--nx-fw-medium);
+  letter-spacing: 0.005em;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--nx-transition);
+}
+.nx-seg-btn::after {
+  content: "";
+  position: absolute;
+  left: var(--nx-space-2);
+  right: var(--nx-space-2);
+  bottom: 0;
+  height: 2px;
+  background: transparent;
+  transition: background-color var(--nx-transition);
+}
+.nx-seg-btn:hover { color: var(--nx-ink); }
+.nx-seg-btn:hover::after { background: var(--nx-border-strong); }
+.nx-seg-btn[aria-pressed="true"] { color: var(--nx-ink); font-weight: var(--nx-fw-semibold); }
+.nx-seg-btn[aria-pressed="true"]::after { background: var(--nx-accent); }
+.nx-seg-count {
+  margin-left: 3px;
+  color: var(--nx-ink-faint);
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nx-fs-micro);
 }
 
-/* Copia de .pw-btn-text (wiki.css L2138). */
-.btn-ghost {
-  padding: 0.2rem 0.6rem;
-  border: 1px solid var(--nx-border);
-  border-radius: var(--nx-radius);
-  background: var(--nx-surface);
+.nx-alarms { max-height: 19rem; overflow-y: auto; overscroll-behavior: contain; }
+/* Fila de alarma: 3 columnas (LED, cuerpo, hora) y paso corto. */
+.nx-alarm {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--nx-space-2);
+  padding: var(--nx-space-2) var(--nx-pad-card);
+  border-bottom: 1px solid var(--nx-border-soft);
+}
+.nx-alarm:last-child { border-bottom: 0; }
+.nx-alarm-led { margin-top: 0.3rem; }
+.nx-alarm-body { min-width: 0; }
+.nx-alarm-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--nx-space-2);
+}
+.nx-alarm-sev {
+  font-size: var(--nx-fs-micro);
+  font-weight: var(--nx-fw-semibold);
+  letter-spacing: var(--nx-track-micro);
+  text-transform: uppercase;
+  line-height: 1.3;
+}
+.nx-alarm-obj {
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nx-fs-caption);
+  letter-spacing: -0.015em;
+  color: var(--nx-ink);
+}
+.nx-alarm-msg {
+  margin-top: 1px;
   color: var(--nx-ink-soft);
-  font-family: inherit;
-  font-size: var(--nx-fs-xs);
-  font-weight: 600;
-  line-height: 1.6;
-  cursor: pointer;
-  transition: background var(--nx-transition), color var(--nx-transition),
-    border-color var(--nx-transition);
+  font-size: var(--nx-fs-caption);
+  line-height: 1.4;
+  text-wrap: pretty;
 }
-.btn-ghost:hover {
-  background: var(--nx-wash);
-  border-color: var(--nx-border-strong);
-  color: var(--nx-ink);
-}
-
-/* Eliminar: mismo cuerpo que .pw-btn-text, en el rojo de la paleta. */
-.btn-danger {
-  padding: 0.2rem 0.6rem;
-  border: 1px solid var(--nx-missing);
-  border-radius: var(--nx-radius);
-  background: var(--nx-surface);
-  color: var(--nx-missing);
-  font-family: inherit;
-  font-size: var(--nx-fs-xs);
-  font-weight: 600;
-  line-height: 1.6;
-  cursor: pointer;
-  transition: background var(--nx-transition), color var(--nx-transition),
-    border-color var(--nx-transition);
-}
-.btn-danger:hover {
-  background: color-mix(in srgb, var(--nx-missing) 8%, var(--nx-surface));
-  color: var(--nx-missing);
-  border-color: var(--nx-missing);
-}
-
-/* ------------------- Tablas de datos -------------------
-   Copia de .pw-wtable (wiki.css L1229): borde en cada celda,
-   cabecera en surface-2 y filas pares sombreadas. */
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  border: 1px solid var(--nx-border);
-  background: var(--nx-surface);
-  font-size: var(--nx-fs-sm);
-  line-height: var(--nx-lh-body);
-}
-.data-table thead th {
-  padding: var(--nx-space-2) var(--nx-space-3);
-  border: 1px solid var(--nx-border);
-  background: var(--nx-surface-2);
-  text-align: left;
-  font-weight: 700;
-  color: var(--nx-ink);
+.nx-alarm-time {
+  color: var(--nx-ink-quiet);
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nx-fs-micro);
+  letter-spacing: -0.01em;
   white-space: nowrap;
 }
+/* La severidad tiñe la etiqueta y da un lavado de fondo a la fila, sin
+   filete de color: el estado se lee de dos formas a la vez (glifo +
+   tono) sin que el panel se convierta en una tabla rayada de colores. */
+.nx-alarm--crit { background: color-mix(in srgb, var(--nx-status-crit) 5%, transparent); }
+.nx-alarm--crit .nx-alarm-sev { color: var(--nx-status-crit); }
+.nx-alarm--warn { background: color-mix(in srgb, var(--nx-status-warn) 5%, transparent); }
+.nx-alarm--warn .nx-alarm-sev { color: var(--nx-status-warn); }
+.nx-alarm--ok .nx-alarm-sev { color: var(--nx-status-ok); }
+.nx-alarm--ok .nx-alarm-msg { color: var(--nx-ink-muted); }
+
+/* Estado vacío de alarmas: dos líneas y un filete. Cinco líneas de
+   aire para decir "nada que contar" convierte el estado tranquilo en el
+   más caro de la pantalla. */
+.nx-alarms-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: var(--nx-space-3) var(--nx-pad-card);
+}
+.nx-alarms-empty-title {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-2);
+  color: var(--nx-ink-soft);
+  font-size: var(--nx-fs-caption);
+  font-weight: var(--nx-fw-semibold);
+  letter-spacing: -0.005em;
+}
+.nx-alarms-empty-text {
+  color: var(--nx-ink-quiet);
+  font-size: var(--nx-fs-caption);
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+
+/* ============================================================
+   Botones
+   ------------------------------------------------------------
+   IMPORTANTE sobre la especificidad: el reset de Tailwind lleva
+   `button, input, ... { margin: 0; padding: 0 }` con especificidad
+   (0,0,1). Por eso el tamaño (alto, relleno horizontal y cuerpo)
+   se declara a (0,1,0) en la capa normal y NO dentro de :where():
+   con :where() la perdía el reset y todos los botones salían sin
+   relleno horizontal. Los modificadores .btn-sm van después para
+   ganar el empate.
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nx-space-1);
+  height: var(--nx-btn-h);
+  padding-inline: var(--nx-btn-px);
+  border: 1px solid transparent;
+  border-radius: var(--nx-radius-sm);
+  font-family: inherit;
+  font-size: var(--nx-btn-fs);
+  font-weight: var(--nx-fw-medium);
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--nx-transition),
+    border-color var(--nx-transition), color var(--nx-transition),
+    transform var(--nx-dur-micro) var(--nx-ease-glide);
+}
+.btn svg { width: 0.75rem; height: 0.75rem; flex: none; }
+
+.btn-primary,
+.btn-ghost,
+.btn-danger,
+.btn-text {
+  height: var(--nx-btn-h);
+  padding-inline: var(--nx-btn-px);
+  font-size: var(--nx-btn-fs);
+}
+.btn-sm,
+.btn-sm.btn-primary,
+.btn-sm.btn-ghost,
+.btn-sm.btn-danger,
+.btn-sm.btn-text {
+  height: var(--nx-btn-h-sm);
+  padding-inline: var(--nx-btn-px-sm);
+  font-size: var(--nx-fs-caption);
+}
+.btn-block { width: 100%; }
+.btn:disabled,
+.btn-primary:disabled,
+.btn-ghost:disabled,
+.btn-danger:disabled,
+.btn-text:disabled {
+  cursor: not-allowed;
+  background: color-mix(in srgb, var(--nx-ink-faint) 14%, var(--nx-surface-3));
+  border-color: var(--nx-border-soft);
+  color: var(--nx-ink-faint);
+  transform: none;
+}
+
+/* Primario: el único relleno de acento del sistema. */
+.btn-primary {
+  border-color: var(--nx-accent);
+  background: var(--nx-accent);
+  color: var(--nx-on-accent);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--nx-accent-hover);
+  border-color: var(--nx-accent-hover);
+}
+.btn-primary:active:not(:disabled) { transform: translateY(1px); }
+
+/* Secundario: superficie con filete. */
+.btn-ghost {
+  border-color: var(--nx-border-strong);
+  background: var(--nx-surface-2);
+  color: var(--nx-ink-soft);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--nx-surface-hover);
+  border-color: var(--nx-ink-faint);
+  color: var(--nx-ink);
+}
+.btn-ghost:active:not(:disabled) { transform: translateY(1px); }
+
+/* Cuarto nivel: acción de texto sin caja hasta que se pide. */
+.btn-text {
+  border-color: transparent;
+  background: transparent;
+  color: var(--nx-ink-muted);
+  font-weight: var(--nx-fw-medium);
+}
+.btn-text:hover:not(:disabled) {
+  background: var(--nx-surface-2);
+  color: var(--nx-ink);
+}
+.btn-text:active:not(:disabled) { transform: none; }
+
+.btn-danger {
+  border-color: color-mix(in srgb, var(--nx-danger) 38%, var(--nx-border));
+  background: transparent;
+  color: var(--nx-danger);
+}
+.btn-danger:hover:not(:disabled) {
+  background: var(--nx-danger-wash);
+  border-color: color-mix(in srgb, var(--nx-danger) 45%, var(--nx-border));
+}
+.btn-danger:active:not(:disabled) { transform: translateY(1px); }
+
+/* ============================================================
+   Formularios
+   ============================================================ */
+.field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.field--row {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--nx-space-2);
+  flex-wrap: wrap;
+}
+
+.input-field {
+  width: 100%;
+  min-height: var(--nx-field-h);
+  padding: 0 0.4375rem;
+  border: 1px solid var(--nx-border-strong);
+  border-radius: var(--nx-radius-xs);
+  background: var(--nx-surface-3);
+  color: var(--nx-ink);
+  font-family: inherit;
+  font-size: var(--nx-fs-caption);
+  line-height: 1.4;
+  box-shadow: var(--nx-inset-field);
+  transition: border-color var(--nx-transition), box-shadow var(--nx-transition),
+    background-color var(--nx-transition);
+}
+.input-field::placeholder { color: var(--nx-ink-faint); }
+.input-field:hover:not(:disabled) { border-color: var(--nx-ink-faint); }
+.input-field:focus {
+  border-color: var(--nx-accent);
+  outline: none;
+  box-shadow: var(--nx-inset-field), 0 0 0 2px var(--nx-focus-halo);
+}
+.input-field:disabled {
+  cursor: not-allowed;
+  color: var(--nx-ink-faint);
+  background: var(--nx-surface-2);
+}
+.input-field[readonly] { color: var(--nx-ink-muted); }
+textarea.input-field { padding-block: 5px; resize: vertical; line-height: 1.45; }
+
+/* Dato técnico dentro de un campo: IPs, rutas, unidades. */
+.input-field--mono {
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
+}
+
+/* Select: se retira el control nativo y se pone un chevron propio,
+   porque el triángulo gris de Chrome rompe la superficie. */
+select.input-field {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 1.5rem;
+  background-image: var(--nx-icon-chevron);
+  background-repeat: no-repeat;
+  background-position: right 0.375rem center;
+  background-size: 0.6875rem;
+  cursor: pointer;
+}
+select.input-field option { background: var(--nx-surface); color: var(--nx-ink); }
+
+/* Los spinners nativos de type=number son ruido en una consola. */
+.input-field[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+.input-field[type="number"]::-webkit-outer-spin-button,
+.input-field[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--nx-ink);
+  -webkit-box-shadow: 0 0 0 1000px var(--nx-surface-2) inset;
+  caret-color: var(--nx-ink);
+}
+
+/* Checkbox: casilla propia con marca dibujada. */
+.nx-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nx-space-1);
+  font-size: var(--nx-fs-caption);
+  color: var(--nx-ink-soft);
+  cursor: pointer;
+  user-select: none;
+}
+.nx-check input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 0.8125rem;
+  height: 0.8125rem;
+  flex: none;
+  margin: 0;
+  border: 1px solid var(--nx-border-strong);
+  border-radius: var(--nx-radius-xs);
+  background: var(--nx-surface-3);
+  cursor: pointer;
+  transition: background-color var(--nx-transition), border-color var(--nx-transition);
+}
+.nx-check input[type="checkbox"]::after {
+  content: "";
+  display: block;
+  width: 0.25rem;
+  height: 0.5rem;
+  margin: 0.0625rem 0 0 0.25rem;
+  border: solid var(--nx-on-accent);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg) scale(0.6);
+  opacity: 0;
+  transition: opacity var(--nx-dur-micro) var(--nx-ease-glide),
+    transform var(--nx-dur-micro) var(--nx-ease-glide);
+}
+.nx-check input[type="checkbox"]:checked {
+  background: var(--nx-accent);
+  border-color: var(--nx-accent);
+}
+.nx-check input[type="checkbox"]:checked::after { opacity: 1; transform: rotate(45deg) scale(1); }
+.nx-check:hover input[type="checkbox"] { border-color: var(--nx-ink-faint); }
+/* Casilla que encabeza un bloque del editor (activar DHCP). */
+.nx-check--strong {
+  font-size: var(--nx-fs-caption);
+  font-weight: var(--nx-fw-semibold);
+  color: var(--nx-ink);
+}
+
+/* ============================================================
+   Tablas de datos (contenedores, red, servicios)
+   ============================================================ */
+.nx-table-scroll {
+  max-height: 24rem;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.nx-table-scroll--short { max-height: 18rem; }
+
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--nx-fs-row);
+  line-height: 1.35;
+}
+.data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: var(--nx-head-h);
+  padding: 0 var(--nx-space-2);
+  border-bottom: 1px solid var(--nx-border);
+  background: var(--nx-surface-3);
+  text-align: left;
+  font-size: var(--nx-fs-micro);
+  font-weight: var(--nx-fw-semibold);
+  letter-spacing: var(--nx-track-micro);
+  text-transform: uppercase;
+  color: var(--nx-ink-muted);
+  white-space: nowrap;
+}
+.data-table thead th:first-child { padding-left: var(--nx-pad-card); }
+.data-table thead th:last-child { padding-right: var(--nx-pad-card); }
+
 .data-table tbody td {
-  padding: var(--nx-space-2) var(--nx-space-3);
-  border: 1px solid var(--nx-border);
+  height: var(--nx-row-h);
+  padding: 0 var(--nx-space-2);
+  border-bottom: 1px solid var(--nx-border-soft);
   text-align: left;
   vertical-align: middle;
   color: var(--nx-ink-soft);
   transition: background-color var(--nx-transition);
 }
-.data-table tbody tr:nth-child(even) td {
-  background: var(--nx-surface-2);
+.data-table tbody td:first-child { padding-left: var(--nx-pad-card); }
+.data-table tbody td:last-child { padding-right: var(--nx-pad-card); }
+.data-table tbody tr:last-child td { border-bottom: 0; }
+.data-table tbody td.nx-cell-strong { color: var(--nx-ink); font-weight: var(--nx-fw-medium); }
+.data-table tbody td.nx-cell-id { color: var(--nx-ink-soft); }
+.data-table tbody td.nx-cell-quiet { color: var(--nx-ink-quiet); }
+.data-table tbody td.nx-cell-num {
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
 }
-/* La fila bajo el puntero se separa con un lavado de acento, para no
-   perderla al seguir la lectura en horizontal. Va después del nth-child
-   para ganar en el empate de especificidad. */
-.data-table tbody tr:hover td {
-  background: var(--nx-surface-hover);
-}
+.data-table tbody tr:hover td { background: var(--nx-surface-hover); }
+
+/* Toda columna numérica se alinea a la derecha. Se declara por
+   posición —no por clase— porque el marcado de esas celdas lo escribe
+   app.js y no admite una clase propia. */
+.nx-th-num,
+#containers-table td:nth-child(5),
+#network-interfaces-table td:nth-child(6) { text-align: right; }
+
+/* Estado vacío / error: una celda con una etiqueta y su explicación,
+   no un volcado de texto de error pegado al resto de la tabla. */
 .empty-row {
-  text-align: center;
+  height: auto;
+  padding: var(--nx-space-5) var(--nx-pad-card) !important;
+  text-align: left;
+  color: var(--nx-ink-quiet);
+  background: transparent !important;
+}
+.nx-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
+.nx-empty-label {
   color: var(--nx-ink-muted);
+  font-size: var(--nx-fs-micro);
+  font-weight: var(--nx-fw-semibold);
+  letter-spacing: var(--nx-track-micro);
+  text-transform: uppercase;
 }
+.nx-empty-text {
+  color: var(--nx-ink-quiet);
+  font-size: var(--nx-fs-caption);
+  line-height: 1.4;
+  max-width: 52ch;
+  overflow-wrap: anywhere;
+}
+.nx-empty--error .nx-empty-label { color: var(--nx-danger); }
 
-/* ------------------- Badges de estado -------------------
-   Cuerpo de .pw-tag (wiki.css L923): pastilla con fondo surface-2.
-   Solo cambia la tinta según el estado, sin salir de la paleta. */
+/* ============================================================
+   Badges de estado
+   ------------------------------------------------------------
+   Siguen la misma gramática de cuatro estados que el resto del
+   panel: `.badge-running` verde = sano, `.badge-warn` ámbar =
+   requiere atención, `.badge-error` rojo = crítico y
+   `.badge-stopped` gris = sin dato / detenido. Aquí la forma SÍ es
+   el componente: son las únicas cápsulas del sistema.
+   ============================================================ */
 .badge {
-  display: inline-block;
-  padding: 0.1rem 0.55rem;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nx-space-1);
+  padding: 0 0.375rem;
+  border-radius: var(--nx-radius-pill);
+  background: var(--nx-surface-2);
+  color: var(--nx-ink-soft);
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nx-fs-micro);
+  font-weight: var(--nx-fw-medium);
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.badge-led {
+  width: 0.3125rem;
+  height: 0.3125rem;
+  flex: none;
+  border-radius: var(--nx-radius-pill);
+  background: currentColor;
+  opacity: 0.9;
+}
+/* El estado del badge viaja en la TINTA y en el LAVADO, nunca en el
+   filete: una columna de cápsulas con bordes de colores satura. */
+.badge-running { color: var(--nx-status-ok); background: var(--nx-wash-ok); }
+.badge-stopped { color: var(--nx-status-unknown); background: var(--nx-wash-unknown); }
+.badge-warn { color: var(--nx-status-warn); background: var(--nx-wash-warn); }
+.badge-error { color: var(--nx-status-crit); background: var(--nx-wash-crit); }
+.badge-paused { color: var(--nx-status-paused-ink); background: var(--nx-wash-paused); }
+
+/* ============================================================
+   Superficies de estado (aviso / error / info)
+   ============================================================ */
+.nx-status {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--nx-space-2);
+  margin-top: var(--nx-space-2);
+  padding: var(--nx-space-2) var(--nx-space-3);
   border: 1px solid var(--nx-border);
-  border-radius: 999px;
-  background: var(--nx-surface-2);
+  border-left-width: 2px;
+  border-radius: var(--nx-radius-xs);
+  background: var(--nx-surface-3);
   color: var(--nx-ink-soft);
-  font-size: var(--nx-fs-xs);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  line-height: 1.6;
+  font-size: var(--nx-fs-caption);
+  line-height: 1.4;
 }
-.badge-running { color: var(--nx-link); border-color: color-mix(in srgb, var(--nx-link) 35%, var(--nx-border)); }
-.badge-stopped { color: var(--nx-ink-muted); }
-.badge-error   { color: var(--nx-missing); border-color: color-mix(in srgb, var(--nx-missing) 35%, var(--nx-border)); }
+.nx-status::before {
+  content: "";
+  width: 0.3125rem;
+  height: 0.3125rem;
+  flex: none;
+  margin-top: 0.4rem;
+  border-radius: var(--nx-radius-pill);
+  background: var(--nx-ink-faint);
+}
+.nx-status--ok {
+  color: var(--nx-ok);
+  background: color-mix(in srgb, var(--nx-ok) 8%, var(--nx-surface-3));
+}
+.nx-status--ok::before { background: var(--nx-ok); }
+/* Aviso: el mismo motivo de estado que el error pero en la posición
+   ámbar. Faltaba en el sistema y lo necesitan tanto las advertencias
+   de formularios como el aviso "esto solo se ve una vez". */
+.nx-status--warn {
+  color: var(--nx-status-warn);
+  background: var(--nx-wash-warn);
+}
+.nx-status--warn::before { background: var(--nx-status-warn); }
+.nx-status--error {
+  color: var(--nx-danger);
+  background: var(--nx-danger-wash);
+}
+.nx-status--error::before { background: var(--nx-danger); }
 
-/* ------------------- Chat ------------------- */
+.nx-status--alert {
+  display: block;
+  color: var(--nx-danger);
+  border-color: color-mix(in srgb, var(--nx-danger) 42%, var(--nx-border));
+  background: var(--nx-danger-wash);
+}
+.nx-status--alert::before { display: none; }
+
+/* Línea de estado puramente informativa (p. ej. puerta de enlace
+   actual): sin punto, en mono. */
+.nx-status--plain {
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
+}
+.nx-status--plain::before { display: none; }
+
+/* Etiqueta auxiliar junto a un campo (settings). */
+.nx-key-state {
+  color: var(--nx-ink-quiet);
+  font-size: var(--nx-fs-micro);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.nx-key-state--set { color: var(--nx-ok); }
+
+/* ============================================================
+   Código y desplegables
+   ============================================================ */
+.nx-code {
+  max-height: 16rem;
+  overflow: auto;
+  margin-top: var(--nx-space-2);
+  padding: var(--nx-space-2);
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius-xs);
+  background: var(--nx-surface-3);
+  box-shadow: var(--nx-inset-field);
+  color: var(--nx-ink-soft);
+  font-size: var(--nx-fs-caption);
+  line-height: 1.55;
+  white-space: pre;
+  tab-size: 2;
+}
+
+.nx-disclosure {
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius-xs);
+  background: var(--nx-surface-3);
+  padding-inline: var(--nx-pad-tight);
+}
+.nx-disclosure > .nx-summary { padding-block: var(--nx-space-2); }
+.nx-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-1);
+  cursor: pointer;
+  list-style: none;
+  color: var(--nx-ink-soft);
+  font-size: var(--nx-fs-caption);
+  font-weight: var(--nx-fw-medium);
+  transition: color var(--nx-transition);
+}
+.nx-summary::-webkit-details-marker { display: none; }
+.nx-summary::before {
+  content: "";
+  width: 0.6875rem;
+  height: 0.6875rem;
+  flex: none;
+  background: currentColor;
+  -webkit-mask-image: var(--nx-icon-chevron);
+  mask-image: var(--nx-icon-chevron);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  transition: transform var(--nx-transition);
+}
+.nx-summary:hover { color: var(--nx-ink); }
+details[open] > .nx-summary::before { transform: rotate(180deg); }
+
+/* ============================================================
+   Chat — workbench del asistente
+   ============================================================ */
+.nx-workbench {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 22rem;
+  max-height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius);
+  background: var(--nx-surface);
+}
+.nx-workbench-head {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-2);
+  min-height: var(--nx-toolbar-h);
+  padding: 0 var(--nx-pad-card);
+  border-bottom: 1px solid var(--nx-border);
+  background: var(--nx-surface-2);
+}
+.nx-workbench-head-text { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: var(--nx-space-2); }
+.nx-workbench-title {
+  font-size: var(--nx-fs-caption);
+  font-weight: var(--nx-fw-semibold);
+  letter-spacing: -0.005em;
+  color: var(--nx-ink);
+  line-height: 1.2;
+}
+.nx-workbench-sub {
+  color: var(--nx-ink-quiet);
+  font-size: var(--nx-fs-micro);
+  line-height: 1.3;
+}
+
 .chat-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: var(--nx-border-strong) transparent;
-}
-.chat-scroll::-webkit-scrollbar { width: 6px; }
-.chat-scroll::-webkit-scrollbar-thumb {
-  background-color: var(--nx-border-strong);
-  border-radius: 999px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--nx-space-1);
+  overflow-y: auto;
+  padding: var(--nx-space-2) var(--nx-pad-card);
 }
 
-/* Mensajes: mismo cuerpo que .pw-note (wiki.css L1159), con su
-   borde izquierdo de 3px y su radio asimétrico. */
+/* Burbujas: sin filete y con paso corto. Un recuadro dentro del
+   recuadro del workbench es exactamente el olor a "plantilla web";
+   aquí la única separación es el fondo plano y el paso. */
 .chat-bubble {
-  max-width: 85%;
-  padding: var(--nx-space-3) var(--nx-space-4);
+  max-width: 94%;
+  padding: var(--nx-space-2);
+  border: 0;
+  border-radius: var(--nx-radius-xs);
   background: var(--nx-surface-2);
-  border: 1px solid var(--nx-border-soft);
-  border-left: 3px solid var(--nx-ink-faint);
-  border-radius: 0 var(--nx-radius-sm) var(--nx-radius-sm) 0;
   color: var(--nx-ink-soft);
-  font-size: var(--nx-fs-sm);
-  line-height: var(--nx-lh-loose);
-  animation: bubble-in var(--nx-dur-1) var(--nx-ease-out);
+  font-size: var(--nx-fs-row);
+  line-height: 1.5;
+  text-align: left;
   white-space: pre-wrap;
   word-break: break-word;
+  overflow-wrap: anywhere;
+  animation: bubble-in var(--nx-dur-standard) var(--nx-ease-glide);
 }
 .chat-bubble.user {
   margin-left: auto;
-  background: var(--nx-link);
-  border-color: var(--nx-link);
-  border-left-color: var(--nx-link);
-  color: var(--nx-on-accent);
+  background: var(--nx-accent-wash);
+  color: var(--nx-ink);
 }
-.chat-bubble.assistant {
-  margin-right: auto;
-}
+.chat-bubble.assistant { margin-right: auto; }
 .chat-bubble.system {
-  margin: 0 auto;
+  margin-inline: 0;
   background: transparent;
-  border: 1px dashed var(--nx-border-strong);
-  border-left: 1px dashed var(--nx-border-strong);
-  border-radius: var(--nx-radius-sm);
-  color: var(--nx-ink-muted);
-  font-size: var(--nx-fs-xs);
-  text-align: center;
+  border: 0;
+  border-left: 2px solid var(--nx-border-strong);
+  padding-left: var(--nx-space-2);
+  color: var(--nx-ink-quiet);
+  font-size: var(--nx-fs-caption);
 }
 
-/* Chip de acción: copia de .pw-chip (wiki.css L3009). */
+/* Línea de sistema de arranque: no es una tarjeta dentro del chat.
+   Es una frase con filete, como la primera línea de un log. */
+.chat-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--nx-space-2) 0;
+  border-bottom: 1px solid var(--nx-border-soft);
+  margin-bottom: var(--nx-space-2);
+}
+.chat-intro-title {
+  color: var(--nx-ink-muted);
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nx-fs-caption);
+  letter-spacing: -0.015em;
+}
+.chat-intro-text {
+  color: var(--nx-ink-quiet);
+  font-size: var(--nx-fs-caption);
+  line-height: 1.45;
+}
+
+/* Chip de herramienta ejecutada por el agente: glifo + nombre en mono,
+   sin cápsula —es un dato de la línea, no un botón. */
 .action-chip {
-  display: inline-block;
-  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nx-space-1);
   margin-top: var(--nx-space-1);
-  padding: 0.1rem 0.55rem;
-  border: 1px solid var(--nx-border);
-  border-radius: var(--nx-radius-sm);
-  background: var(--nx-surface-2);
-  color: var(--nx-ink-soft);
-  font-size: var(--nx-fs-xs);
-  font-weight: 600;
-  line-height: 1.7;
+  padding: 0;
+  color: var(--nx-accent);
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nx-fs-micro);
+  letter-spacing: -0.01em;
+  line-height: 1.5;
   overflow-wrap: anywhere;
+}
+.action-chip::before {
+  content: "";
+  width: 0.25rem;
+  height: 0.25rem;
+  flex: none;
+  border-radius: var(--nx-radius-pill);
+  background: currentColor;
 }
 
 /* Indicador "escribiendo…" */
-.typing {
-  display: inline-flex;
-  gap: 0.2rem;
-  align-items: center;
-}
+.typing { display: inline-flex; gap: 3px; align-items: center; vertical-align: middle; }
 .typing span {
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background-color: var(--nx-ink-faint);
+  width: 4px;
+  height: 4px;
+  border-radius: var(--nx-radius-pill);
+  background: var(--nx-ink-muted);
   animation: typing-blink 1.4s infinite both;
 }
 .typing span:nth-child(2) { animation-delay: 0.2s; }
 .typing span:nth-child(3) { animation-delay: 0.4s; }
 
-/* ------------------- Toast -------------------
-   Cuerpo de .pw-note (wiki.css L1159). El estado va en el borde
-   izquierdo, igual que el aviso original. */
-.toast {
-  min-width: 260px;
-  max-width: 360px;
-  padding: var(--nx-space-3) var(--nx-space-4);
-  background: var(--nx-surface-2);
-  border: 1px solid var(--nx-border-soft);
-  border-left: 3px solid var(--nx-ink-faint);
-  border-radius: 0 var(--nx-radius-sm) var(--nx-radius-sm) 0;
-  color: var(--nx-ink-soft);
-  font-size: var(--nx-fs-sm);
-  line-height: var(--nx-lh-loose);
-  box-shadow: var(--nx-shadow-pop);
-  animation: toast-in var(--nx-dur-1) var(--nx-ease-out);
+/* Redactor */
+.nx-composer {
+  border-top: 1px solid var(--nx-border);
+  background: var(--nx-surface-3);
+  padding: var(--nx-space-2) var(--nx-pad-card);
 }
-.toast.success { border-left-color: var(--nx-link); }
-.toast.error   { border-left-color: var(--nx-missing); }
+.nx-composer-row { display: flex; align-items: stretch; gap: var(--nx-space-1); }
+.nx-composer-row .input-field { min-height: 30px; }
+.nx-composer-row .btn { height: 30px; padding-inline: var(--nx-space-2); }
+.nx-composer-hint {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--nx-space-2);
+  margin-top: 3px;
+  color: var(--nx-ink-faint);
+  font-size: var(--nx-fs-micro);
+  letter-spacing: 0.01em;
+}
 
-/* ------------------- Animaciones ------------------- */
+/* ============================================================
+   Toasts
+   ============================================================ */
+#toast-container { max-width: min(22rem, calc(100vw - 2 * var(--nx-gutter))); }
+.toast {
+  padding: var(--nx-space-2) var(--nx-space-3);
+  border: 1px solid var(--nx-border-strong);
+  border-radius: var(--nx-radius-xs);
+  background: var(--nx-surface-2);
+  color: var(--nx-ink-soft);
+  font-size: var(--nx-fs-caption);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  animation: toast-in var(--nx-dur-standard) var(--nx-ease-glide);
+  transition: opacity 300ms var(--nx-ease-glide);
+}
+.toast::before {
+  content: "";
+  display: block;
+  height: 2px;
+  width: 1.5rem;
+  margin-bottom: var(--nx-space-1);
+  border-radius: var(--nx-radius-pill);
+  background: var(--nx-ink-faint);
+}
+/* El toast lleva el estado en la barra superior de 2px y en la tinta,
+   no en el filete. */
+.toast.success { border-color: var(--nx-border-strong); }
+.toast.success::before { background: var(--nx-ok); }
+.toast.error { border-color: var(--nx-border-strong); }
+.toast.error::before { background: var(--nx-danger); }
+
+/* ============================================================
+   Pie de página / versión
+   ============================================================ */
+.nx-foot {
+  margin-top: var(--nx-space-6);
+  color: var(--nx-ink-faint);
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nx-fs-micro);
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+/* ============================================================
+   Animaciones
+   ============================================================ */
 @keyframes bubble-in {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes toast-in {
-  from { opacity: 0; transform: translateX(20px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translateY(8px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 @keyframes typing-blink {
-  0%, 80%, 100% { opacity: 0.3; }
+  0%, 80%, 100% { opacity: 0.25; }
   40%           { opacity: 1; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Spinner de carga reutilizable. */
+/* Spinner de carga reutilizable (app.js lo inyecta dentro de botones). */
 .spinner {
   display: inline-block;
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--nx-border-strong);
-  border-top-color: var(--nx-link);
-  border-radius: 50%;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 1.5px solid color-mix(in srgb, var(--nx-on-accent) 30%, transparent);
+  border-top-color: currentColor;
+  border-radius: var(--nx-radius-pill);
   animation: spin 0.7s linear infinite;
-  vertical-align: middle;
+  vertical-align: -0.125rem;
+}
+.nx-spinner--ink {
+  border-color: var(--nx-border-strong);
+  border-top-color: var(--nx-accent);
 }
 
-/* ------------------- Movimiento reducido -------------------
-   Reducir, no quitar: el foco del puntero se apaga y el viaje del
-   revelado desaparece, pero se conservan la retícula (es textura, no
-   movimiento), el fundido y todos los cambios de estado. */
+/* ============================================================
+   Movimiento reducido
+   ------------------------------------------------------------
+   Reducir, no quitar: el viaje del revelado desaparece, pero se
+   conservan el fundido y todos los cambios de estado.
+   ============================================================ */
 @media (prefers-reduced-motion: reduce) {
   /* Una preferencia del usuario tiene que ganarle a cualquier regla del
-     fichero, incluidas las utilidades de Tailwind; por eso el !important.
-     Es el único sitio del stylesheet que lo usa (el otro par son los
-     umbrales de las barras de progreso). */
-  /* biome-ignore-start lint/complexity/noImportantStyles: un reset por
-     preferencia del usuario debe ganarle a todas las reglas, incluidas
-     las utilidades de Tailwind; no puede ganar solo por especificidad. */
+     fichero, incluidas las utilidades de Tailwind; por eso el
+     !important. */
   *,
   *::before,
   *::after {
@@ -658,20 +2083,906 @@ h2 {
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
-  /* biome-ignore-end lint/complexity/noImportantStyles: ver arriba */
-
-  /* Se apaga el foco que sigue al puntero; la retícula se queda. */
-  .nx-ambient::after {
-    display: none;
-  }
 
   /* El revelado pierde el desplazamiento y conserva el fundido. */
-  .js [data-reveal]:not(.is-visible) {
-    transform: none;
+  .js [data-reveal]:not(.is-visible) { transform: none; }
+
+  /* Los botones no se hunden al pulsarse. */
+  .btn:active:not(:disabled),
+  .btn-primary:active:not(:disabled),
+  .btn-ghost:active:not(:disabled),
+  .btn-danger:active:not(:disabled) { transform: none; }
+}
+
+/* ============================================================
+   Adaptación a pantallas estrechas
+   ============================================================ */
+@media (max-width: 47.99rem) {
+  .nx-chart-frame { height: 11rem; }
+
+  /* La cabecera de sección baja la frase a su propia línea: forzar
+     las dos en 375 px hacía que el título y la nota compitieran por
+     el mismo ancho. */
+  .nx-section-head { flex-wrap: wrap; }
+  .nx-section-head > .nx-meta {
+    flex-basis: 100%;
+    text-align: left;
   }
 
-  /* Las tarjetas y los paneles conservan su acknowledgement, sin subir. */
-  .metric-card:hover {
-    transform: none;
+  /* La cabecera del panel se queda con el wordmark: el lema a dos
+     líneas empujaba el resto de controles. */
+  .nx-header .nx-brand-sub { display: none; }
+
+  /* En la franja de estado sale la hora de la última lectura, el
+     prefijo largo y el recuento detallado: el veredicto se queda a
+     una línea y los contadores, que ya están al lado, ocupan la
+     segunda. */
+  #metrics-updated,
+  .nx-meta-sep,
+  .nx-poll-prefix,
+  .nx-verdict-sub { display: none; }
+  #poll-toggle-label { display: none; }
+  .nx-poll-btn { padding-inline: var(--nx-space-1); }
+
+  /* La tabla de sensores pierde columnas, no se apila: por debajo de
+     768px la de tendencia y la de umbral ya no aportan y empujan el
+     valor contra el borde. Se conservan nombre, valor, LED, estado y
+     frescura, que es el núcleo de la lectura. */
+  .nx-sr-c-thr,
+  .nx-sr-c-spark,
+  .nx-sr-c-bar { display: none; }
+  .nx-sr-c-led { width: 1.25rem; }
+  .nx-sr-c-name { min-width: 0; }
+  .nx-sr-c-val { width: 4.5rem; }
+  .nx-sr-c-state { width: 4.25rem; }
+  .nx-sr-c-fresh { width: 4rem; }
+  .nx-sr-table thead th,
+  .nx-sr-table tbody td { padding-inline: 6px; }
+  .nx-sr-table thead th:first-child,
+  .nx-sr-table tbody td:first-child { padding-left: var(--nx-pad-card); }
+  .nx-sr-table thead th:last-child,
+  .nx-sr-table tbody td:last-child { padding-right: var(--nx-pad-card); }
+  /* Red de seguridad: si aun así no cabe, la tabla se desplaza en
+     horizontal en vez de recortarse. */
+  .nx-sr-scroll { overflow-x: auto; }
+
+  /* La fila de alarma baja de tres a dos columnas: la hora se va
+     debajo del mensaje en vez de forzar el texto a 280px. */
+  .nx-alarm { grid-template-columns: auto minmax(0, 1fr); }
+  .nx-alarm-time { grid-column: 2; }
+
+  /* Los cuatro filtros de alarma no caben en 375px: bajan a una
+     segunda fila dentro de la cabecera en vez de recortarse. */
+  #alarms-panel .nx-card-head { flex-wrap: wrap; height: auto; padding-block: var(--nx-space-1); }
+  #alarms-panel .nx-card-actions { margin-left: 0; width: 100%; }
+  #alarms-panel .nx-seg { height: 24px; }
+}
+
+@media (min-width: 48rem) and (max-width: 61.99rem) {
+  /* Fuera del ancho de escritorio sobra la columna de umbral, que es la
+     única que puede recortarse sin perder el dato principal. */
+  .nx-sr-c-thr { display: none; }
+}
+
+@media (min-width: 48rem) {
+  .nx-alarms { max-height: 20rem; }
+}
+
+/* --- Workbench del asistente ---
+   Por debajo de lg solo existe cuando la pestaña lo abre; por encima
+   es siempre la columna lateral. Se declara con ID (no con la variante
+   `lg:block` de Tailwind) para no depender del orden en que el CDN
+   inyecta sus utilidades: así gana a `.hidden` sin importar quién
+   aparece después en el documento. */
+@media (min-width: 64rem) {
+  #chat-panel {
+    display: block;
+    position: sticky;
+    top: calc(var(--nx-header-h) + var(--nx-space-3));
+    max-height: min(calc(100vh - var(--nx-header-h) - var(--nx-space-5)), 38rem);
+  }
+  /* En escritorio la pestaña del asistente no aporta nada: el panel
+     ya está siempre en la columna lateral. */
+  .nx-tab-chat { display: none; }
+}
+
+/* ============================================================
+   Layout — ayudantes
+   ============================================================ */
+.nx-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nx-gap-section);
+}
+/* Densidades alternativas para listas cortas generadas por app.js. */
+.nx-stack--tight { gap: var(--nx-space-1); }
+.nx-stack--dense { gap: 2px; }
+
+.nx-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--nx-space-4);
+}
+.nx-section-head > .nx-section-title { flex: 1 1 auto; }
+/* `.nx-meta` es nowrap porque un contador o una hora no deben
+   partirse en dos líneas. Una FRASE en la cabecera de sección, en
+   cambio, sí: "Tokens de API, sesiones activas y segundo factor"
+   empujaba el documento 73 px fuera del viewport a 375 px. Aquí la
+   frase cede y el filete sigue mandando en la posición. */
+.nx-section-head > .nx-meta,
+.nx-card-actions > .nx-meta { white-space: normal; text-align: right; }
+
+/* Barra de filtros: los controles comparten altura y baseline, en
+   una sola fila dentro del panel. */
+.nx-toolbar {
+  display: grid;
+  gap: var(--nx-space-2);
+  grid-template-columns: minmax(0, 1fr);
+  padding: var(--nx-space-2) var(--nx-pad-card);
+  border-bottom: 1px solid var(--nx-border-soft);
+  background: var(--nx-surface-3);
+}
+@media (min-width: 48rem) {
+  .nx-toolbar { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); }
+}
+
+/* Barra de acciones al pie de un panel o de un formulario. */
+.nx-actionbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nx-space-2);
+  padding-top: var(--nx-space-3);
+  border-top: 1px solid var(--nx-border-soft);
+}
+.nx-actionbar-note {
+  margin-left: auto;
+  color: var(--nx-ink-faint);
+  font-size: var(--nx-fs-micro);
+  letter-spacing: 0.01em;
+}
+
+/* Celdas de tabla con acción a la derecha. */
+.nx-cell-actions { text-align: right; white-space: nowrap; }
+.nx-btn-row {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--nx-space-1);
+  flex-wrap: wrap;
+}
+
+/* Pares clave/valor del detalle de servicio. */
+.nx-kv {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--nx-space-2) var(--nx-space-4);
+}
+@media (min-width: 48rem) {
+  .nx-kv { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.nx-kv-label {
+  color: var(--nx-ink-quiet);
+  font-size: var(--nx-fs-micro);
+  font-weight: var(--nx-fw-semibold);
+  letter-spacing: var(--nx-track-micro);
+  text-transform: uppercase;
+  line-height: 1.3;
+}
+.nx-kv-value {
+  margin-top: 1px;
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-1);
+  flex-wrap: wrap;
+  color: var(--nx-ink-soft);
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nx-fs-caption);
+  letter-spacing: -0.015em;
+}
+.nx-kv-value--plain {
+  color: var(--nx-ink-muted);
+  font-family: var(--nx-font-sans);
+  letter-spacing: 0;
+}
+/* Valor que ocupa el hueco sobrante de una fila de dos columnas. */
+.nx-grow { flex: 1 1 auto; min-width: 0; }
+
+/* Sub-tarjeta del editor de configuración (una share, un registro). */
+.nx-subcard {
+  margin: 0;
+  padding: var(--nx-space-2) var(--nx-space-3);
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius-xs);
+  background: var(--nx-surface-3);
+}
+.nx-field-row {
+  display: grid;
+  gap: var(--nx-space-1);
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 40rem) {
+  .nx-field-row,
+  .nx-field-row--3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .nx-field-row > :last-child,
+  .nx-field-row--3 > :last-child { grid-column: 1 / -1; justify-self: start; }
+}
+@media (min-width: 64rem) {
+  .nx-field-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
+  .nx-field-row--3 { grid-template-columns: repeat(3, minmax(0, 1fr)) auto; }
+  .nx-field-row > :last-child,
+  .nx-field-row--3 > :last-child { grid-column: auto; justify-self: end; }
+}
+.nx-checks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nx-space-1) var(--nx-space-3);
+  margin-top: var(--nx-space-2);
+  padding-top: var(--nx-space-2);
+  border-top: 1px solid var(--nx-border-soft);
+}
+.nx-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nx-space-2);
+  margin-top: var(--nx-space-3);
+}
+
+/* Fila etiqueta + estado (settings / login). */
+.nx-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nx-space-2);
+}
+
+/* ============================================================
+   Riel de sub-pestañas (pestañas dentro de una pestaña)
+   ------------------------------------------------------------
+   Un panel que necesita cinco vistas —reglas, eventos, canales,
+   mantenimiento y propuestas— no puede ser cinco pestañas del
+   riel principal: mezclaría dominio de alarms con el de seguridad.
+   El riel de abajo es el MISMO lenguaje que .tab-btn (subrayado
+   de acento de 2px, sin cápsula, peso en el activo) a escala de
+   panel, y por eso se define a partir de las mismas variables.
+   ============================================================ */
+.nx-subtabs {
+  display: flex;
+  align-items: stretch;
+  gap: var(--nx-space-1);
+  min-height: var(--nx-nav-h);
+  border-bottom: 1px solid var(--nx-border);
+  background: var(--nx-surface);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.nx-subtabs::-webkit-scrollbar { display: none; }
+.nx-subtab {
+  position: relative;
+  flex: none;
+  padding: 0 var(--nx-space-3);
+  border: 0;
+  background: transparent;
+  color: var(--nx-ink-muted);
+  font-family: inherit;
+  font-size: var(--nx-fs-caption);
+  font-weight: var(--nx-fw-medium);
+  letter-spacing: 0.005em;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--nx-transition), background-color var(--nx-transition);
+}
+.nx-subtab::after {
+  content: "";
+  position: absolute;
+  left: var(--nx-space-2);
+  right: var(--nx-space-2);
+  bottom: -1px;
+  height: 2px;
+  background: transparent;
+  transition: background-color var(--nx-transition);
+}
+.nx-subtab:hover { color: var(--nx-ink); background: var(--nx-surface-2); }
+.nx-subtab:hover::after { background: var(--nx-border-strong); }
+.nx-subtab.is-active { color: var(--nx-ink); font-weight: var(--nx-fw-semibold); }
+.nx-subtab.is-active::after { background: var(--nx-accent); }
+.nx-subtab:focus-visible { outline-offset: -3px; }
+/* Los paneles del riel se alternan con `.hidden`; la utilidad tiene
+   que ganar a un `display` de bloque, así que se declara por
+   atributo como el workbench, no por clase. */
+.nx-subpanel[hidden],
+.nx-subpanel.hidden { display: none; }
+/* Columna del LED en las tablas nuevas: se estrecha al ancho del
+   punto, como `.nx-sr-c-led`, para que la fila no abra un hueco
+   muerto entre el filete y el nombre. */
+.data-table .nx-c-led-col { width: 1.5rem; padding-inline: var(--nx-space-1) !important; }
+@media (max-width: 47.99rem) {
+  .data-table .nx-c-led-col { width: 1.25rem; }
+}
+/* Recuento en la propia pestaña: se apaga a cero para que la fila
+   no se mueva al filtrar. */
+.nx-subtab-count {
+  margin-left: 4px;
+  color: var(--nx-ink-faint);
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nx-fs-micro);
+}
+
+/* ============================================================
+   Paginación de tablas
+   ------------------------------------------------------------
+   Un filete superior y tres cosas en fila: cuántas páginas hay, el
+   desplazamiento actual y los dos mandos. Sin páginas numeradas:
+   en un registro de auditoría se avanza y se vuelve, no se salta.
+   ============================================================ */
+.nx-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--nx-space-2) var(--nx-space-4);
+  padding: var(--nx-space-2) var(--nx-pad-card);
+  border-top: 1px solid var(--nx-border);
+  background: var(--nx-surface-3);
+}
+.nx-pager-info { min-width: 0; }
+.nx-pager-note { margin-top: 1px; }
+.nx-pager-moves { display: flex; align-items: center; gap: var(--nx-space-1); flex: none; }
+
+/* ============================================================
+   Secreto de una sola lectura
+   ------------------------------------------------------------
+   Un token de API y el secreto TOTP solo se muestran una vez: el
+   servidor no los vuelve a entregar. Por eso esta superficie no es
+   un campo de formulario —es lectura, con su casilla de copiar— sino
+   un plano hundido con la MISMA gramática de los secretos de
+   provisioning. El aviso ámbar de arriba dice por qué no se puede
+   volver atrás.
+   ============================================================ */
+.nx-secret {
+  display: flex;
+  align-items: stretch;
+  gap: var(--nx-space-1);
+  padding: var(--nx-space-2);
+  border: 1px solid var(--nx-border-strong);
+  border-radius: var(--nx-radius-xs);
+  background: var(--nx-surface-3);
+  box-shadow: var(--nx-inset-field);
+}
+.nx-secret-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  align-self: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--nx-ink);
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nx-fs-caption);
+  letter-spacing: -0.01em;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  /* Sin `overflow:auto`: el secreto tiene que poder seleccionarse
+     entero de una vez, y un contenedor con scroll estorba. */
+}
+.nx-secret-text--dim { color: var(--nx-ink-muted); }
+.nx-secret .btn { flex: none; align-self: center; }
+/* Lista de códigos de recuperación: rejilla de dos columnas de
+   tokens cortos, seleccionables como un bloque. */
+.nx-codes {
+  display: grid;
+  gap: var(--nx-space-1) var(--nx-space-3);
+  grid-template-columns: minmax(0, 1fr);
+  margin: var(--nx-space-2) 0 0;
+  padding: var(--nx-space-2);
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius-xs);
+  background: var(--nx-surface-3);
+  box-shadow: var(--nx-inset-field);
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nx-fs-caption);
+  letter-spacing: 0.02em;
+  color: var(--nx-ink);
+  white-space: pre-wrap;
+  user-select: all;
+}
+@media (min-width: 40rem) {
+  .nx-codes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ============================================================
+   Selector de métricas
+   ------------------------------------------------------------
+   Las seis series de la gráfica se eligen aquí, y cada casilla lleva
+   su propia muestra de color para que el lector relacione la casilla
+   con la línea sin pasar por la leyenda. El estado activo es el
+   relleno lavado del mismo tono de serie —no un filete de color—
+   porque el anillo de foco sigue siendo el único borde de color.
+   ============================================================ */
+.nx-picks { display: flex; flex-wrap: wrap; gap: var(--nx-space-1); }
+.nx-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nx-space-1);
+  height: var(--nx-btn-h-sm);
+  padding-inline: var(--nx-space-2);
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius-xs);
+  background: var(--nx-surface-2);
+  color: var(--nx-ink-muted);
+  font-size: var(--nx-fs-caption);
+  font-weight: var(--nx-fw-medium);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--nx-transition), color var(--nx-transition),
+    border-color var(--nx-transition);
+}
+.nx-pick:hover { color: var(--nx-ink); border-color: var(--nx-border-strong); }
+.nx-pick[aria-pressed="true"] {
+  color: var(--nx-ink);
+  border-color: var(--nx-pick-ink, var(--nx-accent));
+  background: color-mix(in srgb, var(--nx-pick-ink, var(--nx-accent)) 14%, var(--nx-surface-2));
+}
+.nx-pick-swatch {
+  width: 0.5rem;
+  height: 0.125rem;
+  flex: none;
+  border-radius: var(--nx-radius-pill);
+  background: var(--nx-pick-ink, var(--nx-ink-faint));
+}
+.nx-pick-cpu { --nx-pick-ink: var(--nx-series-cpu); }
+.nx-pick-ram { --nx-pick-ink: var(--nx-series-ram); }
+.nx-pick-swap { --nx-pick-ink: var(--nx-series-swap); }
+.nx-pick-disk { --nx-pick-ink: var(--nx-series-disk); }
+.nx-pick-load1 { --nx-pick-ink: var(--nx-series-load); }
+.nx-pick-temp { --nx-pick-ink: var(--nx-series-temp); }
+
+/* ============================================================
+   Bloque de resultado de una acción puntual
+   ------------------------------------------------------------
+   "Probar canal" y "confirmar propuesta" devuelven un veredicto
+   con su explicación. Este bloque es la respuesta: un riel de
+   hechos y, debajo, el motivo, que puede ser largo. Sin tarjeta:
+   un filete y el mismo plano que el resto del texto.
+   ============================================================ */
+.nx-verdictbox {
+  padding: var(--nx-space-2) var(--nx-space-3);
+  border: 1px solid var(--nx-border);
+  border-left-width: 2px;
+  border-radius: var(--nx-radius-xs);
+  background: var(--nx-surface-3);
+  font-size: var(--nx-fs-caption);
+  line-height: 1.45;
+}
+.nx-verdictbox--ok { border-left-color: var(--nx-ok); color: var(--nx-ok); }
+.nx-verdictbox--error { border-left-color: var(--nx-danger); color: var(--nx-danger); }
+.nx-verdictbox--info { border-left-color: var(--nx-accent); color: var(--nx-ink-soft); }
+.nx-verdictbox-text {
+  margin-top: 2px;
+  color: var(--nx-ink-quiet);
+  font-size: var(--nx-fs-caption);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+/* Tarjeta de dato de sistema (SMART, actualizaciones): el patrón es
+   el riel .nx-facts, pero con su propia voz cuando el bloque trae
+   más de una cifra —dispositivo, salud, temperatura, desgaste— y
+   una lista de paquetes debajo. */
+.nx-devices { display: flex; flex-direction: column; }
+.nx-device {
+  padding: var(--nx-space-2) var(--nx-pad-card);
+  border-bottom: 1px solid var(--nx-border-soft);
+}
+.nx-device:last-child { border-bottom: 0; }
+.nx-device-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--nx-space-2);
+}
+.nx-device-name {
+  color: var(--nx-ink);
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nx-fs-caption);
+  letter-spacing: -0.01em;
+}
+.nx-device-model { color: var(--nx-ink-faint); font-size: var(--nx-fs-micro); }
+
+/* Condición en una línea de la barra de herramientas o de una
+   cabecera: "cpu > 90 % durante 5 min". Es texto de dato, no un
+   botón, así que va en mono y sin cápsula. */
+.nx-cond {
+  color: var(--nx-ink-soft);
+  font-family: var(--nx-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--nx-fs-micro);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.nx-cond-op { color: var(--nx-ink-faint); }
+
+/* Formulario en rejilla: los formularios nuevos tienen más campos que
+   la rejilla de tres del editor de samba, así que esta declara su
+   propio número de columnas y se estrecha con la pantalla. */
+.nx-form-grid {
+  display: grid;
+  gap: var(--nx-space-2);
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 40rem) {
+  .nx-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .nx-form-grid .nx-form-wide { grid-column: 1 / -1; }
+}
+@media (min-width: 64rem) {
+  .nx-form-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .nx-form-grid--3 .nx-form-wide { grid-column: span 3; }
+  .nx-form-grid--3 .nx-form-span2 { grid-column: span 2; }
+}
+
+/* ------------------- Bloques de formulario (acceso) -------------------
+   Los dos formularios de login.html comparten estructura: micro-rótulo,
+   título, nota y campos. */
+.nx-auth-head { display: flex; flex-direction: column; }
+/* Variante con filete: la cabecera de un panel de acceso se cierra
+   con una regla, igual que la de cualquier panel del panel de control. */
+.nx-auth-head--ruled {
+  padding-bottom: var(--nx-space-2);
+  margin-bottom: var(--nx-space-1);
+  border-bottom: 1px solid var(--nx-border-soft);
+}
+.nx-auth-title {
+  margin-top: 2px;
+  font-size: var(--nx-fs-panel);
+  font-weight: var(--nx-fw-semibold);
+  letter-spacing: var(--nx-track-tight);
+  color: var(--nx-ink);
+  line-height: 1.25;
+}
+.nx-form-stack { display: flex; flex-direction: column; gap: var(--nx-space-2); }
+/* La nota de apertura sigue al overline con un peldaño más de aire. */
+.nx-auth-head > .panel-note { margin-top: 3px; }
+
+/* Lista de campos relacionados: separados por filete, no por cajas. */
+.nx-field-list { display: flex; flex-direction: column; }
+.nx-field-list > .field + .field {
+  margin-top: var(--nx-space-2);
+  padding-top: var(--nx-space-2);
+  border-top: 1px solid var(--nx-border-soft);
+}
+
+/* Fila de botones sin filete superior (último bloque de un panel). */
+.nx-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nx-space-2);
+}
+
+.nx-hstack { display: flex; flex-wrap: wrap; gap: var(--nx-space-1); }
+.nx-block-top { margin-top: var(--nx-space-3); }
+
+/* Ayudantes de ritmo y rejilla SOLO para el markup que app.js genera en
+   tiempo de ejecución. No dependen del CDN de Tailwind: el generador JIT
+   solo ve el DOM inicial, así que el contenido inyectado después lleva
+   clases propias y se ve igual aunque el CDN tarde o falle. */
+.nx-t-2 { margin-top: var(--nx-space-2); }
+.nx-t-3 { margin-top: var(--nx-space-3); }
+.nx-t-4 { margin-top: var(--nx-space-4); }
+.nx-grid-3 {
+  display: grid;
+  gap: var(--nx-space-2);
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 40rem) {
+  .nx-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .nx-span-2 { grid-column: span 2; }
+  .nx-span-3 { grid-column: span 3; }
+}
+
+/* Rejilla del panel: columna principal + workbench lateral.
+   align-items: start evita que la columna lateral se estire a la altura
+   de la principal. */
+.nx-console-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: var(--nx-gap-section);
+}
+@media (min-width: 64rem) {
+  .nx-console-grid {
+    grid-template-columns: minmax(0, 1fr) 21rem;
+    gap: var(--nx-gap-section);
   }
 }
+
+/* Ritmo vertical de la página. */
+.nx-page { padding-block: var(--nx-space-3); }
+.nx-page--roomy { padding-block: var(--nx-space-4); }
+
+/* Ayuda corta dentro de un campo, bajo el control. */
+.nx-hint {
+  color: var(--nx-ink-quiet);
+  font-size: var(--nx-fs-caption);
+  line-height: 1.4;
+}
+
+/* ============================================================
+   Flota de hosts
+   ------------------------------------------------------------
+   Tres piezas que no existían en el sistema y que se apoyan
+   solo en tokens ya declarados arriba: el selector de host de
+   la franja de estado, el chip de ámbito que dice de quién son
+   los contadores, y la tabla de inventario con su panel de
+   enrolamiento. Nada de tarjetas, nada de radios nuevos, nada
+   de color propio: un host en línea es el mismo verde de
+   estado que un sensor sano.
+   ============================================================ */
+
+/* --- Selector de host, en la franja de estado ---
+   Micro-rótulo + LED + select. El LED va FUERA del <select>
+   porque una <option> nativa no puede llevar un punto: el
+   estado se pinta al lado, no dentro. */
+.nx-hostsel {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-2);
+  flex: none;
+  min-width: 0;
+}
+.nx-hostsel-label {
+  font-size: var(--nx-fs-micro);
+  font-weight: var(--nx-fw-semibold);
+  letter-spacing: var(--nx-track-micro);
+  text-transform: uppercase;
+  color: var(--nx-ink-muted);
+}
+.nx-hostsel-select {
+  height: var(--nx-btn-h-sm);
+  max-width: 12rem;
+  min-width: 7rem;
+  padding: 0 var(--nx-space-2);
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius-sm);
+  background: var(--nx-surface-2);
+  box-shadow: var(--nx-inset-hi);
+  color: var(--nx-ink);
+  font-family: inherit;
+  font-size: var(--nx-fs-caption);
+  font-weight: var(--nx-fw-medium);
+  line-height: 1;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: background-color var(--nx-transition), border-color var(--nx-transition),
+    color var(--nx-transition);
+}
+.nx-hostsel-select:hover { border-color: var(--nx-border-strong); background: var(--nx-surface); }
+.nx-hostsel-select:focus-visible {
+  outline: 2px solid var(--nx-focus);
+  outline-offset: 1px;
+}
+/* El host local se distingue por el nombre, no por un filete de
+   color: la etiqueta es la que lo dice y es lo que se lee. */
+.nx-hostsel[data-scope="local"] .nx-hostsel-select { color: var(--nx-ink-soft); }
+
+/* --- Chip de ámbito del veredicto ---
+   Dice de quién son los contadores de severidad de al lado. Es
+   texto en versalitas con su LED, no una píldora de color: el
+   estado ya lo lleva el punto. */
+.nx-scope {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nx-space-1);
+  flex: none;
+  height: 1.375rem;
+  padding-inline: var(--nx-space-2);
+  border-radius: var(--nx-radius-xs);
+  background: var(--nx-surface-2);
+  color: var(--nx-ink-muted);
+  font-size: var(--nx-fs-micro);
+  font-weight: var(--nx-fw-semibold);
+  letter-spacing: var(--nx-track-micro);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.nx-scope[data-scope="remote"] { background: var(--nx-surface-2); color: var(--nx-ink-soft); }
+
+/* --- Inventario de la flota --- */
+#hosts-table-wrap { min-width: 46rem; }
+#hosts-table-wrap .nx-cell-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 14rem;
+}
+/* Etiqueta del ámbito del host: "local" o "id del agente". Va en la
+   misma celda del nombre para que la fila se lea sola. */
+.nx-host-tag {
+  margin-left: var(--nx-space-2);
+  padding: 0 var(--nx-space-1);
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius-xs);
+  color: var(--nx-ink-quiet);
+  font-size: var(--nx-fs-micro);
+  font-weight: var(--nx-fw-medium);
+  letter-spacing: var(--nx-track-micro);
+  text-transform: uppercase;
+  white-space: nowrap;
+  vertical-align: 1px;
+}
+.nx-host-tag--local { color: var(--nx-ink-muted); }
+.nx-host-note {
+  display: block;
+  margin-top: 1px;
+  color: var(--nx-ink-faint);
+  font-size: var(--nx-fs-micro);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 18rem;
+}
+/* El botón de eliminar del host local no se pinta: se explica con
+   texto, porque una acción ausente sin motivo parece un fallo. */
+.nx-cell-actions .btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+
+/* --- Panel de enrolamiento ---
+   Los pasos van numerados con un cuadrado de micro-versalitas, y
+   cada comando en una fila con su botón de copiar: leer un
+   comando es la tarea, y copiarlo es la acción. */
+.nx-hosts-step + .nx-hosts-step {
+  margin-top: var(--nx-space-5);
+  padding-top: var(--nx-space-4);
+  border-top: 1px solid var(--nx-border-soft);
+}
+.nx-hosts-step-head {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-2);
+  min-height: var(--nx-btn-h-sm);
+  margin-bottom: var(--nx-space-2);
+}
+.nx-hosts-step-head .btn { margin-left: auto; }
+.nx-hosts-step-n {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+  border-radius: var(--nx-radius-xs);
+  background: var(--nx-surface-2);
+  color: var(--nx-ink-muted);
+  font-size: var(--nx-fs-micro);
+  font-weight: var(--nx-fw-semibold);
+  font-variant-numeric: tabular-nums;
+}
+.nx-hosts-step-head .nx-strip-sep + .btn { margin-left: 0; }
+.nx-hosts-step-note {
+  margin-bottom: var(--nx-space-2);
+  color: var(--nx-ink-quiet);
+  font-size: var(--nx-fs-caption);
+  line-height: 1.4;
+}
+.nx-hosts-step-note code,
+.nx-hosts-hint code { color: var(--nx-ink-soft); }
+/* Fila de comando: el texto se recorta con elipsis en vez de
+   desbordar el panel — el botón de copiar sigue dando el valor
+   entero — y en 375px baja el botón a su propia línea. */
+.nx-hosts-cmd {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-2);
+  min-width: 0;
+  padding: var(--nx-space-1) var(--nx-space-2);
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius-xs);
+  background: var(--nx-surface-3);
+  box-shadow: var(--nx-inset-field);
+}
+.nx-hosts-cmd + .nx-hosts-cmd { margin-top: var(--nx-space-1); }
+.nx-hosts-cmd > code {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--nx-ink-soft);
+  font-size: var(--nx-fs-caption);
+}
+.nx-hosts-cmd > .btn { flex: none; }
+/* El token va en su propio bloque con altura automática: no es un
+   log, es un valor que se copia entero. */
+.nx-hosts-code {
+  max-height: none;
+  overflow-x: auto;
+  color: var(--nx-ink);
+  font-weight: var(--nx-fw-medium);
+}
+/* Un token es un secreto: la tinta lo distingue de los comandos
+   públicos sin inventarse un color nuevo para el secreto. */
+#hosts-enroll-token { color: var(--nx-ink); letter-spacing: 0.01em; }
+
+/* Confirmación de copia en el propio botón: lavado y tinta, nunca un
+   filete de color (el del anillo se reserva al foco). */
+.btn.is-copied {
+  color: var(--nx-ok);
+  background: var(--nx-wash-ok);
+  border-color: transparent;
+}
+/* Un enlace que no puede llevar a su destino se apaga y se explica;
+   el título y el aviso de al lado dicen por qué. */
+a.is-disabled,
+a.is-disabled:hover {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* --- "Cómo funciona" --- */
+.nx-hosts-how {
+  display: grid;
+  gap: var(--nx-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.nx-hosts-how > li {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-left: var(--nx-space-3);
+  border-left: 1px solid var(--nx-border);
+  color: var(--nx-ink-quiet);
+  font-size: var(--nx-fs-caption);
+  line-height: var(--nx-lh-loose);
+}
+.nx-hosts-how > li > .nx-eyebrow { color: var(--nx-ink-muted); }
+.nx-hosts-how em { color: var(--nx-ink-soft); font-style: normal; font-family: var(--nx-font-mono); }
+
+@media (min-width: 64rem) {
+  .nx-hosts-how { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 47.99rem) {
+  /* El chip de ámbito baja bajo el veredicto: a 375px competía con
+     el texto del veredicto por el mismo ancho. */
+  .nx-scope { order: 3; }
+  .nx-verdict { flex-wrap: wrap; }
+  .nx-hostsel { width: 100%; }
+  .nx-hostsel-select { flex: 1 1 auto; max-width: none; }
+  /* El comando se parte en dos líneas en vez de recortarse: a 375px
+     el texto largo ocupa la fila entera y el botón baja debajo. */
+  .nx-hosts-cmd { flex-wrap: wrap; }
+  .nx-hosts-cmd > code { white-space: normal; overflow-wrap: anywhere; }
+  .nx-hosts-cmd > .btn { margin-left: auto; }
+}
+
+/* Lockup de la pantalla de acceso. */
+.nx-brand-hero {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-2);
+  margin-bottom: var(--nx-space-3);
+}
+.nx-brand-hero .nx-brand-text { flex-direction: column; align-items: flex-start; gap: 1px; }
+.nx-brand-hero .nx-brand-sub { margin-bottom: 1px; }
+
+/* --------------------------------------------------
+   Respaldo de `.hidden` (declarado al final del fichero)
+   -------------------------------------------------- */
+.hidden { display: none; }

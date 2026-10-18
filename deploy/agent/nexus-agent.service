@@ -1,0 +1,61 @@
+# ============================================================
+#  Nexus-Core — Unidad systemd del AGENTE (hosts remotos)
+#
+#  El agente se ejecuta en el servidor vigilado y **conecta
+#  hacia fuera** con el hub: no escucha en ningún puerto, así
+#  que detrás de NAT funciona sin abrir nada en el firewall.
+#
+#  Instalación (ver deploy/agent/install-agent.sh):
+#    1. Copiar el proyecto a /opt/nexus-agent
+#    2. Copiar esta unidad a /etc/systemd/system/nexus-agent.service
+#    3. systemctl daemon-reload && systemctl enable --now nexus-agent
+#
+#  NOTAS DE SEGURIDAD:
+#   * Corre como usuario NO privilegiado `nexus-agent`.
+#   * La configuración con el token está en /etc/nexus-agent/config.json
+#     (0600, propiedad de nexus-agent): nadie más la puede leer.
+#   * El agente solo puede hacer lo que el panel le pide, y el panel
+#     solo pide herramientas de una lista blanca (allowlist del
+#     agente). No hay shell remoto.
+#   * Hardening: no puede escribir fuera de su configuración ni
+#     instalar nada (ProtectSystem=strict), no puede montar nada
+#     y solo necesita salida TCP.
+# ============================================================
+
+[Unit]
+Description=Nexus-Core — Agente de monitorización (conecta al hub)
+Documentation=file:/opt/nexus-agent/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=nexus-agent
+Group=nexus-agent
+WorkingDirectory=/opt/nexus-agent
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+# Configuración alternativa si el panel usa un hub distinto.
+# Environment=NEXUS_AGENT_CONFIG=/etc/nexus-agent/config.json
+ExecStart=/usr/bin/python3 /opt/nexus-agent/agent.py run
+Restart=always
+RestartSec=5
+
+# --- Endurecimiento del servicio ---
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/etc/nexus-agent
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+# Solo salida TCP (y el socket unix de Docker, si se leen contenedores).
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

@@ -5,182 +5,208 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- Marca de JS: sin ella el CSS no oculta nada y la página se ve entera. -->
   <script>document.documentElement.classList.add('js');</script>
+  <meta name="robots" content="noindex" />
   <title>Nexus-Core · Ajustes</title>
 
-  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='6'%20fill='%234da6ff'/%3E%3Ctext%20x='16'%20y='23'%20font-family='Georgia,serif'%20font-size='19'%20font-weight='700'%20text-anchor='middle'%20fill='%23070c1a'%3EN%3C/text%3E%3C/svg%3E" />
-  <meta name="theme-color" content="#070c1a" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%23161b22'/%3E%3Cpath%20d='M11%2021.5v-11l10%2011v-11'%20fill='none'%20stroke='%232f81f7'%20stroke-width='2.6'%20stroke-linecap='round'%20stroke-linejoin='round'/%3E%3C/svg%3E" />
+  <meta name="theme-color" content="#0d1117" />
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    // Misma paleta que el panel (azul marino con acentos azules).
+    // Misma paleta que el panel: grafito neutro + azul corporativo.
     tailwind.config = {
       theme: {
         extend: {
           fontFamily: {
-            sans: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
-            serif: ['Iowan Old Style', 'Palatino Linotype', 'Palatino', 'Book Antiqua', 'Georgia', 'Times New Roman', 'serif']
+            sans: ['InterVariable', 'Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+            mono: ['Roboto Mono', 'ui-monospace', 'SFMono-Regular', 'SF Mono', 'JetBrains Mono', 'Cascadia Mono', 'Menlo', 'Consolas', 'monospace']
           },
           colors: {
-            brand: { DEFAULT: '#4da6ff', dark: '#2f7dcc' },
-            nexus: { 950: '#070c1a', 900: '#0d1527', 800: '#1a2740', 700: '#2c4066' },
+            brand: { DEFAULT: '#2f81f7', dark: '#1f6feb' },
+            nexus: { 950: '#0d1117', 900: '#161b22', 800: '#1c2128', 700: '#444c56' },
             slate: {
-              100: '#e9f1fd', 300: '#b9c7e2', 400: '#8497ba', 500: '#8497ba',
-              600: '#8497ba', 700: '#2c4066', 800: '#1a2740', 900: '#121d33', 950: '#0a111f'
+              100: '#e6edf3', 300: '#b3bcc8', 400: '#8b949e', 500: '#7d8994',
+              600: '#565e68', 700: '#444c56', 800: '#30363d', 900: '#1c2128', 950: '#0a0d13'
             },
-            cyan:    { 300: '#4da6ff', 400: '#4da6ff', 500: '#4da6ff' },
+            cyan:    { 300: '#2f81f7', 400: '#2f81f7', 500: '#2f81f7' },
             emerald: { 400: '#9d8cff', 500: '#9d8cff' },
-            violet:  { 400: '#8497ba' },
+            violet:  { 400: '#8b949e' },
             orange:  { 400: '#ff6b6b' },
             red:     { 400: '#ff6b6b', 500: '#ff6b6b' },
             danger:  '#ff6b6b'
           },
           boxShadow: {
-            glow: '0 1px 3px rgba(0, 0, 0, 0.55), 0 10px 24px -10px rgba(0, 0, 0, 0.6)'
+            glow: '0 0 0 3px rgba(47, 129, 247, 0.35)'
           }
         }
       }
     };
   </script>
 
-  <link rel="stylesheet" href="/css/styles.css?v=3" />
+  <link rel="stylesheet" href="/css/styles.css?v=9" />
 </head>
 
 <body class="min-h-screen bg-nexus-950 text-slate-100 font-sans antialiased">
 
-  <!-- Capa ambiental fija: gradiente base + retícula + foco del puntero -->
-  <div class="nx-ambient" aria-hidden="true"></div>
-
   <!-- ===================== CABECERA ===================== -->
-  <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-nexus-950/80 backdrop-blur">
-    <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-      <div class="flex items-center gap-3">
-        <a href="/" class="flex h-10 w-10 items-center justify-center rounded-md bg-brand font-extrabold text-nexus-950 shadow-glow" title="Volver al panel">N</a>
-        <div>
-          <h1 class="text-lg font-bold leading-tight tracking-tight">Ajustes</h1>
-          <p class="text-xs text-slate-400">Configuración del agente de IA</p>
+  <header class="nx-header">
+    <div class="nx-shell">
+      <div class="nx-header-bar">
+        <a class="nx-brand" href="/" title="Volver al panel">
+          <span class="nx-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true" role="img">
+              <rect x="3.25" y="3.25" width="17.5" height="17.5" rx="5.25" stroke="currentColor" stroke-width="1.5" opacity=".45" />
+              <path d="M7.75 16.25V8.4l8.5 7.85V7.75" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+          <span class="nx-brand-text">
+            <span class="nx-brand-name">Ajustes</span>
+            <span class="nx-brand-sub">Agente de IA</span>
+          </span>
+        </a>
+        <div class="nx-header-tools">
+          <a href="/" class="btn btn-ghost btn-sm">Volver al panel</a>
+          <button id="logout-btn" type="button" class="btn btn-ghost btn-sm">Cerrar sesión</button>
         </div>
-      </div>
-      <div class="flex items-center gap-3">
-        <a href="/" class="btn-ghost text-xs">← Volver al panel</a>
-        <button id="logout-btn" class="btn-ghost text-xs">Cerrar sesión</button>
       </div>
     </div>
   </header>
 
   <!-- ===================== CONTENIDO ===================== -->
-  <main class="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
-    <form id="ai-form" class="panel space-y-5" data-reveal>
-      <div>
-        <h2 class="panel-title">Agente de IA</h2>
-        <p class="mt-1 text-xs text-slate-400">
-          Los cambios se guardan directamente en el fichero de configuración del
-          servidor (permisos 0600) y se aplican al instante — sin reiniciar y sin
-          editar ficheros a mano. Las claves nunca se muestran de vuelta y nunca
-          se escriben en el registro de auditoría.
-        </p>
-      </div>
+  <main class="nx-shell nx-shell-narrow nx-page--roomy">
+    <div class="nx-section-head mb-3" data-reveal>
+      <h1 class="nx-section-title">Ajustes del agente</h1>
+    </div>
 
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <label class="flex flex-col gap-1">
-          <span class="metric-label">Proveedor</span>
-          <select id="ai-provider" class="input-field">
-            <option value="">Sin proveedor (asistente desactivado)</option>
-            <option value="openai">OpenAI</option>
-            <option value="anthropic">Anthropic (Claude)</option>
-            <option value="gemini">Google Gemini</option>
-            <option value="ollama">Ollama (local)</option>
-          </select>
-        </label>
-        <label class="flex flex-col gap-1">
-          <span class="metric-label">Modelo</span>
-          <input id="ai-model" type="text" class="input-field" placeholder="gpt-4o-mini" required />
-        </label>
-      </div>
+    <form id="ai-form" class="panel panel--flush" data-reveal>
+      <!-- ---------- Grupo 1: proveedor y modelo ---------- -->
+      <div class="nx-card-body nx-stack">
+        <div class="nx-auth-head">
+          <p class="nx-eyebrow">Selección del modelo</p>
+          <p class="panel-note">
+            El agente usa un único proveedor. Los cambios se escriben en el fichero
+            de configuración del servidor (permisos 0600) y se aplican al instante:
+            no hace falta reiniciar ni editar ficheros a mano.
+          </p>
+        </div>
 
-      <label class="flex flex-col gap-1 sm:max-w-[11rem]">
-        <span class="metric-label">Temperatura (0 – 2)</span>
-        <input id="ai-temperature" type="number" min="0" max="2" step="0.1" class="input-field" />
-      </label>
-
-      <fieldset class="space-y-4 rounded-sm border border-slate-800 p-4" data-reveal>
-        <legend class="metric-label px-1">Claves de API</legend>
-
-        <label class="flex flex-col gap-1">
-          <span class="flex items-center justify-between gap-2">
-            <span class="metric-label">OpenAI</span>
-            <span id="key-openai-state" class="text-xs text-slate-500">Sin configurar</span>
-          </span>
-          <input id="key-openai" type="password" class="input-field" placeholder="Dejar vacío para conservar la actual" autocomplete="off" />
-        </label>
-
-        <label class="flex flex-col gap-1">
-          <span class="flex items-center justify-between gap-2">
-            <span class="metric-label">Anthropic (Claude)</span>
-            <span id="key-anthropic-state" class="text-xs text-slate-500">Sin configurar</span>
-          </span>
-          <input id="key-anthropic" type="password" class="input-field" placeholder="Dejar vacío para conservar la actual" autocomplete="off" />
-        </label>
-
-        <label class="flex flex-col gap-1">
-          <span class="flex items-center justify-between gap-2">
-            <span class="metric-label">Google Gemini</span>
-            <span id="key-gemini-state" class="text-xs text-slate-500">Sin configurar</span>
-          </span>
-          <input id="key-gemini" type="password" class="input-field" placeholder="Dejar vacío para conservar la actual" autocomplete="off" />
-        </label>
-      </fieldset>
-
-      <details class="rounded-sm border border-slate-800 p-4" data-reveal>
-        <summary class="cursor-pointer text-sm font-semibold">Opciones avanzadas (URLs base)</summary>
-        <div class="mt-3 space-y-3">
-          <label class="flex flex-col gap-1">
-            <span class="metric-label">OpenAI / endpoints compatibles</span>
-            <input id="url-openai" type="text" class="input-field" placeholder="https://api.openai.com/v1" />
+        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <label class="field">
+            <span class="nx-eyebrow">Proveedor</span>
+            <select id="ai-provider" class="input-field">
+              <option value="">Sin proveedor (asistente desactivado)</option>
+              <option value="openai">OpenAI</option>
+              <option value="anthropic">Anthropic (Claude)</option>
+              <option value="gemini">Google Gemini</option>
+              <option value="ollama">Ollama (local)</option>
+            </select>
           </label>
-          <label class="flex flex-col gap-1">
-            <span class="metric-label">Google Gemini</span>
-            <input id="url-gemini" type="text" class="input-field" placeholder="https://generativelanguage.googleapis.com/v1beta" />
+          <label class="field">
+            <span class="nx-eyebrow">Modelo</span>
+            <input id="ai-model" type="text" class="input-field input-field--mono" placeholder="gpt-4o-mini" required />
           </label>
-          <label class="flex flex-col gap-1">
-            <span class="metric-label">Ollama (host local)</span>
-            <input id="url-ollama" type="text" class="input-field" placeholder="http://host.docker.internal:11434/v1" />
+          <label class="field sm:max-w-48">
+            <span class="nx-eyebrow">Temperatura</span>
+            <input id="ai-temperature" type="number" min="0" max="2" step="0.1" class="input-field input-field--mono" />
+            <span class="nx-hint">De 0 (determinista) a 2 (creativo).</span>
           </label>
         </div>
-      </details>
-
-      <div class="flex flex-wrap items-center gap-3" data-reveal>
-        <button type="submit" class="btn-primary" id="save-btn">Guardar cambios</button>
-        <button type="button" class="btn-ghost" id="test-btn">Probar conexión</button>
       </div>
-      <p id="save-status" class="mt-1 hidden rounded-sm border px-3 py-2 text-xs"></p>
+
+      <!-- ---------- Grupo 2: claves ---------- -->
+      <div class="nx-card-body nx-stack">
+        <div class="nx-auth-head">
+          <p class="nx-eyebrow">Claves de API</p>
+          <p class="panel-note">
+            Deja vacío el campo para conservar la clave ya guardada. Las claves no se
+            muestran de vuelta ni se escriben en el registro de auditoría.
+          </p>
+        </div>
+
+        <div class="nx-field-list">
+          <label class="field">
+            <span class="nx-label-row">
+              <span class="nx-eyebrow">OpenAI</span>
+              <span id="key-openai-state" class="nx-key-state">Sin configurar</span>
+            </span>
+            <input id="key-openai" type="password" class="input-field input-field--mono" placeholder="sk-…" autocomplete="off" spellcheck="false" />
+          </label>
+
+          <label class="field">
+            <span class="nx-label-row">
+              <span class="nx-eyebrow">Anthropic</span>
+              <span id="key-anthropic-state" class="nx-key-state">Sin configurar</span>
+            </span>
+            <input id="key-anthropic" type="password" class="input-field input-field--mono" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" />
+          </label>
+
+          <label class="field">
+            <span class="nx-label-row">
+              <span class="nx-eyebrow">Google Gemini</span>
+              <span id="key-gemini-state" class="nx-key-state">Sin configurar</span>
+            </span>
+            <input id="key-gemini" type="password" class="input-field input-field--mono" placeholder="AIza…" autocomplete="off" spellcheck="false" />
+          </label>
+        </div>
+      </div>
+
+      <!-- ---------- Grupo 3: endpoints ---------- -->
+      <div class="nx-card-body">
+        <details class="nx-disclosure">
+          <summary class="nx-summary">Endpoints personalizados</summary>
+          <p class="panel-note mt-3">
+            Solo para proveedores compatibles o modelos servidos por tu propia
+            infraestructura. Déjalo vacío para usar las URLs por defecto.
+          </p>
+          <div class="nx-form-stack mt-4">
+            <label class="field">
+              <span class="nx-eyebrow">OpenAI o endpoint compatible</span>
+              <input id="url-openai" type="text" class="input-field input-field--mono" placeholder="https://api.openai.com/v1" />
+            </label>
+            <label class="field">
+              <span class="nx-eyebrow">Google Gemini</span>
+              <input id="url-gemini" type="text" class="input-field input-field--mono" placeholder="https://generativelanguage.googleapis.com/v1beta" />
+            </label>
+            <label class="field">
+              <span class="nx-eyebrow">Ollama</span>
+              <input id="url-ollama" type="text" class="input-field input-field--mono" placeholder="http://host.docker.internal:11434/v1" />
+            </label>
+          </div>
+        </details>
+      </div>
+
+      <!-- ---------- Guardar ---------- -->
+      <div class="nx-card-body">
+        <div class="nx-actions">
+          <button type="submit" class="btn btn-primary" id="save-btn">Guardar cambios</button>
+          <button type="button" class="btn btn-ghost" id="test-btn">Probar conexión</button>
+          <span class="nx-actionbar-note">Se aplican en caliente, sin reiniciar</span>
+        </div>
+        <p id="save-status" class="nx-status hidden" role="status"></p>
+      </div>
     </form>
+
+    <p class="nx-foot">
+      nexus-core · consola de administración · acceso auditado
+    </p>
   </main>
 
   <script>
-    // ===================== Sistema visual ambiental =====================
-    /* Motor del sistema portado de la variante local: el puntero que
-       alimenta el foco de .nx-ambient::after y el revelado de los bloques
-       [data-reveal] al entrar en pantalla.
+    // ===================== Revelado al hacer scroll =====================
+    /* Motor del sistema, idéntico al de app.js: revela los bloques
+       [data-reveal] al entrar en pantalla, con cascada entre hermanos y
+       sin desplazamiento si el usuario prefiere menos movimiento.
        Es el MISMO bloque que app.js y login.html: esta página no
        carga app.js porque su arranque es exclusivo del panel, así que el
        motor tiene que llegarle sin salir del <body>. */
-    function initAmbientPointer() {
-      window.addEventListener(
-        'pointermove',
-        (event) => {
-          document.documentElement.style.setProperty('--mx', `${event.clientX}px`);
-          document.documentElement.style.setProperty('--my', `${event.clientY}px`);
-        },
-        { passive: true }
-      );
-    }
-
     function initScrollReveal() {
       const items = Array.from(document.querySelectorAll('[data-reveal]'));
       if (items.length === 0) return;
 
       if (!('IntersectionObserver' in window)) {
-        items.forEach((item) => item.classList.add('is-visible'));
+        items.forEach((item) => {
+          item.classList.add('is-visible');
+        });
         return;
       }
 
@@ -212,7 +238,6 @@
       });
     }
 
-    initAmbientPointer();
     initScrollReveal();
   </script>
 
@@ -223,13 +248,8 @@
 
     function setStatus(message, kind) {
       const box = $("save-status");
-      const palette = {
-        ok: "border-emerald-400/40 bg-emerald-400/10 text-emerald-400",
-        error: "border-red-400/40 bg-red-400/10 text-red-400",
-        info: "border-slate-700/70 bg-nexus-900/70 text-slate-300",
-      };
       box.textContent = message;
-      box.className = "mt-1 rounded-sm border px-3 py-2 text-xs " + (palette[kind] || palette.info);
+      box.className = "nx-status" + (kind === "ok" ? " nx-status--ok" : kind === "error" ? " nx-status--error" : "");
       box.classList.remove("hidden");
     }
 
@@ -259,10 +279,10 @@
       const el = $(elementId);
       if (secret && secret.configured) {
         el.textContent = "Configurada · " + secret.masked;
-        el.className = "text-xs text-emerald-400";
+        el.className = "nx-key-state nx-key-state--set";
       } else {
         el.textContent = "Sin configurar";
-        el.className = "text-xs text-slate-500";
+        el.className = "nx-key-state";
       }
     }
 
@@ -355,7 +375,7 @@
         const activeKey = state.keys[state.provider];
         if (activeKey && !activeKey.configured) {
           setStatus(
-            `Guardado, pero OJO: el proveedor activo (${state.provider}) todavía no tiene clave; el asistente responderá con un aviso hasta que se la añadas.`,
+            `Guardado, pero el proveedor activo (${state.provider}) todavía no tiene clave: el asistente responderá con un aviso hasta que se la añadas.`,
             "error"
           );
         } else {

@@ -6,142 +6,153 @@
   <!-- Marca de JS: sin ella el CSS no oculta nada y la página se ve entera. -->
   <script>document.documentElement.classList.add('js');</script>
   <meta name="robots" content="noindex" />
+  <meta name="description" content="Acceso a la consola de administración de Nexus-Core." />
   <title>Nexus-Core · Acceso</title>
 
-  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='6'%20fill='%234da6ff'/%3E%3Ctext%20x='16'%20y='23'%20font-family='Georgia,serif'%20font-size='19'%20font-weight='700'%20text-anchor='middle'%20fill='%23070c1a'%3EN%3C/text%3E%3C/svg%3E" />
-  <meta name="theme-color" content="#070c1a" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%23161b22'/%3E%3Cpath%20d='M11%2021.5v-11l10%2011v-11'%20fill='none'%20stroke='%232f81f7'%20stroke-width='2.6'%20stroke-linecap='round'%20stroke-linejoin='round'/%3E%3C/svg%3E" />
+  <meta name="theme-color" content="#0d1117" />
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    // Misma paleta que el panel (azul marino con acentos azules).
+    // Misma paleta que el panel: grafito neutro + azul corporativo.
     tailwind.config = {
       theme: {
         extend: {
           fontFamily: {
-            sans: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
-            serif: ['Iowan Old Style', 'Palatino Linotype', 'Palatino', 'Book Antiqua', 'Georgia', 'Times New Roman', 'serif']
+            sans: ['InterVariable', 'Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+            mono: ['Roboto Mono', 'ui-monospace', 'SFMono-Regular', 'SF Mono', 'JetBrains Mono', 'Cascadia Mono', 'Menlo', 'Consolas', 'monospace']
           },
           colors: {
-            brand: { DEFAULT: '#4da6ff', dark: '#2f7dcc' },
-            nexus: { 950: '#070c1a', 900: '#0d1527', 800: '#1a2740', 700: '#2c4066' },
+            brand: { DEFAULT: '#2f81f7', dark: '#1f6feb' },
+            nexus: { 950: '#0d1117', 900: '#161b22', 800: '#1c2128', 700: '#444c56' },
             slate: {
-              100: '#e9f1fd', 300: '#b9c7e2', 400: '#8497ba', 500: '#8497ba',
-              600: '#8497ba', 700: '#2c4066', 800: '#1a2740', 900: '#121d33', 950: '#0a111f'
+              100: '#e6edf3', 300: '#b3bcc8', 400: '#8b949e', 500: '#7d8994',
+              600: '#565e68', 700: '#444c56', 800: '#30363d', 900: '#1c2128', 950: '#0a0d13'
             },
-            cyan:    { 300: '#4da6ff', 400: '#4da6ff', 500: '#4da6ff' },
+            cyan:    { 300: '#2f81f7', 400: '#2f81f7', 500: '#2f81f7' },
             emerald: { 400: '#9d8cff', 500: '#9d8cff' },
-            violet:  { 400: '#8497ba' },
+            violet:  { 400: '#8b949e' },
             orange:  { 400: '#ff6b6b' },
             red:     { 400: '#ff6b6b', 500: '#ff6b6b' },
             danger:  '#ff6b6b'
           },
           boxShadow: {
-            glow: '0 1px 3px rgba(0, 0, 0, 0.55), 0 10px 24px -10px rgba(0, 0, 0, 0.6)'
+            glow: '0 0 0 3px rgba(47, 129, 247, 0.35)'
           }
         }
       }
     };
   </script>
 
-  <link rel="stylesheet" href="/css/styles.css?v=3" />
+  <link rel="stylesheet" href="/css/styles.css?v=9" />
 </head>
 
 <body class="min-h-screen bg-nexus-950 text-slate-100 font-sans antialiased">
 
-  <!-- Capa ambiental fija: gradiente base + retícula + foco del puntero -->
-  <div class="nx-ambient" aria-hidden="true"></div>
+  <main class="nx-shell nx-shell-form flex min-h-screen flex-col justify-center py-10">
 
-  <main class="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-10">
-    <div class="mb-6 flex items-center gap-3" data-reveal>
-      <div class="flex h-10 w-10 items-center justify-center rounded-md bg-brand font-extrabold text-nexus-950 shadow-glow">N</div>
+    <!-- Lockup: la marca manda, la coletilla acompaña debajo. -->
+    <div class="nx-brand-hero" data-reveal>
+      <span class="nx-mark nx-mark--lg" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true" role="img">
+          <rect x="3.25" y="3.25" width="17.5" height="17.5" rx="5.25" stroke="currentColor" stroke-width="1.5" opacity=".45" />
+          <path d="M7.75 16.25V8.4l8.5 7.85V7.75" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </span>
       <div>
-        <h1 class="text-lg font-bold leading-tight tracking-tight">Nexus-Core</h1>
-        <p class="text-xs text-slate-400">Panel de administración</p>
+        <h1 class="nx-brand-name">Nexus-Core</h1>
+        <p class="nx-brand-sub">Consola de infraestructura</p>
       </div>
     </div>
 
     <div class="panel" data-reveal>
       <!-- ============ Asistente de primer arranque ============ -->
-      <section id="setup-block" class="hidden space-y-4">
-        <div>
-          <h2 class="text-lg font-semibold">Configuración inicial</h2>
-          <p class="mt-1 text-xs text-slate-400">
-            Es el primer arranque: aún no existe administrador. Introduce el
-            <strong>token de configuración</strong> que aparece en la consola del
-            servicio (o en el fichero <code>setup_token</code> del directorio de datos)
-            y crea la cuenta del panel.
+      <section id="setup-block" class="hidden nx-stack">
+        <div class="nx-auth-head nx-auth-head--ruled">
+          <p class="nx-eyebrow">Primer arranque</p>
+          <h2 class="nx-auth-title">Crea la cuenta de administrador</h2>
+          <p class="panel-note">
+            Todavía no existe ningún administrador en este host. Pega el token de
+            configuración que aparece en la consola del servicio —o en el fichero
+            <code>setup_token</code> del directorio de datos— para definir la cuenta.
           </p>
         </div>
-        <form id="setup-form" class="space-y-3">
-          <label class="flex flex-col gap-1">
-            <span class="metric-label">Token de configuración</span>
-            <input id="setup-token" type="text" class="input-field" autocomplete="off" required />
+        <form id="setup-form" class="nx-form-stack">
+          <label class="field">
+            <span class="nx-eyebrow">Token de configuración</span>
+            <input id="setup-token" type="text" class="input-field input-field--mono" autocomplete="off" spellcheck="false" required />
           </label>
-          <label class="flex flex-col gap-1">
-            <span class="metric-label">Usuario</span>
+          <label class="field">
+            <span class="nx-eyebrow">Usuario</span>
             <input id="setup-username" type="text" class="input-field" value="admin" autocomplete="username" required />
           </label>
-          <label class="flex flex-col gap-1">
-            <span class="metric-label">Contraseña (mínimo 10 caracteres)</span>
+          <label class="field">
+            <span class="nx-eyebrow">Contraseña</span>
             <input id="setup-password" type="password" class="input-field" autocomplete="new-password" minlength="10" required />
+            <span class="nx-hint">Mínimo 10 caracteres.</span>
           </label>
-          <label class="flex flex-col gap-1">
-            <span class="metric-label">Repite la contraseña</span>
+          <label class="field">
+            <span class="nx-eyebrow">Repite la contraseña</span>
             <input id="setup-password2" type="password" class="input-field" autocomplete="new-password" minlength="10" required />
           </label>
-          <button type="submit" class="btn-primary w-full">Crear administrador y entrar</button>
+          <div class="nx-t-2">
+            <button type="submit" class="btn btn-primary btn-block">Crear administrador y entrar</button>
+          </div>
         </form>
       </section>
 
       <!-- ==================== Inicio de sesión ==================== -->
-      <section id="login-block" class="hidden space-y-4">
-        <h2 class="text-lg font-semibold">Iniciar sesión</h2>
-        <form id="login-form" class="space-y-3">
-          <label class="flex flex-col gap-1">
-            <span class="metric-label">Usuario</span>
+      <section id="login-block" class="hidden nx-stack">
+        <div class="nx-auth-head nx-auth-head--ruled">
+          <p class="nx-eyebrow">Sesión</p>
+          <h2 class="nx-auth-title">Iniciar sesión</h2>
+          <p class="panel-note">Acceso restringido al administrador del host.</p>
+        </div>
+        <form id="login-form" class="nx-form-stack">
+          <label class="field">
+            <span class="nx-eyebrow">Usuario</span>
             <input id="login-username" type="text" class="input-field" autocomplete="username" required />
           </label>
-          <label class="flex flex-col gap-1">
-            <span class="metric-label">Contraseña</span>
+          <label class="field">
+            <span class="nx-eyebrow">Contraseña</span>
             <input id="login-password" type="password" class="input-field" autocomplete="current-password" required />
           </label>
-          <button type="submit" class="btn-primary w-full">Entrar</button>
+          <label class="field">
+            <span class="nx-eyebrow">Código 2FA</span>
+            <input id="login-totp" type="text" class="input-field" inputmode="numeric"
+                   autocomplete="one-time-code" maxlength="32"
+                   placeholder="6 dígitos o código de recuperación" />
+          </label>
+          <div class="nx-t-2">
+            <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+          </div>
         </form>
       </section>
 
-      <p id="auth-error" class="mt-3 hidden rounded-sm border border-red-400/40 bg-red-400/10 px-3 py-2 text-xs text-red-400"></p>
+      <p id="auth-error" class="nx-status nx-status--error hidden" role="alert"></p>
     </div>
 
-    <p class="mt-4 text-center text-xs text-slate-500" data-reveal>
-      Acceso restringido · Todas las acciones quedan registradas en la auditoría
+    <p class="nx-foot" data-reveal>
+      nexus-core · acceso auditado
     </p>
   </main>
 
   <script>
-    // ===================== Sistema visual ambiental =====================
-    /* Motor del sistema portado de la variante local: el puntero que
-       alimenta el foco de .nx-ambient::after y el revelado de los bloques
-       [data-reveal] al entrar en pantalla.
+    // ===================== Revelado al hacer scroll =====================
+    /* Motor del sistema, idéntico al de app.js: revela los bloques
+       [data-reveal] al entrar en pantalla, con cascada entre hermanos y
+       sin desplazamiento si el usuario prefiere menos movimiento.
        Es el MISMO bloque que app.js y settings.html: esta página no
        carga app.js porque su arranque es exclusivo del panel, así que el
        motor tiene que llegarle sin salir del <body>. */
-    function initAmbientPointer() {
-      window.addEventListener(
-        'pointermove',
-        (event) => {
-          document.documentElement.style.setProperty('--mx', `${event.clientX}px`);
-          document.documentElement.style.setProperty('--my', `${event.clientY}px`);
-        },
-        { passive: true }
-      );
-    }
-
     function initScrollReveal() {
       const items = Array.from(document.querySelectorAll('[data-reveal]'));
       if (items.length === 0) return;
 
       if (!('IntersectionObserver' in window)) {
-        items.forEach((item) => item.classList.add('is-visible'));
+        items.forEach((item) => {
+          item.classList.add('is-visible');
+        });
         return;
       }
 
@@ -173,7 +184,6 @@
       });
     }
 
-    initAmbientPointer();
     initScrollReveal();
   </script>
 
@@ -232,11 +242,15 @@
           body: JSON.stringify({
             username: $("login-username").value.trim(),
             password: $("login-password").value,
+            totp: $("login-totp").value.trim() || undefined,
           }),
         });
         window.location.href = "/";
       } catch (error) {
         showError(error.message);
+        if (error.message.toLowerCase().includes("dos pasos")) {
+          $("login-totp").focus();
+        }
       }
     });
 
@@ -244,7 +258,7 @@
       event.preventDefault();
       hideError();
       if ($("setup-password").value !== $("setup-password2").value) {
-        showError("Las contraseñas no coinciden.");
+        showError("Las dos contraseñas no coinciden.");
         return;
       }
       try {

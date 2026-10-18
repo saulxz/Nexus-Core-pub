@@ -2,6 +2,8 @@
 
 * Aísla el estado de la aplicación en un directorio temporal
   (``NEXUS_DATA_DIR``) para no tocar datos reales.
+* Desactiva el comprobador de monitores en segundo plano: los tests crean
+  monitores con destinos ficticios y no debe haber peticiones salientes.
 * Proporciona un cliente autenticado: completa el primer arranque con el
   token de setup y deja la cookie de sesión en el cliente de tests.
 """
@@ -18,6 +20,7 @@ import pytest
 _TEST_DATA_DIR = Path(tempfile.mkdtemp(prefix="nexus-tests-"))
 os.environ["NEXUS_DATA_DIR"] = str(_TEST_DATA_DIR)
 os.environ["SESSION_COOKIE_SECURE"] = "false"
+os.environ["MONITORS_ENABLED"] = "false"
 
 from fastapi.testclient import TestClient  # noqa: E402
 

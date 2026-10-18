@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import json
 import os
 import secrets
 import sqlite3
@@ -29,6 +30,7 @@ from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
 from fastapi import HTTPException, Request, Response, status
 
+from app.core import totp
 from app.core.audit import audit
 from app.core.config import get_settings
 from app.core.logging_conf import logger
@@ -67,7 +69,13 @@ def init_db() -> None:
                 username      TEXT NOT NULL,
                 password_hash TEXT NOT NULL,
                 created_at    REAL NOT NULL,
-                updated_at    REAL NOT NULL
+                updated_at    REAL NOT NULL,
+                -- Segundo factor TOTP (RFC 6238). El secreto y los códigos de
+                -- recuperación se guardan hasheados/cifrados por el módulo
+                -- app.core.totp; aquí solo se persisten.
+                totp_secret   TEXT,
+                totp_enabled  INTEGER NOT NULL DEFAULT 0,
+                totp_recovery TEXT
             );
             CREATE TABLE IF NOT EXISTS sessions (
                 token_hash  TEXT PRIMARY KEY,
@@ -246,6 +254,26 @@ def _hash_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
+def session_id(token: str | None) -> str:
+    """Identificador público de una sesión a partir de su token en claro.
+
+    Es el ``token_hash`` de la fila (la clave que necesita el revocador). **No
+    es una credencial**: para autenticarse hay que presentar el token en claro,
+    del que solo se conoce el resumen.
+    """
+    return _hash_token(token) if token else ""
+
+
+def admin_username() -> str:
+    """Usuario de la cuenta de administrador (la única que existe en el panel)."""
+    conn = connect()
+    try:
+        row = conn.execute("SELECT username FROM admin WHERE id = 1").fetchone()
+    finally:
+        conn.close()
+    return str(row["username"]) if row is not None else ""
+
+
 def create_session(
     username: str, idle_minutes: int, absolute_hours: int
 ) -> tuple[str, str, float]:
@@ -338,6 +366,190 @@ def destroy_all_sessions(except_token: str | None = None) -> None:
         conn.close()
 
 
+def list_sessions(current_token: str | None = None, now: float | None = None) -> list[dict[str, Any]]:
+    """Inventario de sesiones abiertas (la vista «seguridad» del panel).
+
+    ``id`` es el ``token_hash`` de la fila: es la clave primaria que necesita
+    :func:`revoke_session` y **no** es una credencial utilizable —para
+    autenticarse habría que presentar el token en claro, del que solo se conoce
+    el resumen—. Aun así se devuelve completo para que el revocador sea exacto.
+
+    Args:
+        current_token: Token en claro de la sesión que pregunta; su fila se
+            marca con ``is_current`` para que la UI pueda protegerla.
+        now: Instante de referencia para evaluar caducidades.
+
+    Returns:
+        Sesiones de la más reciente a la más antigua.
+    """
+    moment = _utc() if now is None else float(now)
+    current_hash = _hash_token(current_token) if current_token else ""
+    settings = get_settings()
+    idle_limit = settings.SESSION_IDLE_MINUTES * 60
+    conn = connect()
+    try:
+        rows = conn.execute("SELECT * FROM sessions ORDER BY last_seen DESC").fetchall()
+    finally:
+        conn.close()
+    sessions: list[dict[str, Any]] = []
+    for row in rows:
+        last_seen = float(row["last_seen"])
+        expires_at = float(row["expires_at"])
+        sessions.append(
+            {
+                "id": str(row["token_hash"]),
+                "username": str(row["username"]),
+                "created_at": float(row["created_at"]),
+                "last_seen": last_seen,
+                "expires_at": expires_at,
+                "idle_seconds": round(max(0.0, moment - last_seen), 1),
+                "idle_limit_seconds": idle_limit,
+                "expired": moment > expires_at or moment - last_seen > idle_limit,
+                "is_current": bool(current_hash) and str(row["token_hash"]) == current_hash,
+            }
+        )
+    return sessions
+
+
+def revoke_session(session_id: str) -> bool:
+    """Elimina una sesión por su ``token_hash`` (``False`` si no existía)."""
+    conn = connect()
+    try:
+        removed = conn.execute(
+            "DELETE FROM sessions WHERE token_hash = ?", (str(session_id),)
+        ).rowcount
+        conn.commit()
+    finally:
+        conn.close()
+    return bool(removed)
+
+
+# ====================== Segundo factor (TOTP) =========================
+def get_totp_state(username: str) -> dict[str, Any]:
+    """Estado del segundo factor de una cuenta.
+
+    Returns:
+        ``{"enabled": bool, "configured": bool, "recovery_left": int}``.
+        ``configured`` indica que hay un secreto guardado aunque todavía no se
+        haya activado (fase de setup pendiente de confirmar).
+    """
+    conn = connect()
+    try:
+        row = conn.execute(
+            "SELECT totp_secret, totp_enabled, totp_recovery FROM admin WHERE username = ?",
+            (username,),
+        ).fetchone()
+    finally:
+        conn.close()
+    if row is None:
+        return {"enabled": False, "configured": False, "recovery_left": 0}
+    recovery = _recovery_hashes(row["totp_recovery"])
+    return {
+        "enabled": bool(row["totp_enabled"]) and bool(row["totp_secret"]),
+        "configured": bool(row["totp_secret"]),
+        "recovery_left": len(recovery),
+    }
+
+
+def _recovery_hashes(raw: str | None) -> list[str]:
+    """Deserializa la lista JSON de códigos de recuperación hasheados."""
+    if not raw:
+        return []
+    try:
+        parsed = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return []
+    return [str(item) for item in parsed] if isinstance(parsed, list) else []
+
+
+def stage_totp(username: str, secret: str, recovery_hashes: list[str]) -> None:
+    """Guarda el secreto TOTP **sin activarlo** y los códigos hasheados.
+
+    Es la fase de *setup*: el operador escanea el QR y confirma con un código.
+    Hasta que llama a :func:`enable_totp` el segundo factor no se exige al
+    iniciar sesión (así un setup a medias no deja la cuenta inaccesible).
+    """
+    conn = connect()
+    try:
+        conn.execute(
+            "UPDATE admin SET totp_secret = ?, totp_enabled = 0, totp_recovery = ? "
+            "WHERE username = ?",
+            (secret, json.dumps(recovery_hashes, ensure_ascii=False), username),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def enable_totp(username: str) -> None:
+    """Activa el segundo factor (tras verificar un código correcto)."""
+    conn = connect()
+    try:
+        conn.execute(
+            "UPDATE admin SET totp_enabled = 1, updated_at = ? WHERE username = ?",
+            (_utc(), username),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def disable_totp(username: str) -> None:
+    """Desactiva y borra el segundo factor (secret y códigos de recuperación)."""
+    conn = connect()
+    try:
+        conn.execute(
+            "UPDATE admin SET totp_secret = NULL, totp_enabled = 0, "
+            "totp_recovery = NULL, updated_at = ? WHERE username = ?",
+            (_utc(), username),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def verify_second_factor(username: str, code: str, now: float | None = None) -> dict[str, Any]:
+    """Valida un segundo factor (código TOTP o de recuperación).
+
+    Un **código de recuperación** se consume: si coincide con alguno de los
+    hasheados se elimina y no vuelve a servir (uso único, como en el panel de
+    Google). Los códigos TOTP solo se validan (el SAME/anti-replay exigiría
+    guardar el último contador y bloquear códigos válidos durante 30 s).
+
+    Returns:
+        ``{"ok": bool, "method": "totp" | "recovery" | None, "recovery_left": int}``.
+    """
+    moment = _utc() if now is None else float(now)
+    conn = connect()
+    try:
+        row = conn.execute(
+            "SELECT totp_secret, totp_recovery FROM admin WHERE username = ?", (username,)
+        ).fetchone()
+        if row is None or not row["totp_secret"]:
+            return {"ok": False, "method": None, "recovery_left": 0}
+
+        secret = str(row["totp_secret"])
+        if totp.verify(secret, code, timestamp=moment):
+            state = get_totp_state(username)
+            return {"ok": True, "method": "totp", "recovery_left": int(state["recovery_left"])}
+
+        # Segundo intento: código de recuperación (uso único, comparación constante).
+        stored = _recovery_hashes(row["totp_recovery"])
+        digest = totp.hash_recovery_code(code)
+        match = next((item for item in stored if hmac.compare_digest(item, digest)), None)
+        if match is None:
+            return {"ok": False, "method": None, "recovery_left": len(stored)}
+        remaining = [item for item in stored if item != match]
+        conn.execute(
+            "UPDATE admin SET totp_recovery = ? WHERE username = ?",
+            (json.dumps(remaining, ensure_ascii=False), username),
+        )
+        conn.commit()
+        return {"ok": True, "method": "recovery", "recovery_left": len(remaining)}
+    finally:
+        conn.close()
+
+
 # ========================= Limitación de intentos =========================
 def check_login_rate(
     key: str, limit: int, window_seconds: int
@@ -404,24 +616,129 @@ def clear_session_cookie(response: Response) -> None:
     response.delete_cookie(key=SESSION_COOKIE, path="/")
 
 
-def require_auth(request: Request) -> dict[str, Any]:
-    """Dependency de FastAPI: exige sesión válida y CSRF en métodos mutantes.
+def _bearer_token(request: Request) -> str | None:
+    """Extrae el token de API de la cabecera ``Authorization: Bearer ...``."""
+    header = request.headers.get("Authorization", "")
+    if not header.lower().startswith("bearer "):
+        return None
+    value = header[7:].strip()
+    return value or None
 
-    Adjunta la sesión a ``request.state.session`` para que los endpoints
-    conozcan al actor (usuario) sin volver a consultar la base de datos.
+
+def _token_session(request: Request, raw: str) -> dict[str, Any] | None:
+    """Construye la sesión equivalente a partir de un token de API.
+
+    Devuelve ``None`` si el token no es válido (inexistente, revocado o
+    caducado).
+
+    Los tokens de API **no** llevan CSRF (no dependen de una cookie que un
+    navegador adjunte automáticamente: si existiera, bastaría un formulario
+    externo para que el navegador falsificara la cabecera *Authorization* que el
+    panel tiene permitted por CORS). Es el mismo modelo que un JWT o una clave
+    de API: quien la posee es quien la usa.
     """
+    # Import local: app.core.db (y por tanto este módulo) se importa desde
+    # api_tokens, así que una importación a nivel de módulo sería circular.
+    from app.core import api_tokens
+
+    info = api_tokens.authenticate(raw)
+    if info is None:
+        logger.warning("Rechazado un token de API inválido, revocado o caducado")
+        return None
+    return {
+        "username": f"token:{info['name']}",
+        "csrf": "",
+        "auth_kind": "token",
+        "scope": info["scope"],
+        "token_id": info["id"],
+        "created_at": info["created_at"],
+        "expires_at": info["expires_at"],
+        "is_current": False,
+    }
+
+
+def _session_session(request: Request) -> dict[str, Any] | None:
+    """Valida la sesión por cookie y exige CSRF en los métodos mutantes."""
     settings = get_settings()
     token = request.cookies.get(SESSION_COOKIE)
     session = get_session(token, settings.SESSION_IDLE_MINUTES)
     if session is None:
-        raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED, "No autenticado. Inicia sesión en el panel."
-        )
+        return None
     if request.method in _UNSAFE_METHODS:
         csrf = request.headers.get("X-CSRF-Token", "")
         if not csrf or not hmac.compare_digest(csrf, session["csrf"]):
             raise HTTPException(
                 status.HTTP_403_FORBIDDEN, "Token CSRF ausente o inválido."
             )
+    session.update({"auth_kind": "session", "scope": "write", "is_current": True})
+    return session
+
+
+def _authenticate(request: Request, *, require_write: bool) -> dict[str, Any] | None:
+    """Resuelve la identidad de la petición: token de API o sesión con cookie.
+
+    Si la petición trae ``Authorization: Bearer``, esa credencial es **la única**
+    que se considera: un token inválido produce 401 en lugar de caer de vuelta
+    a la cookie. Sin ese «no degradar», un token caducado o revocado seguiría
+    funcionando para cualquiera que además tuviera la sesión abierta, y el
+    cliente no vería ningún error de su credencial.
+
+    Args:
+        request: Petición entrante.
+        require_write: Si es ``True``, un token de API debe tener ámbito
+            ``write`` para métodos mutantes.
+
+    Returns:
+        La sesión normalizada, o ``None`` si no hay ninguna credencial válida.
+    """
+    raw = _bearer_token(request)
+    if raw is not None:
+        session = _token_session(request, raw)
+        if session is not None and require_write and request.method in _UNSAFE_METHODS:
+            if session["scope"] != "write":
+                raise HTTPException(
+                    status.HTTP_403_FORBIDDEN,
+                    "El token de API no tiene permiso para modificar el panel "
+                    "(ámbito 'read'). Crea uno con ámbito 'write'.",
+                )
+        return session
+    return _session_session(request)
+
+
+def require_auth(request: Request) -> dict[str, Any]:
+    """Dependency de FastAPI: exige sesión válida (o token de API) y CSRF.
+
+    Acepta dos credenciales:
+
+    * **Cookie de sesión + cabecera ``X-CSRF-Token``** en los métodos mutantes
+      (el frontend del panel).
+    * **``Authorization: Bearer <token>``** con un token de API: no necesita
+      CSRF y, para mutar, exige ámbito ``write``.
+
+    En ambos casos la identidad se adjunta a ``request.state.session`` para que
+    los endpoints conozcan al actor sin volver a consultar la base de datos.
+    """
+    session = _authenticate(request, require_write=True)
+    if session is None:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED, "No autenticado. Inicia sesión en el panel."
+        )
+    request.state.session = session
+    return session
+
+
+def require_read_auth(request: Request) -> dict[str, Any]:
+    """Dependency como :func:`require_auth` pero sin exigir ámbito ``write``.
+
+    Se reserva para transportes que usan un método mutante para una operación
+    lógicamente de **solo lectura** (el servidor MCP, que es un ``POST`` con
+    JSON-RPC). Un token ``read`` basta ahí; la sesión por cookie sigue exigiendo
+    CSRF, para que el endpoint no se convierta en un agujero de CSRF.
+    """
+    session = _authenticate(request, require_write=False)
+    if session is None:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED, "No autenticado. Inicia sesión en el panel."
+        )
     request.state.session = session
     return session

@@ -25,6 +25,12 @@ from app.core.security import connect
 #: Segundos que una propuesta permanece válida antes de caducar.
 TTL_SECONDS = 120
 
+#: Actor reservado a las propuestas creadas por el motor (autorremediación de
+#: alertas), que no pertenecen a ninguna sesión concreta. Cualquier
+#: administrador autenticado puede confirmarlas: si exigieran su propio actor,
+#: nadie podría ejecutarlas nunca.
+SYSTEM_ACTOR = "sistema"
+
 _actor_var: contextvars.ContextVar[str] = contextvars.ContextVar(
     "nexus_actor", default="desconocido"
 )
@@ -87,11 +93,25 @@ def _row_to_dict(row: Any) -> dict[str, Any]:
 
 
 def create(
-    tool: str, args: dict[str, Any], summary: str, ttl: int = TTL_SECONDS
+    tool: str,
+    args: dict[str, Any],
+    summary: str,
+    ttl: int = TTL_SECONDS,
+    actor: str | None = None,
 ) -> dict[str, Any]:
-    """Registra una propuesta pendiente de confirmación humana."""
+    """Registra una propuesta pendiente de confirmación humana.
+
+    Args:
+        tool: Nombre de la herramienta/acción propuesta.
+        args: Argumentos con los que se ejecutaría al confirmar.
+        summary: Descripción legible para el panel.
+        ttl: Segundos de validez.
+        actor: Propietario de la propuesta. Por defecto es el actor del contexto
+            (``set_actor``); el motor de alertas usa :data:`SYSTEM_ACTOR`.
+    """
     now = time.time()
     action_id = secrets.token_hex(8)
+    owner = actor or current_actor()
     conn = connect()
     try:
         conn.execute(
@@ -101,7 +121,7 @@ def create(
                 action_id,
                 now,
                 now + ttl,
-                current_actor(),
+                owner,
                 tool,
                 json.dumps(args, ensure_ascii=False),
                 summary,
@@ -159,6 +179,27 @@ def list_for(actor: str, limit: int = 20) -> list[dict[str, Any]]:
         conn.close()
 
 
+def list_by_tools(tools: tuple[str, ...], limit: int = 20) -> list[dict[str, Any]]:
+    """Lista propuestas creadas por alguna de las herramientas indicadas.
+
+    Lo usa ``GET /api/alerts/remediation`` para mostrar las propuestas del motor
+    de alertas, que no pertenecen a la sesión de quien las consulta.
+    """
+    if not tools:
+        return []
+    placeholders = ", ".join("?" for _ in tools)
+    conn = connect()
+    try:
+        rows = conn.execute(
+            f"SELECT * FROM pending_actions WHERE tool IN ({placeholders}) "
+            "ORDER BY created_at DESC LIMIT ?",
+            (*tools, max(1, min(int(limit), 200))),
+        ).fetchall()
+        return [_row_to_dict(row) for row in rows]
+    finally:
+        conn.close()
+
+
 def confirm(action_id: str, actor: str) -> dict[str, Any]:
     """Marca una propuesta como confirmada (transición de un solo uso).
 
@@ -178,7 +219,7 @@ def confirm(action_id: str, actor: str) -> dict[str, Any]:
                 "reason": "not_found",
                 "action": None,
             }
-        if row["actor"] != actor:
+        if row["actor"] != actor and row["actor"] != SYSTEM_ACTOR:
             return {
                 "success": False,
                 "message": "La acción pertenece a otra sesión.",
@@ -236,7 +277,7 @@ def cancel(action_id: str, actor: str) -> dict[str, Any]:
         ).fetchone()
         if row is None:
             return {"success": False, "message": "La acción no existe.", "reason": "not_found"}
-        if row["actor"] != actor:
+        if row["actor"] != actor and row["actor"] != SYSTEM_ACTOR:
             return {"success": False, "message": "La acción pertenece a otra sesión.", "reason": "forbidden"}
         if row["status"] != "pending":
             return {

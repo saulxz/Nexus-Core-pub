@@ -68,6 +68,24 @@ class Settings(BaseSettings):
     SCAN_DEFAULT_SUBNET: str = "192.168.1.0/24"
     SCAN_TIMEOUT_SECONDS: int = 120
 
+    # ------------------------- Exportación a Prometheus ------------------------
+    # Si está vacío, /api/metrics/prometheus es público (por defecto). Al
+    # configurarlo, el endpoint exige «Authorization: Bearer <token>».
+    METRICS_TOKEN: str = ""
+    # Comprobador de monitores en segundo plano. Se desactiva (MONITORS_ENABLED=
+    # false) en los tests —para que no hagan peticiones de red reales— y durante
+    # un mantenimiento en el que no deba salir tráfico.
+    MONITORS_ENABLED: bool = True
+
+    # ------------------------------ Flota (multi-host) ------------------------
+    # Token de enrolamiento de los agentes remotos: quien lo presenta puede dar
+    # de alta un host en la flota (POST /api/agent/enroll). Si se deja vacío, el
+    # hub genera uno y lo guarda en $NEXUS_DATA_DIR/config/agent_enroll_token
+    # (0600); se consulta desde el panel con GET /api/hosts/enrollment.
+    AGENT_ENROLL_TOKEN: str = ""
+    # Segundos sin heartbeat a partir de los cuales un host se marca «offline».
+    AGENT_ONLINE_WINDOW: int = 30
+
     # --------------------------------- Agente IA ------------------------------
     # Proveedor: "openai" | "anthropic" | "gemini" | "ollama".
     # Vacío = sin proveedor: el asistente queda desactivado (es opcional y el

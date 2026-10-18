@@ -1,0 +1,15 @@
+# Nexus-Core — Caddy de producción
+# Sustituye nexus.example.com por tu dominio real antes de instalar:
+#   sudo sed -i 's/nexus.example.com/TU-DOMINIO/' /etc/caddy/Caddyfile
+# Caddy obtiene y renueva el certificado TLS automáticamente (puertos 80/443).
+
+nexus.example.com {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8000
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+}
