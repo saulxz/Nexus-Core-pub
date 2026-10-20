@@ -72,7 +72,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
 
   <!-- Tipografía: pilas del sistema, sin descargas externas -->
-  <link rel="stylesheet" href="/css/styles.css?v=12" />
+  <link rel="stylesheet" href="/css/styles.css?v=14" />
 <link rel="stylesheet" href="/vendor/xterm/xterm.css">
 </head>
 
@@ -1953,6 +1953,12 @@
             <h3 class="panel-title">Terminal SSH</h3>
             <p class="panel-note panel-note--inline">Conexión cifrada al servidor. Solo administrador; se cierra al salir de la pestaña.</p>
             <div class="nx-card-actions">
+              <label class="nx-terminal-picker" for="terminal-host">
+                <span class="nx-terminal-picker-label">Servidor</span>
+                <select id="terminal-host" class="input-field nx-terminal-select" aria-label="Servidor de la terminal" disabled>
+                  <option value="">Cargando servidores…</option>
+                </select>
+              </label>
               <button id="terminal-reconnect" type="button" class="btn btn-ghost btn-sm">Reconectar</button>
             </div>
           </div>
@@ -2011,6 +2017,6 @@
   <!-- ===================== SCRIPTS ===================== -->
   <script src="/vendor/xterm/xterm.js"></script>
 <script src="/vendor/xterm/addon-fit.js"></script>
-<script src="/js/app.js?v=14"></script>
+<script src="/js/app.js?v=15"></script>
 </body>
 </html>

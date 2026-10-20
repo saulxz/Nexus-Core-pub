@@ -551,11 +551,15 @@ mantiene la superficie de ataque pequeña y auditable.</p>
 un WebSocket autenticado. No hay contraseñas ni claves en el cliente: el navegador
 solo transporta el WebSocket; el hub abre la conexión SSH con una clave dedicada
 (<code>/etc/nexus/terminal_key</code>) y un <code>known_hosts</code> fijado.</p>
+<p>El desplegable <strong>Servidor</strong> lista los hosts conectados. Solo se pueden seleccionar
+los que tienen un destino SSH definido en <code>TERMINAL_TARGETS</code>; los demás aparecen
+deshabilitados con el motivo. El host local usa <code>TERMINAL_SSH_*</code> y no se incluye en
+ese mapa.</p>
 <ul>
 <li>La sesión exige cookie de administrador, token CSRF enviado en el subprotocolo
   <code>csrf.&lt;token&gt;</code> y el mismo origen del panel.</li>
-<li>El PTY se abre como el usuario configurado en <code>TERMINAL_SSH_USER</code> (por ejemplo,
-  <code>saul_server</code>). Si se deja vacío, la terminal queda desactivada.</li>
+<li>El PTY se abre como el usuario configurado en <code>TERMINAL_SSH_USER</code> o en el destino
+  remoto. Si no hay usuario, la terminal queda desactivada.</li>
 <li>Se cierra al cambiar de pestaña y tras <code>TERMINAL_IDLE_SECONDS</code> sin actividad.</li>
 <li>Los comandos se ejecutan con los permisos de ese usuario; no hay una shell root
   implícita. Para tareas root se usa <code>sudo</code> y su contraseña, igual que en una SSH normal.</li>
@@ -568,9 +572,14 @@ sudo install -d -o saul_server -g saul_server -m 0700 /home/saul_server/.ssh
 sudo sh -c 'cat /etc/nexus/terminal_key.pub &gt;&gt; /home/saul_server/.ssh/authorized_keys'
 sudo chown saul_server:saul_server /home/saul_server/.ssh/authorized_keys
 sudo chmod 600 /home/saul_server/.ssh/authorized_keys
-sudo sh -c 'ssh-keyscan -t ed25519 127.0.0.1 &gt; /etc/nexus/terminal_known_hosts'
+sudo sh -c 'ssh-keyscan -t ed25519 127.0.0.1 192.168.1.10 &gt; /etc/nexus/terminal_known_hosts'
 sudo chown nexus:nexus /etc/nexus/terminal_key /etc/nexus/terminal_known_hosts
 sudo chmod 600 /etc/nexus/terminal_key /etc/nexus/terminal_known_hosts
+</code></pre>
+<p>En cada host remoto hay que autorizar la clave pública del hub en el usuario SSH
+correspondiente y añadir su clave de host al <code>known_hosts</code> del hub. El destino se
+declara únicamente en el servidor (<code>/etc/nexus/nexus.env</code>):</p>
+<pre><code class="language-bash">TERMINAL_TARGETS={&quot;ubuntu-server-sor&quot;:{&quot;host&quot;:&quot;192.168.1.10&quot;,&quot;port&quot;:22,&quot;user&quot;:&quot;saul_server&quot;}}
 </code></pre>
 <p>Añade estas claves a <code>/etc/nexus/nexus.env</code> y reinicia el servicio:</p>
 <pre><code class="language-bash">TERMINAL_SSH_HOST=127.0.0.1
@@ -1060,6 +1069,11 @@ y que el puerto 8000 no es accesible desde fuera. <strong>Pregunta:</strong> ¿q
 <td>WS</td>
 <td><code>/api/terminal/ws</code></td>
 <td>Terminal SSH autenticada (xterm.js)</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/terminal/targets</code></td>
+<td>Hosts conectados y disponibilidad de terminal</td>
 </tr>
 </tbody>
 </table>

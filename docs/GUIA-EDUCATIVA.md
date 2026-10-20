@@ -185,10 +185,15 @@ un WebSocket autenticado. No hay contraseñas ni claves en el cliente: el navega
 solo transporta el WebSocket; el hub abre la conexión SSH con una clave dedicada
 (`/etc/nexus/terminal_key`) y un `known_hosts` fijado.
 
+El desplegable **Servidor** lista los hosts conectados. Solo se pueden seleccionar
+los que tienen un destino SSH definido en `TERMINAL_TARGETS`; los demás aparecen
+deshabilitados con el motivo. El host local usa `TERMINAL_SSH_*` y no se incluye en
+ese mapa.
+
 - La sesión exige cookie de administrador, token CSRF enviado en el subprotocolo
   `csrf.<token>` y el mismo origen del panel.
-- El PTY se abre como el usuario configurado en `TERMINAL_SSH_USER` (por ejemplo,
-  `saul_server`). Si se deja vacío, la terminal queda desactivada.
+- El PTY se abre como el usuario configurado en `TERMINAL_SSH_USER` o en el destino
+  remoto. Si no hay usuario, la terminal queda desactivada.
 - Se cierra al cambiar de pestaña y tras `TERMINAL_IDLE_SECONDS` sin actividad.
 - Los comandos se ejecutan con los permisos de ese usuario; no hay una shell root
   implícita. Para tareas root se usa `sudo` y su contraseña, igual que en una SSH normal.
@@ -203,9 +208,17 @@ sudo install -d -o saul_server -g saul_server -m 0700 /home/saul_server/.ssh
 sudo sh -c 'cat /etc/nexus/terminal_key.pub >> /home/saul_server/.ssh/authorized_keys'
 sudo chown saul_server:saul_server /home/saul_server/.ssh/authorized_keys
 sudo chmod 600 /home/saul_server/.ssh/authorized_keys
-sudo sh -c 'ssh-keyscan -t ed25519 127.0.0.1 > /etc/nexus/terminal_known_hosts'
+sudo sh -c 'ssh-keyscan -t ed25519 127.0.0.1 192.168.1.10 > /etc/nexus/terminal_known_hosts'
 sudo chown nexus:nexus /etc/nexus/terminal_key /etc/nexus/terminal_known_hosts
 sudo chmod 600 /etc/nexus/terminal_key /etc/nexus/terminal_known_hosts
+```
+
+En cada host remoto hay que autorizar la clave pública del hub en el usuario SSH
+correspondiente y añadir su clave de host al `known_hosts` del hub. El destino se
+declara únicamente en el servidor (`/etc/nexus/nexus.env`):
+
+```bash
+TERMINAL_TARGETS={"ubuntu-server-sor":{"host":"192.168.1.10","port":22,"user":"saul_server"}}
 ```
 
 Añade estas claves a `/etc/nexus/nexus.env` y reinicia el servicio:
@@ -568,6 +581,7 @@ y que el puerto 8000 no es accesible desde fuera. **Pregunta:** ¿qué añade Cl
 | GET | `/api/metrics/prometheus` | Exportación Prometheus |
 | GET | `/api/status/page` | Página pública de estado |
 | WS | `/api/terminal/ws` | Terminal SSH autenticada (xterm.js) |
+| GET | `/api/terminal/targets` | Hosts conectados y disponibilidad de terminal |
 
 ## 12.2 Herramientas del agente
 

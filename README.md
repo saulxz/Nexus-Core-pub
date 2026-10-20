@@ -37,8 +37,9 @@ direcciones de documentación (`192.0.2.10`). No hay credenciales ni datos reale
   notificaciones y monitores HTTP/TCP/SSL con página de estado.
 - **Instalador apt con allowlist**: catálogo cerrado (nginx, Samba, dnsmasq, Docker,
   Fail2ban y Redis), confirmación, auditoría y helper root-owned; local y agentes Linux.
-- **Terminal SSH**: pestaña con xterm.js y WebSocket autenticado; clave dedicada en
-  el hub, CSRF/origen, known_hosts fijado y cierre por inactividad.
+- **Terminal SSH**: pestaña con xterm.js, selector de hosts conectados y WebSocket
+  autenticado; clave dedicada en el hub, CSRF/origen, known_hosts fijado y cierre
+  por inactividad.
 - **Seguridad**: 2FA TOTP con códigos de recuperación, sesiones con CSRF, cookies
   `Secure`, rate limiting, tokens de API, auditoría encadenada y backups verificados.
 - **IA con control humano**: el asistente propone acciones; las sensibles quedan
@@ -134,7 +135,7 @@ python -m pytest backend/tests -q
 ```
 
 El proyecto incluye pruebas de autenticación, alertas, métricas, monitores,
-multi-host, seguridad y sistema. La suite actual pasa con **229 tests y 1 omitido**.
+multi-host, seguridad y sistema. La suite actual pasa con **231 tests y 1 omitido**.
 
 ---
 

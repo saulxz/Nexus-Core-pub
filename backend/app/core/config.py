@@ -97,6 +97,10 @@ class Settings(BaseSettings):
     TERMINAL_SSH_KNOWN_HOSTS: str = "/etc/nexus/terminal_known_hosts"
     TERMINAL_IDLE_SECONDS: int = 900
     TERMINAL_MAX_MESSAGE: int = 65536
+    # Mapa JSON de destinos remotos, con clave por id/nombre/hostname del host:
+    # {"ubuntu-server-sor":{"host":"192.168.1.10","port":22,"user":"saul_server"}}
+    # El host local no se incluye aquí: usa TERMINAL_SSH_*.
+    TERMINAL_TARGETS: str = ""
 
     # --------------------------------- Agente IA ------------------------------
     # Proveedor: "openai" | "anthropic" | "gemini" | "ollama".

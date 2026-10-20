@@ -17,6 +17,22 @@ def _expect_close(client: TestClient, code: int, **kwargs: object) -> None:
     assert caught.value.code == code
 
 
+def test_terminal_targets_requires_authentication() -> None:
+    """El listado de destinos no es público."""
+    response = TestClient(app).get("/api/terminal/targets")
+    assert response.status_code == 401
+
+
+def test_terminal_targets_lists_local_host(client: TestClient) -> None:
+    """El inventario incluye el host local y su disponibilidad."""
+    response = client.get("/api/terminal/targets")
+    assert response.status_code == 200
+    targets = response.json()["targets"]
+    assert any(target["is_local"] for target in targets)
+    for target in targets:
+        assert set(target) == {"id", "name", "is_local", "available", "reason"}
+
+
 def test_terminal_rejects_anonymous_session() -> None:
     """Sin cookie de sesión no se acepta el WebSocket (4401)."""
     _expect_close(TestClient(app), 4401)

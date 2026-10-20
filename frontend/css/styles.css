@@ -624,6 +624,50 @@ code { font-size: 0.95em; }
   flex: none;
 }
 
+.nx-terminal-picker {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-2);
+  min-width: 0;
+}
+
+.nx-terminal-picker-label {
+  flex: none;
+  color: var(--nx-ink-quiet);
+  font-size: var(--nx-fs-caption);
+  white-space: nowrap;
+}
+
+select.nx-terminal-select {
+  width: 13rem;
+  min-width: 13rem;
+  max-width: 20rem;
+  font-size: var(--nx-fs-caption);
+}
+
+@media (max-width: 760px) {
+  #section-terminal .nx-card-head {
+    flex-wrap: wrap;
+    padding-block: var(--nx-space-2);
+  }
+
+  #section-terminal .nx-card-head .panel-note {
+    order: 3;
+    width: 100%;
+    text-align: left;
+  }
+
+  .nx-terminal-picker {
+    flex: 1;
+  }
+
+  select.nx-terminal-select {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+}
+
 /* En escritorio el Asistente es una columna fija. Al abrir Terminal se
    oculta para que la consola use todo el ancho; al cambiar de pestaña
    vuelve a aparecer. El ResizeObserver de app.js reajusta xterm. */

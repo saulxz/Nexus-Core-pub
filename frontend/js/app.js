@@ -85,7 +85,9 @@ const state = {
   remoteSensorStatus: {},       // { [clave]: severidad } del host remoto.
   remoteFreshAt: 0,             // ts (ms) del último punto pintado del agente.
   remoteSeries: {},             // { [clave]: [números] } — minigráficos remotos.
-  localSnapshot: null,          // Último /api/metrics, para volver a local al vuelo.
+  localSnapshot: null,          // último /api/metrics, para volver a local al vuelo.
+  terminalTargets: [],          // Hosts conectados con destino SSH disponible.
+  terminalHostId: null,         // Host elegido para la pestaña Terminal.
   loaded: {}                    // { [clave]: true } — una vez por bloque
 };
 
@@ -6032,6 +6034,66 @@ function sizeTerminalSection() {
   section.style.height = `${Math.max(320, Math.round(window.innerHeight - top - 16))}px`;
 }
 
+async function fetchTerminalTargets() {
+  const select = $('terminal-host');
+  try {
+    const payload = await apiFetch('/api/terminal/targets');
+    state.terminalTargets = Array.isArray(payload.targets) ? payload.targets : [];
+  } catch (error) {
+    state.terminalTargets = [];
+    state.terminalHostId = null;
+    if (select) {
+      select.innerHTML = '<option value="">Sin conexión con el hub</option>';
+      select.disabled = true;
+    }
+    setTerminalStatus(`No se pudo cargar la lista de servidores: ${error.message}`, true);
+    return false;
+  }
+
+  const available = state.terminalTargets.filter((target) => target.available);
+  const saved = Number(window.localStorage.getItem('nexus.terminalHost') || 0);
+  const selected = available.find((target) => Number(target.id) === saved)
+    || available.find((target) => target.is_local)
+    || available[0]
+    || null;
+  state.terminalHostId = selected ? Number(selected.id) : null;
+
+  if (!select) return Boolean(selected);
+  if (!state.terminalTargets.length) {
+    select.innerHTML = '<option value="">Sin servidores conectados</option>';
+    select.disabled = true;
+    setTerminalStatus('No hay servidores conectados con terminal disponible.', true);
+    return false;
+  }
+
+  select.innerHTML = state.terminalTargets
+    .map((target) => {
+      const label = `${target.name}${target.is_local ? ' (este servidor)' : ''}${
+        target.available ? '' : ` — ${target.reason || 'sin SSH'}`
+      }`;
+      return `<option value="${escapeHtml(String(target.id))}"${
+        target.available ? '' : ' disabled'
+      }>${escapeHtml(label)}</option>`;
+    })
+    .join('');
+  select.disabled = available.length === 0;
+  if (selected) select.value = String(selected.id);
+  if (!selected) {
+    setTerminalStatus('No hay servidores con terminal disponible.', true);
+    return false;
+  }
+  return true;
+}
+
+async function prepareTerminalSession() {
+  setTerminalStatus('Cargando servidores…');
+  const ready = await fetchTerminalTargets();
+  if (document.body.dataset.tab !== 'terminal') return;
+  sizeTerminalSection();
+  closeTerminalSession();
+  if (ready) openTerminalSession();
+}
+
 function closeTerminalSession() {
   const session = terminalSession;
   terminalSession = null;
@@ -6046,9 +6108,19 @@ function openTerminalSession() {
   sizeTerminalSection();
   const host = $('terminal');
   if (!host) return;
-  if (terminalSession) {
-    try { terminalSession.fit.fit(); terminalSession.term.focus(); } catch (_error) { /* oculto */ }
+  const target = state.terminalTargets.find(
+    (item) => Number(item.id) === Number(state.terminalHostId)
+  );
+  if (!target || !target.available) {
+    setTerminalStatus(target?.reason || 'Selecciona un servidor con terminal disponible.', true);
     return;
+  }
+  if (terminalSession) {
+    if (Number(terminalSession.hostId) === Number(target.id)) {
+      try { terminalSession.fit.fit(); terminalSession.term.focus(); } catch (_error) { /* oculto */ }
+      return;
+    }
+    closeTerminalSession();
   }
   if (!window.Terminal || !window.FitAddon) {
     setTerminalStatus('El emulador de terminal no está disponible.', true);
@@ -6075,11 +6147,11 @@ function openTerminalSession() {
 
   const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
   const ws = new WebSocket(
-    `${scheme}://${window.location.host}/api/terminal/ws`,
+    `${scheme}://${window.location.host}/api/terminal/ws?host=${encodeURIComponent(String(target.id))}`,
     ['nexus-terminal', `csrf.${state.csrf || ''}`]
   );
   ws.binaryType = 'arraybuffer';
-  const session = { term, fit, ws, host };
+  const session = { term, fit, ws, host, hostId: Number(target.id) };
   terminalSession = session;
 
   // El panel cambia de ancho al ocultar el Asistente y al redimensionar
@@ -6095,7 +6167,7 @@ function openTerminalSession() {
   }
 
   ws.onopen = () => {
-    setTerminalStatus('Conectado por SSH.');
+    setTerminalStatus(`Conectado a ${target.name} por SSH.`);
     try { fit.fit(); } catch (_error) { /* sin tamaño */ }
     sendTerminalResize(session);
     term.focus();
@@ -6127,17 +6199,37 @@ function openTerminalSession() {
 
 window.addEventListener('nx-tab', (event) => {
   if (event.detail && event.detail.name === 'terminal') {
-    window.setTimeout(openTerminalSession, 120);
+    window.setTimeout(prepareTerminalSession, 120);
   } else {
     closeTerminalSession();
   }
 });
 
+const terminalHostSelect = $('terminal-host');
+if (terminalHostSelect) {
+  terminalHostSelect.addEventListener('change', () => {
+    const target = state.terminalTargets.find(
+      (item) => Number(item.id) === Number(terminalHostSelect.value)
+    );
+    if (!target || !target.available) {
+      setTerminalStatus(target?.reason || 'Servidor sin terminal disponible.', true);
+      return;
+    }
+    state.terminalHostId = Number(target.id);
+    try {
+      window.localStorage.setItem('nexus.terminalHost', String(target.id));
+    } catch (_error) { /* almacenamiento no disponible */ }
+    closeTerminalSession();
+    setTerminalStatus(`Conectando a ${target.name}…`);
+    window.setTimeout(openTerminalSession, 120);
+  });
+}
+
 const terminalReconnect = $('terminal-reconnect');
 if (terminalReconnect) {
   terminalReconnect.addEventListener('click', () => {
     closeTerminalSession();
-    window.setTimeout(openTerminalSession, 120);
+    prepareTerminalSession();
   });
 }
 
