@@ -54,8 +54,8 @@ RestrictRealtime=yes
 RestrictSUIDSGID=yes
 LockPersonality=yes
 SystemCallArchitectures=native
-# Solo salida TCP (y el socket unix de Docker, si se leen contenedores).
-RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+# Salida TCP y NETLINK (psutil enumera interfaces por netlink).
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
 
 [Install]
 WantedBy=multi-user.target
