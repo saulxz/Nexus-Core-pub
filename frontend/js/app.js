@@ -5765,6 +5765,8 @@ function showTab(name) {
   document.querySelectorAll('.tab-btn').forEach((button) => {
     button.classList.toggle('tab-active', button.dataset.tab === name);
   });
+
+  window.dispatchEvent(new CustomEvent('nx-tab', { detail: { name } }));
 }
 
 // ============================== Gráfica ==============================
@@ -5999,6 +6001,121 @@ function startPolling() {
     if (!isRemoteScope()) fetchContainers();
   }, CONFIG.POLL_INTERVAL_MS);
 }
+
+/* ------------------------- Terminal SSH ------------------------- */
+let terminalSession = null;
+
+function setTerminalStatus(text, isError = false) {
+  const node = $('terminal-status');
+  if (!node) return;
+  node.textContent = text;
+  node.classList.toggle('nx-status--error', Boolean(isError));
+}
+
+function sendTerminalResize(session) {
+  if (!session || session.ws.readyState !== WebSocket.OPEN) return;
+  session.ws.send(JSON.stringify({ type: 'resize', cols: session.term.cols, rows: session.term.rows }));
+}
+
+function closeTerminalSession() {
+  const session = terminalSession;
+  terminalSession = null;
+  if (!session) return;
+  try { session.ws.close(1000); } catch (_error) { /* ya cerrado */ }
+  try { session.term.dispose(); } catch (_error) { /* ya liberado */ }
+  try { session.host.innerHTML = ''; } catch (_error) { /* sin host */ }
+}
+
+function openTerminalSession() {
+  const host = $('terminal');
+  if (!host) return;
+  if (terminalSession) {
+    try { terminalSession.fit.fit(); terminalSession.term.focus(); } catch (_error) { /* oculto */ }
+    return;
+  }
+  if (!window.Terminal || !window.FitAddon) {
+    setTerminalStatus('El emulador de terminal no está disponible.', true);
+    return;
+  }
+
+  const term = new window.Terminal({
+    cursorBlink: true,
+    convertEol: true,
+    fontFamily: '"Cascadia Mono", Consolas, monospace',
+    fontSize: 13,
+    scrollback: 2000,
+    theme: {
+      background: '#080d16',
+      foreground: '#d7e3ef',
+      cursor: '#4da3ff',
+      selectionBackground: 'rgba(77, 163, 255, 0.25)',
+    },
+  });
+  const fit = new window.FitAddon.FitAddon();
+  term.loadAddon(fit);
+  term.open(host);
+  try { fit.fit(); } catch (_error) { /* aún sin tamaño */ }
+
+  const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  const ws = new WebSocket(
+    `${scheme}://${window.location.host}/api/terminal/ws`,
+    ['nexus-terminal', `csrf.${state.csrf || ''}`]
+  );
+  ws.binaryType = 'arraybuffer';
+  const session = { term, fit, ws, host };
+  terminalSession = session;
+
+  ws.onopen = () => {
+    setTerminalStatus('Conectado por SSH.');
+    try { fit.fit(); } catch (_error) { /* sin tamaño */ }
+    sendTerminalResize(session);
+    term.focus();
+  };
+  ws.onmessage = (event) => {
+    const data = typeof event.data === 'string' ? event.data : new Uint8Array(event.data);
+    term.write(data);
+  };
+  ws.onerror = () => setTerminalStatus('Error de conexión con el terminal.', true);
+  ws.onclose = (event) => {
+    setTerminalStatus(
+      event.code === 1000 ? 'Sesión cerrada.' : `Sesión cerrada (${event.code}).`,
+      event.code !== 1000
+    );
+    if (terminalSession === session) {
+      terminalSession = null;
+      try { term.dispose(); } catch (_error) { /* ya liberado */ }
+      try { host.innerHTML = ''; } catch (_error) { /* sin host */ }
+    }
+  };
+  term.onData((data) => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'input', data }));
+    }
+  });
+  term.onResize(() => sendTerminalResize(session));
+}
+
+window.addEventListener('nx-tab', (event) => {
+  if (event.detail && event.detail.name === 'terminal') {
+    window.setTimeout(openTerminalSession, 120);
+  } else {
+    closeTerminalSession();
+  }
+});
+
+const terminalReconnect = $('terminal-reconnect');
+if (terminalReconnect) {
+  terminalReconnect.addEventListener('click', () => {
+    closeTerminalSession();
+    window.setTimeout(openTerminalSession, 120);
+  });
+}
+
+window.addEventListener('resize', () => {
+  if (!terminalSession) return;
+  try { terminalSession.fit.fit(); } catch (_error) { /* oculto */ }
+  sendTerminalResize(terminalSession);
+});
 
 function registerEventListeners() {
   document.querySelectorAll('.tab-btn').forEach((button) => {

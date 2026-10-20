@@ -265,6 +265,7 @@ marcadores como <code>&lt;TOKEN&gt;</code>. Ninguna credencial real aparece en e
 <li><a href="#32-monitores-y-pagina-de-estado">3.2 Monitores y página de estado</a></li>
 <li><a href="#33-ia-con-human-in-the-loop">3.3 IA con human-in-the-loop</a></li>
 <li><a href="#34-instalacion-de-servicios-apt">3.4 Instalación de servicios (apt)</a></li>
+<li><a href="#35-terminal-ssh-del-panel">3.5 Terminal SSH del panel</a></li>
 </ul>
 </li>
 <li><a href="#4-datos-y-persistencia">4. Datos y persistencia</a><ul>
@@ -544,6 +545,46 @@ instalación exige confirmación y queda registrada en Auditoría.</p>
 <p><strong>Por qué allowlist y no un campo de paquete:</strong> instalar paquetes es una operación de
 root. Un campo libre convertiría el panel en una shell root; el catálogo cerrado
 mantiene la superficie de ataque pequeña y auditable.</p>
+</blockquote>
+<h2 id="35-terminal-ssh-del-panel">3.5 Terminal SSH del panel</h2>
+<p>La pestaña <strong>Terminal</strong> abre una sesión SSH real dentro del navegador con xterm.js y
+un WebSocket autenticado. No hay contraseñas ni claves en el cliente: el navegador
+solo transporta el WebSocket; el hub abre la conexión SSH con una clave dedicada
+(<code>/etc/nexus/terminal_key</code>) y un <code>known_hosts</code> fijado.</p>
+<ul>
+<li>La sesión exige cookie de administrador, token CSRF enviado en el subprotocolo
+  <code>csrf.&lt;token&gt;</code> y el mismo origen del panel.</li>
+<li>El PTY se abre como el usuario configurado en <code>TERMINAL_SSH_USER</code> (por ejemplo,
+  <code>saul_server</code>). Si se deja vacío, la terminal queda desactivada.</li>
+<li>Se cierra al cambiar de pestaña y tras <code>TERMINAL_IDLE_SECONDS</code> sin actividad.</li>
+<li>Los comandos se ejecutan con los permisos de ese usuario; no hay una shell root
+  implícita. Para tareas root se usa <code>sudo</code> y su contraseña, igual que en una SSH normal.</li>
+<li><code>asyncssh</code> y <code>websockets</code> son dependencias del hub; los assets de xterm.js están
+  vendorizados, sin CDN.</li>
+</ul>
+<p>Configuración mínima en el hub:</p>
+<pre><code class="language-bash">sudo ssh-keygen -t ed25519 -N '' -f /etc/nexus/terminal_key -C nexus-web-terminal
+sudo install -d -o saul_server -g saul_server -m 0700 /home/saul_server/.ssh
+sudo sh -c 'cat /etc/nexus/terminal_key.pub &gt;&gt; /home/saul_server/.ssh/authorized_keys'
+sudo chown saul_server:saul_server /home/saul_server/.ssh/authorized_keys
+sudo chmod 600 /home/saul_server/.ssh/authorized_keys
+sudo sh -c 'ssh-keyscan -t ed25519 127.0.0.1 &gt; /etc/nexus/terminal_known_hosts'
+sudo chown nexus:nexus /etc/nexus/terminal_key /etc/nexus/terminal_known_hosts
+sudo chmod 600 /etc/nexus/terminal_key /etc/nexus/terminal_known_hosts
+</code></pre>
+<p>Añade estas claves a <code>/etc/nexus/nexus.env</code> y reinicia el servicio:</p>
+<pre><code class="language-bash">TERMINAL_SSH_HOST=127.0.0.1
+TERMINAL_SSH_PORT=22
+TERMINAL_SSH_USER=saul_server
+TERMINAL_SSH_KEY=/etc/nexus/terminal_key
+TERMINAL_SSH_KNOWN_HOSTS=/etc/nexus/terminal_known_hosts
+TERMINAL_IDLE_SECONDS=900
+</code></pre>
+<blockquote>
+<p><strong>Por qué no se guarda la contraseña SSH:</strong> la clave dedicada permite auditar y
+revocar el acceso sin depositar secretos en el navegador. El <code>known_hosts</code> evita
+aceptar una clave de host desconocida y el CSRF impide que otro origen abra la
+terminal con la cookie del administrador.</p>
 </blockquote>
 <hr />
 <h1 id="4-datos-y-persistencia">4. Datos y persistencia</h1>
@@ -1014,6 +1055,11 @@ y que el puerto 8000 no es accesible desde fuera. <strong>Pregunta:</strong> ¿q
 <td>GET</td>
 <td><code>/api/status/page</code></td>
 <td>Página pública de estado</td>
+</tr>
+<tr>
+<td>WS</td>
+<td><code>/api/terminal/ws</code></td>
+<td>Terminal SSH autenticada (xterm.js)</td>
 </tr>
 </tbody>
 </table>

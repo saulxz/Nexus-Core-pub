@@ -178,6 +178,52 @@ instalación exige confirmación y queda registrada en Auditoría.
 > root. Un campo libre convertiría el panel en una shell root; el catálogo cerrado
 > mantiene la superficie de ataque pequeña y auditable.
 
+## 3.5 Terminal SSH del panel
+
+La pestaña **Terminal** abre una sesión SSH real dentro del navegador con xterm.js y
+un WebSocket autenticado. No hay contraseñas ni claves en el cliente: el navegador
+solo transporta el WebSocket; el hub abre la conexión SSH con una clave dedicada
+(`/etc/nexus/terminal_key`) y un `known_hosts` fijado.
+
+- La sesión exige cookie de administrador, token CSRF enviado en el subprotocolo
+  `csrf.<token>` y el mismo origen del panel.
+- El PTY se abre como el usuario configurado en `TERMINAL_SSH_USER` (por ejemplo,
+  `saul_server`). Si se deja vacío, la terminal queda desactivada.
+- Se cierra al cambiar de pestaña y tras `TERMINAL_IDLE_SECONDS` sin actividad.
+- Los comandos se ejecutan con los permisos de ese usuario; no hay una shell root
+  implícita. Para tareas root se usa `sudo` y su contraseña, igual que en una SSH normal.
+- `asyncssh` y `websockets` son dependencias del hub; los assets de xterm.js están
+  vendorizados, sin CDN.
+
+Configuración mínima en el hub:
+
+```bash
+sudo ssh-keygen -t ed25519 -N '' -f /etc/nexus/terminal_key -C nexus-web-terminal
+sudo install -d -o saul_server -g saul_server -m 0700 /home/saul_server/.ssh
+sudo sh -c 'cat /etc/nexus/terminal_key.pub >> /home/saul_server/.ssh/authorized_keys'
+sudo chown saul_server:saul_server /home/saul_server/.ssh/authorized_keys
+sudo chmod 600 /home/saul_server/.ssh/authorized_keys
+sudo sh -c 'ssh-keyscan -t ed25519 127.0.0.1 > /etc/nexus/terminal_known_hosts'
+sudo chown nexus:nexus /etc/nexus/terminal_key /etc/nexus/terminal_known_hosts
+sudo chmod 600 /etc/nexus/terminal_key /etc/nexus/terminal_known_hosts
+```
+
+Añade estas claves a `/etc/nexus/nexus.env` y reinicia el servicio:
+
+```bash
+TERMINAL_SSH_HOST=127.0.0.1
+TERMINAL_SSH_PORT=22
+TERMINAL_SSH_USER=saul_server
+TERMINAL_SSH_KEY=/etc/nexus/terminal_key
+TERMINAL_SSH_KNOWN_HOSTS=/etc/nexus/terminal_known_hosts
+TERMINAL_IDLE_SECONDS=900
+```
+
+> **Por qué no se guarda la contraseña SSH:** la clave dedicada permite auditar y
+> revocar el acceso sin depositar secretos en el navegador. El `known_hosts` evita
+> aceptar una clave de host desconocida y el CSRF impide que otro origen abra la
+> terminal con la cookie del administrador.
+
 ---
 
 # 4. Datos y persistencia
@@ -521,6 +567,7 @@ y que el puerto 8000 no es accesible desde fuera. **Pregunta:** ¿qué añade Cl
 | POST | `/api/agent/commands/{id}/result` | Resultado |
 | GET | `/api/metrics/prometheus` | Exportación Prometheus |
 | GET | `/api/status/page` | Página pública de estado |
+| WS | `/api/terminal/ws` | Terminal SSH autenticada (xterm.js) |
 
 ## 12.2 Herramientas del agente
 

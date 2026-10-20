@@ -51,6 +51,7 @@ from app.api.routes_security import router as security_router
 from app.api.routes_services import router as services_router
 from app.api.routes_settings import router as settings_router
 from app.api.routes_system import router as system_router
+from app.api.routes_terminal import router as terminal_router
 from app.core import db, security, settings_store
 from app.core.audit import audit
 from app.core.config import get_settings
@@ -300,6 +301,8 @@ app.include_router(
     prefix=settings.API_PREFIX,
     dependencies=[Depends(security.require_auth)],
 )
+# terminal SSH por WebSocket: valida sesión, CSRF y origen dentro del handler.
+app.include_router(terminal_router, prefix=settings.API_PREFIX)
 # Servidor MCP: se registra SIN dependencia global porque su transporte es un
 # POST de solo lectura y aplica su propio control de acceso
 # (``require_read_auth``: sesión+CSRF o token de API con ámbito «read»).

@@ -73,6 +73,7 @@
 
   <!-- Tipografía: pilas del sistema, sin descargas externas -->
   <link rel="stylesheet" href="/css/styles.css?v=11" />
+<link rel="stylesheet" href="/vendor/xterm/xterm.css">
 </head>
 
 <body class="min-h-screen bg-nexus-950 text-slate-100 font-sans antialiased">
@@ -122,6 +123,7 @@
           <button type="button" data-tab="audit" class="tab-btn" aria-controls="section-audit">Auditoría</button>
           <button type="button" data-tab="system" class="tab-btn" aria-controls="section-system">Sistema</button>
           <button type="button" data-tab="security" class="tab-btn" aria-controls="section-security">Seguridad</button>
+          <button type="button" data-tab="terminal" class="tab-btn" aria-controls="section-terminal">Terminal</button>
           <button type="button" data-tab="chat" class="tab-btn nx-tab-chat" aria-controls="chat-panel">Asistente</button>
         </nav>
       </div>
@@ -758,16 +760,17 @@
 
           <p class="nx-status nx-status--warn hidden" id="localonly-services" role="status"></p>
 
-          <section class="panel panel--flush" data-reveal aria-label="Instalador de servicios">
-            <div class="nx-card-head">
-              <h3 class="panel-title">Instalar servicios (apt)</h3>
-              <p class="panel-note panel-note--inline">Catálogo con lista blanca. La instalación exige confirmación y queda auditada.</p>
-            </div>
+          <details class="panel panel--flush nx-details" data-reveal>
+            <summary class="nx-details__summary">
+              <span class="nx-details__title">Instalar servicios (apt)</span>
+              <span class="panel-note panel-note--inline">Catálogo con lista blanca. La instalación exige confirmación y queda auditada.</span>
+              <span class="nx-details__chevron" aria-hidden="true">⌄</span>
+            </summary>
             <div class="nx-card-body">
               <p id="install-status" class="nx-hint"></p>
               <div id="install-catalog" class="nx-install-list"></div>
             </div>
-          </section>
+          </details>
 
           <section class="panel panel--flush" data-reveal aria-label="Inventario de servicios">
             <div class="nx-card-head">
@@ -1939,6 +1942,27 @@
         </section>
       </div>
 
+      <!-- ------------------ Terminal SSH ------------------ -->
+      <section id="section-terminal" class="tab-section nx-stack hidden" aria-label="Terminal del servidor">
+        <div class="nx-section-head" data-reveal>
+          <h2 class="nx-section-title">Terminal</h2>
+          <span class="nx-meta">SSH al servidor del hub · sesión auditada</span>
+        </div>
+        <section class="panel panel--flush" data-reveal aria-label="Terminal SSH">
+          <div class="nx-card-head">
+            <h3 class="panel-title">Terminal SSH</h3>
+            <p class="panel-note panel-note--inline">Conexión cifrada al servidor. Solo administrador; se cierra al salir de la pestaña.</p>
+            <div class="nx-card-actions">
+              <button id="terminal-reconnect" type="button" class="btn btn-ghost btn-sm">Reconectar</button>
+            </div>
+          </div>
+          <div class="nx-terminal-body">
+            <div id="terminal" class="nx-terminal"></div>
+            <p id="terminal-status" class="nx-hint">Abre la pestaña para conectar por SSH.</p>
+          </div>
+        </section>
+      </section>
+
       <!-- ------------------ Workbench del asistente ------------------ -->
       <aside id="chat-panel" class="tab-section hidden" data-reveal aria-label="Asistente">
         <div class="nx-workbench">
@@ -1985,6 +2009,8 @@
   <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2" aria-live="polite"></div>
 
   <!-- ===================== SCRIPTS ===================== -->
-  <script src="/js/app.js?v=11"></script>
+  <script src="/vendor/xterm/xterm.js"></script>
+<script src="/vendor/xterm/addon-fit.js"></script>
+<script src="/js/app.js?v=12"></script>
 </body>
 </html>

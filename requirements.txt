@@ -14,6 +14,8 @@
 fastapi==0.143.0
 # Servidor ASGI (suficiente para el panel en LAN; sin extras binarios).
 uvicorn==0.54.0
+# Servidor WebSocket que uvicorn necesita para la terminal SSH.
+websockets==14.1
 
 # -------------------- Validación / Config --------------------
 # Validación de modelos de datos y esquemas de la API.
@@ -27,6 +29,8 @@ python-dotenv==1.2.4
 # Cliente HTTP asíncrono usado por el agente para TODOS los
 # proveedores LLM (OpenAI, Anthropic, Gemini y Ollama).
 httpx==0.28.1
+# SSH asíncrono para la terminal web (PTY remoto por WebSocket).
+asyncssh==2.24.1
 
 # -------------- Integración con el Sistema Operativo ---------
 # SDK oficial de Docker: listar/crear/destruir contenedores.

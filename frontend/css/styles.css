@@ -481,6 +481,42 @@ code { font-size: 0.95em; }
 }
 
 /* Catálogo de servicios instalables (apt) */
+.nx-details > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-3);
+  padding: var(--nx-space-4) var(--nx-space-5);
+  cursor: pointer;
+  list-style: none;
+}
+
+.nx-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.nx-details__title {
+  flex: none;
+  color: var(--nx-ink);
+  font-size: var(--nx-fs-body-sm, 14px);
+  font-weight: 600;
+}
+
+.nx-details__chevron {
+  margin-left: auto;
+  color: var(--nx-ink-quiet);
+  font-size: 16px;
+  line-height: 1;
+  transition: transform 0.2s var(--nx-ease, ease);
+}
+
+.nx-details[open] .nx-details__chevron {
+  transform: rotate(180deg);
+}
+
+.nx-details[open] > .nx-card-body {
+  padding-top: 0;
+}
+
 .nx-install-list {
   display: grid;
 }
@@ -540,6 +576,38 @@ code { font-size: 0.95em; }
 
   .nx-install-item .btn {
     margin-left: auto;
+  }
+}
+
+/* Terminal SSH (xterm.js vendorizado) */
+.nx-terminal-body {
+  padding: 0 0 12px;
+}
+
+.nx-terminal {
+  height: 520px;
+  padding: 10px;
+  background: #080d16;
+  border-top: 1px solid var(--nx-border);
+  border-bottom: 1px solid var(--nx-border);
+  overflow: hidden;
+}
+
+.nx-terminal .xterm {
+  height: 100%;
+}
+
+.nx-terminal .xterm-viewport {
+  background: #080d16 !important;
+}
+
+#terminal-status {
+  padding: 10px 18px 0;
+}
+
+@media (max-width: 900px) {
+  .nx-terminal {
+    height: 420px;
   }
 }
 

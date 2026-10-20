@@ -86,6 +86,18 @@ class Settings(BaseSettings):
     # Segundos sin heartbeat a partir de los cuales un host se marca «offline».
     AGENT_ONLINE_WINDOW: int = 30
 
+    # ------------------------- Terminal SSH del panel -------------------------
+    # Conexión SSH saliente del hub hacia el host que se administra. La clave
+    # vive en el servidor; el navegador nunca la ve. Si TERMINAL_SSH_USER está
+    # vacío, la pestaña Terminal queda desactivada.
+    TERMINAL_SSH_HOST: str = "127.0.0.1"
+    TERMINAL_SSH_PORT: int = 22
+    TERMINAL_SSH_USER: str = ""
+    TERMINAL_SSH_KEY: str = "/etc/nexus/terminal_key"
+    TERMINAL_SSH_KNOWN_HOSTS: str = "/etc/nexus/terminal_known_hosts"
+    TERMINAL_IDLE_SECONDS: int = 900
+    TERMINAL_MAX_MESSAGE: int = 65536
+
     # --------------------------------- Agente IA ------------------------------
     # Proveedor: "openai" | "anthropic" | "gemini" | "ollama".
     # Vacío = sin proveedor: el asistente queda desactivado (es opcional y el
