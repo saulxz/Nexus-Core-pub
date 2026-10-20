@@ -584,6 +584,59 @@ code { font-size: 0.95em; }
   padding: 0 0 12px;
 }
 
+/* La pestaña Terminal es una superficie de trabajo: ocupa el alto útil
+   de la ventana, no una tarjeta de 520 px. El panel y xterm se reparten
+   el espacio con flex para que el fit de xterm calcule filas/columnas
+   reales. */
+#section-terminal:not(.hidden) {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--nx-header-h) - 1.5rem);
+  height: calc(100dvh - var(--nx-header-h) - 1.5rem);
+  min-height: 20rem;
+}
+
+#section-terminal > .nx-section-head {
+  flex: none;
+}
+
+#section-terminal > .panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#section-terminal .nx-terminal-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#section-terminal .nx-terminal {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+}
+
+#section-terminal #terminal-status {
+  flex: none;
+}
+
+/* En escritorio el Asistente es una columna fija. Al abrir Terminal se
+   oculta para que la consola use todo el ancho; al cambiar de pestaña
+   vuelve a aparecer. El ResizeObserver de app.js reajusta xterm. */
+@media (min-width: 64rem) {
+  body[data-tab="terminal"] .nx-console-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body[data-tab="terminal"] #chat-panel {
+    display: none;
+  }
+}
+
 .nx-terminal {
   height: 520px;
   padding: 10px;
@@ -603,12 +656,6 @@ code { font-size: 0.95em; }
 
 #terminal-status {
   padding: 10px 18px 0;
-}
-
-@media (max-width: 900px) {
-  .nx-terminal {
-    height: 420px;
-  }
 }
 
 /* Metadato en vivo (timestamps, contadores, resúmenes). Mono, chico,

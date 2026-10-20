@@ -5719,6 +5719,7 @@ function loadHostsTab() {
 }
 
 function showTab(name) {
+  document.body.dataset.tab = name;
   document.querySelectorAll('.tab-section').forEach((section) => section.classList.add('hidden'));
 
   if (name === 'chat') {
@@ -6004,6 +6005,13 @@ function startPolling() {
 
 /* ------------------------- Terminal SSH ------------------------- */
 let terminalSession = null;
+let terminalResizeObserver = null;
+
+function disconnectTerminalResize() {
+  if (!terminalResizeObserver) return;
+  terminalResizeObserver.disconnect();
+  terminalResizeObserver = null;
+}
 
 function setTerminalStatus(text, isError = false) {
   const node = $('terminal-status');
@@ -6017,9 +6025,17 @@ function sendTerminalResize(session) {
   session.ws.send(JSON.stringify({ type: 'resize', cols: session.term.cols, rows: session.term.rows }));
 }
 
+function sizeTerminalSection() {
+  const section = $('section-terminal');
+  if (!section || document.body.dataset.tab !== 'terminal') return;
+  const top = Math.max(0, section.getBoundingClientRect().top);
+  section.style.height = `${Math.max(320, Math.round(window.innerHeight - top - 16))}px`;
+}
+
 function closeTerminalSession() {
   const session = terminalSession;
   terminalSession = null;
+  disconnectTerminalResize();
   if (!session) return;
   try { session.ws.close(1000); } catch (_error) { /* ya cerrado */ }
   try { session.term.dispose(); } catch (_error) { /* ya liberado */ }
@@ -6027,6 +6043,7 @@ function closeTerminalSession() {
 }
 
 function openTerminalSession() {
+  sizeTerminalSection();
   const host = $('terminal');
   if (!host) return;
   if (terminalSession) {
@@ -6065,6 +6082,18 @@ function openTerminalSession() {
   const session = { term, fit, ws, host };
   terminalSession = session;
 
+  // El panel cambia de ancho al ocultar el Asistente y al redimensionar
+  // la ventana. ResizeObserver ajusta xterm sin esperar a un resize global.
+  if (window.ResizeObserver) {
+    disconnectTerminalResize();
+    terminalResizeObserver = new ResizeObserver(() => {
+      if (!terminalSession) return;
+      try { terminalSession.fit.fit(); } catch (_error) { /* oculto */ }
+      sendTerminalResize(terminalSession);
+    });
+    terminalResizeObserver.observe(host);
+  }
+
   ws.onopen = () => {
     setTerminalStatus('Conectado por SSH.');
     try { fit.fit(); } catch (_error) { /* sin tamaño */ }
@@ -6083,6 +6112,7 @@ function openTerminalSession() {
     );
     if (terminalSession === session) {
       terminalSession = null;
+      disconnectTerminalResize();
       try { term.dispose(); } catch (_error) { /* ya liberado */ }
       try { host.innerHTML = ''; } catch (_error) { /* sin host */ }
     }
@@ -6112,6 +6142,7 @@ if (terminalReconnect) {
 }
 
 window.addEventListener('resize', () => {
+  sizeTerminalSection();
   if (!terminalSession) return;
   try { terminalSession.fit.fit(); } catch (_error) { /* oculto */ }
   sendTerminalResize(terminalSession);
