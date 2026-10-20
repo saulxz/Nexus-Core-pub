@@ -41,7 +41,8 @@ UMask=0077
 # --- Endurecimiento del servicio ---
 NoNewPrivileges=no
 PrivateTmp=yes
-ProtectSystem=strict
+# El helper apt (root, allowlist) necesita escribir en /usr y /etc.
+ProtectSystem=off
 ProtectHome=yes
 ReadWritePaths=/var/lib/nexus
 ProtectKernelTunables=yes

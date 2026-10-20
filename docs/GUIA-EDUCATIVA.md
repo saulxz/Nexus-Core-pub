@@ -159,6 +159,25 @@ herramientas declaradas. Las acciones sensibles se convierten en **propuestas pe
 el administrador confirma o rechaza. El objetivo es que la IA ayude a diagnosticar sin quitar
 el control.
 
+## 3.4 Instalación de servicios (apt)
+
+El panel incluye un catálogo cerrado de servicios instalables con apt: Nginx, Samba,
+dnsmasq, Docker, Fail2ban y Redis. No acepta nombres de paquete libres: la clave se
+valida contra `/etc/nexus/installable.json` y un helper root-owned con allowlist. Cada
+instalación exige confirmación y queda registrada en Auditoría.
+
+- En el host local del hub, el backend llama al helper mediante una regla sudoers exacta.
+- En un agente Linux, la orden viaja por el despachador y el agente llama a su propio helper.
+- Docker añade el usuario del servicio al grupo `docker`; hay que reiniciar `nexus` o
+  `nexus-agent` para que el proceso lo vea.
+- Para que apt pueda escribir, las unidades relajan `ProtectSystem` y
+  `NoNewPrivileges`; la aplicación y el agente siguen ejecutándose como usuarios no
+  privilegiados y solo el helper tiene root.
+
+> **Por qué allowlist y no un campo de paquete:** instalar paquetes es una operación de
+> root. Un campo libre convertiría el panel en una shell root; el catálogo cerrado
+> mantiene la superficie de ataque pequeña y auditable.
+
 ---
 
 # 4. Datos y persistencia
@@ -273,6 +292,9 @@ lo que evita un falso sentido de seguridad.
 - El socket de Docker es potente: montarlo da un privilegio equivalente a root sobre el host.
   Por eso el despliegue con Docker se documenta como opción de laboratorio y se recomienda el
   servicio nativo en producción.
+- El instalador apt solo acepta claves del catálogo; el helper root-owned valida la clave y
+  ejecuta apt sin recibir comandos del panel. Las unidades relajan el sandbox para que apt
+  escriba, pero la aplicación y el agente siguen como usuarios sin privilegios.
 - El escaneo de red se limita a rangos privados y requiere autorización.
 
 ## 6.5 Secretos y configuración

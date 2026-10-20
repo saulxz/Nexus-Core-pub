@@ -17,9 +17,11 @@
 #   * El agente solo puede hacer lo que el panel le pide, y el panel
 #     solo pide herramientas de una lista blanca (allowlist del
 #     agente). No hay shell remoto.
-#   * Hardening: no puede escribir fuera de su configuración ni
-#     instalar nada (ProtectSystem=strict), no puede montar nada
-#     y solo necesita salida TCP.
+#   * Puede instalar servicios del catálogo apt mediante un helper
+#     root-owned con allowlist; el proceso del agente sigue siendo
+#     no privilegiado.
+#   * Hardening: no puede escribir fuera de su configuración, no puede
+#     montar nada y solo necesita salida TCP.
 # ============================================================
 
 [Unit]
@@ -35,16 +37,17 @@ Group=nexus-agent
 WorkingDirectory=/opt/nexus-agent
 Environment=PYTHONUNBUFFERED=1
 Environment=PYTHONDONTWRITEBYTECODE=1
-# Configuración alternativa si el panel usa un hub distinto.
-# Environment=NEXUS_AGENT_CONFIG=/etc/nexus-agent/config.json
-ExecStart=/usr/bin/python3 /opt/nexus-agent/agent.py run
+Environment=NEXUS_AGENT_CONFIG=/etc/nexus-agent/config.json
+ExecStart=/opt/nexus-agent/venv/bin/python /opt/nexus-agent/agent.py run
 Restart=always
 RestartSec=5
 
 # --- Endurecimiento del servicio ---
-NoNewPrivileges=yes
+# Se permite sudo únicamente para el helper pkg-install (sudoers 0440).
+NoNewPrivileges=no
 PrivateTmp=yes
-ProtectSystem=strict
+# apt necesita escribir en /usr y /etc desde el helper root.
+ProtectSystem=off
 ProtectHome=yes
 ReadWritePaths=/etc/nexus-agent
 ProtectKernelTunables=yes

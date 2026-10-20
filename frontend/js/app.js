@@ -1344,6 +1344,94 @@ async function fetchServices() {
   }
 }
 
+function renderInstallCatalog(items) {
+  const box = $('install-catalog');
+  if (!box) return;
+  if (!items || items.length === 0) {
+    box.innerHTML = '<p class="nx-hint">El catálogo está vacío.</p>';
+    return;
+  }
+  box.innerHTML = items.map((item) => {
+    const installed = Boolean(item.installed);
+    const active = item.active === true;
+    const badge = installed ? (active ? 'badge-running' : 'badge-warn') : 'badge-stopped';
+    const label = installed ? (active ? 'Activo' : 'Instalado') : 'No instalado';
+    const packages = (item.packages || []).join(', ');
+    return `
+      <div class="nx-install-item">
+        <div class="nx-install-info">
+          <strong>${escapeHtml(item.name || item.key)}</strong>
+          <p>${escapeHtml(item.description || '')}</p>
+          <small>${escapeHtml(packages)}</small>
+        </div>
+        <span class="badge ${badge}">${label}</span>
+        <button class="btn btn-primary btn-sm" type="button" data-install-key="${escapeHtml(item.key)}" ${installed ? 'disabled' : ''}>Instalar</button>
+      </div>`;
+  }).join('');
+  box.querySelectorAll('[data-install-key]').forEach((button) => {
+    button.addEventListener('click', () => installService(button.dataset.installKey));
+  });
+}
+
+async function fetchInstallCatalog() {
+  const box = $('install-catalog');
+  const note = $('install-status');
+  if (!box) return;
+  box.innerHTML = '<p class="nx-hint">Cargando catálogo…</p>';
+  if (note) note.textContent = '';
+  try {
+    const data = isRemoteScope()
+      ? await hostCommand('install', { action: 'catalog' }, 60)
+      : await apiFetch('/api/install/catalog');
+    const items = Array.isArray(data) ? data : data.catalog || [];
+    if (data && data.available === false && note) {
+      note.textContent = data.reason || 'El instalador solo está disponible en Linux.';
+    }
+    renderInstallCatalog(items);
+  } catch (error) {
+    if (note) note.textContent = 'No se pudo cargar el catálogo: ' + error.message;
+    box.innerHTML = '';
+  }
+}
+
+async function installService(key) {
+  if (!window.confirm(`¿Instalar «${key}» con apt? La acción queda auditada.`)) return;
+  let button = null;
+  try {
+    button = document.querySelector(`[data-install-key="${key}"]`);
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Instalando…';
+    }
+    const result = isRemoteScope()
+      ? await hostCommand('install', { action: 'install', key }, 170)
+      : await apiFetch(`/api/install/${encodeURIComponent(key)}`, {
+          method: 'POST',
+          body: JSON.stringify({ confirm: true }),
+        }, 220000);
+    const ok = Boolean(result.success);
+    const message = result.message || result.reason || (ok ? 'Servicio instalado.' : 'No se pudo instalar.');
+    showToast(message, ok ? 'success' : 'error');
+    if (ok && result.restart_required) {
+      showToast('Reinicia nexus o nexus-agent para aplicar el grupo docker.', 'success');
+    }
+    if (ok && isRemoteScope()) {
+      // apt puede tardar más que la ventana de latido: espera a que el agente
+      // vuelva a estar en línea antes de recargar el catálogo.
+      await new Promise((resolve) => setTimeout(resolve, 6000));
+    }
+    await fetchInstallCatalog();
+    await fetchServices();
+  } catch (error) {
+    showToast(`Error al instalar: ${error.message}`, 'error');
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Instalar';
+    }
+  }
+}
+
 async function showServiceDetail(name) {
   const panel = $('service-detail');
   if (!panel) return;
@@ -5381,7 +5469,10 @@ async function applyHostScope() {
     fetchDockerInventory();
     fetchContainers();
   }
-  if (isTabVisible('services')) fetchServices();
+  if (isTabVisible('services')) {
+    fetchServices();
+    fetchInstallCatalog();
+  }
   if (isTabVisible('network')) fetchNetworkState();
   if (isTabVisible('system')) {
     fetchPorts();
@@ -5637,7 +5728,10 @@ function showTab(name) {
     const section = $(`section-${name}`);
     if (section) section.classList.remove('hidden');
     // Al abrir la pestaña de servicios se refresca el inventario.
-    if (name === 'services') fetchServices();
+    if (name === 'services') {
+      fetchServices();
+      fetchInstallCatalog();
+    }
     // Al abrir la pestaña de red se refresca el estado de red.
     if (name === 'network') fetchNetworkState();
     // Contenedores remotos: se piden al abrir, no en el sondeo de 5 s.

@@ -1,0 +1,179 @@
+#!/usr/bin/env python3
+"""Instalador apt con allowlist para Nexus-Core.
+
+Se ejecuta como root a través de sudo. Solo acepta claves presentes en
+/etc/nexus/installable.json; nunca recibe nombres de paquete ni comandos
+desde el panel. Salida: JSON por stdout.
+
+Uso:
+    pkg-install catalog
+    pkg-install install <clave>
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+CATALOG = Path("/etc/nexus/installable.json")
+LOG = Path("/var/log/nexus-pkg-install.log")
+KEY_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,31}$")
+
+
+def log(message: str) -> None:
+    stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    try:
+        with LOG.open("a", encoding="utf-8") as handle:
+            handle.write(f"{stamp} {message}\n")
+    except OSError:
+        pass
+
+
+def load_catalog() -> dict:
+    if not CATALOG.is_file():
+        raise SystemExit(f"No existe el catálogo {CATALOG}")
+    return json.loads(CATALOG.read_text(encoding="utf-8"))
+
+
+def package_installed(package: str) -> bool:
+    result = subprocess.run(
+        ["dpkg-query", "-W", "-f=${Status}", package],
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    return result.returncode == 0 and "install ok installed" in result.stdout
+
+
+def service_active(service: str) -> bool:
+    result = subprocess.run(
+        ["systemctl", "is-active", "--quiet", service],
+        capture_output=True,
+        timeout=15,
+    )
+    return result.returncode == 0
+
+
+def catalog_payload(catalog: dict) -> list[dict]:
+    items = []
+    for key, entry in catalog.items():
+        packages = entry.get("packages") or []
+        services = entry.get("services") or []
+        items.append(
+            {
+                "key": key,
+                "name": entry.get("name", key),
+                "description": entry.get("description", ""),
+                "packages": packages,
+                "services": services,
+                "port": entry.get("port"),
+                "installed": all(package_installed(pkg) for pkg in packages) if packages else False,
+                "active": all(service_active(svc) for svc in services) if services else None,
+                "restart_required": bool(entry.get("restart_required")),
+            }
+        )
+    return items
+
+
+def install(key: str, catalog: dict) -> dict:
+    if not KEY_RE.match(key) or key not in catalog:
+        return {"success": False, "message": f"Servicio no permitido: '{key}'."}
+
+    entry = catalog[key]
+    packages = entry.get("packages") or []
+    if not packages:
+        return {"success": False, "message": "El catálogo no define paquetes para esta entrada."}
+
+    log(f"install key={key} packages={','.join(packages)}")
+    environment = dict(os.environ, DEBIAN_FRONTEND="noninteractive", APT_LISTCHANGES_FRONTEND="none")
+
+    update = subprocess.run(
+        ["apt-get", "update", "-qq"],
+        capture_output=True,
+        text=True,
+        env=environment,
+        timeout=90,
+    )
+    if update.returncode != 0:
+        return {
+            "success": False,
+            "message": (update.stderr or update.stdout or "apt-get update falló")[-500:],
+        }
+
+    install_result = subprocess.run(
+        ["apt-get", "install", "-y", "--no-install-recommends", *packages],
+        capture_output=True,
+        text=True,
+        env=environment,
+        timeout=150,
+    )
+    if install_result.returncode != 0:
+        log(f"install key={key} failed rc={install_result.returncode}")
+        return {
+            "success": False,
+            "message": (install_result.stderr or install_result.stdout or "apt-get install falló")[-500:],
+        }
+
+    services = entry.get("services") or []
+    for service in services:
+        subprocess.run(
+            ["systemctl", "enable", "--now", service],
+            capture_output=True,
+            text=True,
+            timeout=45,
+        )
+
+    if entry.get("docker_group"):
+        user = os.environ.get("SUDO_USER", "")
+        if user and user != "root":
+            subprocess.run(
+                ["usermod", "-aG", "docker", user],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            log(f"docker group added user={user}")
+
+    log(f"install key={key} ok")
+    return {
+        "success": True,
+        "message": f"{entry.get('name', key)} instalado correctamente.",
+        "installed": True,
+        "restart_required": bool(entry.get("restart_required")),
+    }
+
+
+def main() -> int:
+    if os.geteuid() != 0:
+        print(json.dumps({"success": False, "message": "Este helper debe ejecutarse como root."}))
+        return 1
+
+    if len(sys.argv) < 2 or sys.argv[1] not in {"catalog", "install"}:
+        print(json.dumps({"success": False, "message": "Uso: pkg-install catalog | install <clave>"}))
+        return 2
+
+    try:
+        catalog = load_catalog()
+        if sys.argv[1] == "catalog":
+            print(json.dumps({"catalog": catalog_payload(catalog)}, ensure_ascii=False))
+            return 0
+        if len(sys.argv) < 3:
+            print(json.dumps({"success": False, "message": "Falta la clave del servicio."}))
+            return 2
+        print(json.dumps(install(sys.argv[2], catalog), ensure_ascii=False))
+        return 0
+    except subprocess.TimeoutExpired:
+        print(json.dumps({"success": False, "message": "La instalación agotó el tiempo de espera."}))
+        return 1
+    except Exception as exc:  # noqa: BLE001 - salida JSON para el panel
+        print(json.dumps({"success": False, "message": str(exc)[:500]}))
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

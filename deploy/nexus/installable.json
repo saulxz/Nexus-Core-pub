@@ -1,0 +1,46 @@
+{
+  "nginx": {
+    "name": "Nginx",
+    "description": "Servidor web y proxy inverso",
+    "packages": ["nginx"],
+    "services": ["nginx"],
+    "port": 80
+  },
+  "samba": {
+    "name": "Samba",
+    "description": "Compartición de archivos SMB/CIFS",
+    "packages": ["samba"],
+    "services": ["smbd", "nmbd"],
+    "port": 445
+  },
+  "dnsmasq": {
+    "name": "dnsmasq",
+    "description": "DNS y DHCP ligero",
+    "packages": ["dnsmasq"],
+    "services": ["dnsmasq"],
+    "port": 53
+  },
+  "docker": {
+    "name": "Docker",
+    "description": "Motor de contenedores",
+    "packages": ["docker.io"],
+    "services": ["docker"],
+    "port": null,
+    "docker_group": true,
+    "restart_required": true
+  },
+  "fail2ban": {
+    "name": "Fail2ban",
+    "description": "Bloqueo de intentos de acceso repetidos",
+    "packages": ["fail2ban"],
+    "services": ["fail2ban"],
+    "port": null
+  },
+  "redis": {
+    "name": "Redis",
+    "description": "Caché y colas en memoria",
+    "packages": ["redis-server"],
+    "services": ["redis-server"],
+    "port": 6379
+  }
+}

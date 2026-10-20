@@ -37,6 +37,7 @@ import json
 import os
 import platform
 import socket
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -318,6 +319,46 @@ def _tool_system(args: dict[str, Any]) -> Any:
     raise ValueError(f"Herramienta de sistema no soportada: {action}")
 
 
+#: Helper privilegiado instalado por deploy/agent/install-agent.sh.
+INSTALL_HELPER = "/usr/local/lib/nexus-agent/pkg-install"
+
+
+def _tool_install(args: dict[str, Any]) -> Any:
+    """Catálogo e instalación de servicios apt con allowlist.
+
+    El agente no ejecuta apt directamente: llama a un helper root-owned que
+    valida la clave contra /etc/nexus/installable.json. El agente solo puede
+    pedir claves del catálogo; nunca nombres de paquete ni comandos.
+    """
+    if platform.system() != "Linux":
+        return {
+            "success": False,
+            "available": False,
+            "catalog": [],
+            "message": "La instalación apt solo está disponible en hosts Linux.",
+        }
+
+    action = str(_args(args, "action", "catalog"))
+    if action == "catalog":
+        command = ["sudo", "-n", INSTALL_HELPER, "catalog"]
+    elif action == "install":
+        key = str(_args(args, "key", ""))
+        if not key:
+            raise ValueError("Falta la clave del servicio a instalar.")
+        command = ["sudo", "-n", INSTALL_HELPER, "install", key]
+    else:
+        raise ValueError(f"Acción de instalación no soportada: {action}")
+
+    result = subprocess.run(command, capture_output=True, text=True, timeout=170)
+    output = (result.stdout or "").strip()
+    if not output:
+        raise RuntimeError(result.stderr.strip() or "El instalador no devolvió respuesta.")
+    payload = json.loads(output)
+    if result.returncode != 0 and isinstance(payload, dict):
+        payload.setdefault("success", False)
+    return payload
+
+
 #: Herramientas que el hub puede ordenar. Es una **allowlist** explícita: el
 #: hub nunca puede pedir código arbitrario, solo una de estas herramientas con
 #: sus argumentos. ``diagnostics`` está declarada pero no implementada (el
@@ -329,6 +370,7 @@ TOOLS: dict[str, Callable[[dict[str, Any]], Any]] = {
     "services": _tool_services,
     "network": _tool_network,
     "system": _tool_system,
+    "install": _tool_install,
 }
 
 
@@ -340,6 +382,7 @@ def supported_tools() -> list[str]:
         "services.list | services.detail | services.logs | services.action",
         "network.interfaces | network.scan",
         "system.ports | system.updates | system.smart",
+        "install.catalog | install.install",
         "diagnostics? (no implementado: devuelve error)",
     ]
 

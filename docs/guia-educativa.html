@@ -264,6 +264,7 @@ marcadores como <code>&lt;TOKEN&gt;</code>. Ninguna credencial real aparece en e
 <li><a href="#31-alertas-del-dato-a-la-decision">3.1 Alertas: del dato a la decisión</a></li>
 <li><a href="#32-monitores-y-pagina-de-estado">3.2 Monitores y página de estado</a></li>
 <li><a href="#33-ia-con-human-in-the-loop">3.3 IA con human-in-the-loop</a></li>
+<li><a href="#34-instalacion-de-servicios-apt">3.4 Instalación de servicios (apt)</a></li>
 </ul>
 </li>
 <li><a href="#4-datos-y-persistencia">4. Datos y persistencia</a><ul>
@@ -525,6 +526,25 @@ telemetría del host no es lo mismo que la disponibilidad de un servicio.</p>
 herramientas declaradas. Las acciones sensibles se convierten en <strong>propuestas pendientes</strong> que
 el administrador confirma o rechaza. El objetivo es que la IA ayude a diagnosticar sin quitar
 el control.</p>
+<h2 id="34-instalacion-de-servicios-apt">3.4 Instalación de servicios (apt)</h2>
+<p>El panel incluye un catálogo cerrado de servicios instalables con apt: Nginx, Samba,
+dnsmasq, Docker, Fail2ban y Redis. No acepta nombres de paquete libres: la clave se
+valida contra <code>/etc/nexus/installable.json</code> y un helper root-owned con allowlist. Cada
+instalación exige confirmación y queda registrada en Auditoría.</p>
+<ul>
+<li>En el host local del hub, el backend llama al helper mediante una regla sudoers exacta.</li>
+<li>En un agente Linux, la orden viaja por el despachador y el agente llama a su propio helper.</li>
+<li>Docker añade el usuario del servicio al grupo <code>docker</code>; hay que reiniciar <code>nexus</code> o
+  <code>nexus-agent</code> para que el proceso lo vea.</li>
+<li>Para que apt pueda escribir, las unidades relajan <code>ProtectSystem</code> y
+  <code>NoNewPrivileges</code>; la aplicación y el agente siguen ejecutándose como usuarios no
+  privilegiados y solo el helper tiene root.</li>
+</ul>
+<blockquote>
+<p><strong>Por qué allowlist y no un campo de paquete:</strong> instalar paquetes es una operación de
+root. Un campo libre convertiría el panel en una shell root; el catálogo cerrado
+mantiene la superficie de ataque pequeña y auditable.</p>
+</blockquote>
 <hr />
 <h1 id="4-datos-y-persistencia">4. Datos y persistencia</h1>
 <p>Nexus-Core usa <strong>SQLite</strong> para simplificar el despliegue: un solo archivo, sin servidor de base
@@ -711,6 +731,9 @@ lo que evita un falso sentido de seguridad.</p>
 <li>El socket de Docker es potente: montarlo da un privilegio equivalente a root sobre el host.
   Por eso el despliegue con Docker se documenta como opción de laboratorio y se recomienda el
   servicio nativo en producción.</li>
+<li>El instalador apt solo acepta claves del catálogo; el helper root-owned valida la clave y
+  ejecuta apt sin recibir comandos del panel. Las unidades relajan el sandbox para que apt
+  escriba, pero la aplicación y el agente siguen como usuarios sin privilegios.</li>
 <li>El escaneo de red se limita a rangos privados y requiere autorización.</li>
 </ul>
 <h2 id="65-secretos-y-configuracion">6.5 Secretos y configuración</h2>

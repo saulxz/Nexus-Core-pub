@@ -758,6 +758,17 @@
 
           <p class="nx-status nx-status--warn hidden" id="localonly-services" role="status"></p>
 
+          <section class="panel panel--flush" data-reveal aria-label="Instalador de servicios">
+            <div class="nx-card-head">
+              <h3 class="panel-title">Instalar servicios (apt)</h3>
+              <p class="panel-note panel-note--inline">Catálogo con lista blanca. La instalación exige confirmación y queda auditada.</p>
+            </div>
+            <div class="nx-card-body">
+              <p id="install-status" class="nx-hint"></p>
+              <div id="install-catalog" class="nx-install-list"></div>
+            </div>
+          </section>
+
           <section class="panel panel--flush" data-reveal aria-label="Inventario de servicios">
             <div class="nx-card-head">
               <h3 class="panel-title">Inventario systemd</h3>

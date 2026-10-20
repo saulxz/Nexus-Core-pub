@@ -89,6 +89,17 @@ install -m 0644 "${SCRIPT_DIR}/deploy/agent/requirements-agent.txt" "${APP_DIR}/
 chown -R root:root "${APP_DIR}"
 find "${APP_DIR}" -name '__pycache__' -type d -prune -exec rm -rf {} + 2>/dev/null || true
 
+echo "==> Instalador apt (helper + catalogo)"
+install -d -m 0755 /usr/local/lib/nexus-agent
+install -m 0755 -o root -g root "${SCRIPT_DIR}/deploy/helpers/pkg-install" /usr/local/lib/nexus-agent/pkg-install
+install -d -m 0755 /etc/nexus
+install -m 0644 -o root -g root "${SCRIPT_DIR}/deploy/nexus/installable.json" /etc/nexus/installable.json
+SUDOERS_PKG="/etc/sudoers.d/nexus-agent-pkg"
+printf '%s\n' "nexus-agent ALL=(root) NOPASSWD: /usr/local/lib/nexus-agent/pkg-install" > "${SUDOERS_PKG}"
+chown root:root "${SUDOERS_PKG}"
+chmod 0440 "${SUDOERS_PKG}"
+visudo -cf "${SUDOERS_PKG}"
+
 echo "==> Dependencias de Python (subset del agente)"
 python3 -m pip install --no-input -r "${APP_DIR}/requirements-agent.txt"
 
@@ -104,7 +115,7 @@ fi
 echo "==> Enrolando el host en el hub"
 # El token se pasa por entorno, no por línea de comandos, para que no quede
 # en la lista de procesos del sistema.
-NEXUS_DATA_DIR="${CONF_DIR}" \
+NEXUS_DATA_DIR="${CONF_DIR}" NEXUS_AGENT_CONFIG="${CONF_DIR}/config.json" \
   runuser -u "${SERVICE_USER}" -- \
   python3 "${APP_DIR}/agent.py" enroll \
     --hub "${HUB}" \

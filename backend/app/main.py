@@ -42,6 +42,7 @@ from app.api.routes_alerts import router as alerts_router
 from app.api.routes_auth import router as auth_router
 from app.api.routes_config import router as config_router
 from app.api.routes_hosts import router as hosts_router
+from app.api.routes_install import router as install_router
 from app.api.routes_mcp import router as mcp_router
 from app.api.routes_monitors import public_router as status_public_router
 from app.api.routes_monitors import router as monitors_router
@@ -284,6 +285,12 @@ app.include_router(
 # inventario de Docker y FIM.
 app.include_router(
     system_router,
+    prefix=settings.API_PREFIX,
+    dependencies=[Depends(security.require_auth)],
+)
+# catálogo e instalación de servicios apt con allowlist y helper privilegiado.
+app.include_router(
+    install_router,
     prefix=settings.API_PREFIX,
     dependencies=[Depends(security.require_auth)],
 )

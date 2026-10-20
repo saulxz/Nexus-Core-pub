@@ -6,7 +6,7 @@
 #    install -m 0440 deploy/sudoers.d/nexus /etc/sudoers.d/nexus
 #
 #  Principios de diseño:
-#   * Se autorizan EXACTAMENTE los seis helpers, sin comodines: cada uno
+#   * Se autorizan EXACTAMENTE los siete helpers, sin comodines: cada uno
 #     valida sus propios argumentos (acción, unidad, servicio, copia)
 #     contra listas controladas por root (/etc/nexus, /var/backups/nexus).
 #   * Nada de `systemctl` directo por sudo ni de shell genérica.
@@ -21,5 +21,6 @@
 Defaults:nexus !lecture
 
 # Helpers autorizados EXACTAMENTE (sin comodines; cada uno valida sus
-# argumentos): control de servicios, configuración con rollback y red.
-nexus ALL=(root) NOPASSWD: /usr/local/lib/nexus/svc-ctl, /usr/local/lib/nexus/conf-apply, /usr/local/lib/nexus/conf-restore, /usr/local/lib/nexus/net-apply, /usr/local/lib/nexus/net-confirm, /usr/local/lib/nexus/net-revert
+# argumentos): control de servicios, configuración con rollback, red e
+# instalación apt con catálogo cerrado.
+nexus ALL=(root) NOPASSWD: /usr/local/lib/nexus/svc-ctl, /usr/local/lib/nexus/conf-apply, /usr/local/lib/nexus/conf-restore, /usr/local/lib/nexus/net-apply, /usr/local/lib/nexus/net-confirm, /usr/local/lib/nexus/net-revert, /usr/local/lib/nexus/pkg-install

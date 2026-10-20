@@ -480,6 +480,69 @@ code { font-size: 0.95em; }
   max-width: none;
 }
 
+/* Catálogo de servicios instalables (apt) */
+.nx-install-list {
+  display: grid;
+}
+
+.nx-install-item {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-3);
+  padding: var(--nx-space-3) 0;
+  border-top: 1px solid var(--nx-border);
+}
+
+.nx-install-item:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.nx-install-item:last-child {
+  padding-bottom: 0;
+}
+
+.nx-install-info {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.nx-install-info strong {
+  color: var(--nx-ink);
+  font-size: var(--nx-fs-body-sm, 14px);
+}
+
+.nx-install-info p {
+  margin: 0;
+  color: var(--nx-ink-quiet);
+  font-size: var(--nx-fs-caption, 12px);
+  line-height: 1.4;
+}
+
+.nx-install-info small {
+  color: var(--nx-ink-faint);
+  font-family: var(--nx-font-mono);
+  font-size: 10.5px;
+}
+
+.nx-install-item .badge,
+.nx-install-item .btn {
+  flex: none;
+}
+
+@media (max-width: 639px) {
+  .nx-install-item {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .nx-install-item .btn {
+    margin-left: auto;
+  }
+}
+
 /* Metadato en vivo (timestamps, contadores, resúmenes). Mono, chico,
    apagado: es contexto, no contenido. */
 .nx-meta {

@@ -35,6 +35,8 @@ direcciones de documentación (`192.0.2.10`). No hay credenciales ni datos reale
   puertos, actualizaciones, SMART, auditoría y seguridad.
 - **Alertas**: umbrales con duración e histéresis, acknowledgment, snooze,
   notificaciones y monitores HTTP/TCP/SSL con página de estado.
+- **Instalador apt con allowlist**: catálogo cerrado (nginx, Samba, dnsmasq, Docker,
+  Fail2ban y Redis), confirmación, auditoría y helper root-owned; local y agentes Linux.
 - **Seguridad**: 2FA TOTP con códigos de recuperación, sesiones con CSRF, cookies
   `Secure`, rate limiting, tokens de API, auditoría encadenada y backups verificados.
 - **IA con control humano**: el asistente propone acciones; las sensibles quedan

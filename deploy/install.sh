@@ -97,6 +97,7 @@ install -m 0755 -o root -g root "${APP_DIR}/deploy/helpers/"* "${HELPERS_DIR}/"
 echo "==> Lista blanca de unidades controlables"
 install -d -m 0755 /etc/nexus
 install -m 0644 -o root -g root "${APP_DIR}/deploy/nexus/allowed-units" /etc/nexus/allowed-units
+install -m 0644 -o root -g root "${APP_DIR}/deploy/nexus/installable.json" /etc/nexus/installable.json
 
 echo "==> Reglas sudoers (validando sintaxis antes de instalar)"
 visudo -cf "${APP_DIR}/deploy/sudoers.d/nexus"
