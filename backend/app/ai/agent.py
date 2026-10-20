@@ -22,6 +22,7 @@ herramientas definido en ``tools_schema.py``.
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 import httpx
@@ -33,6 +34,20 @@ from app.core.logging_conf import logger
 
 
 # ============================ Utilidades internas ============================
+
+def _normalize_gemini_model(model: str) -> str:
+    """Normaliza el identificador del modelo para la API nativa de Gemini.
+
+    Acepta valores escritos por una persona («gemini 2.5 flash»), con el
+    prefijo ``models/`` o en mayúsculas, y devuelve el identificador que
+    espera ``/models/{model}:generateContent``.
+    """
+    value = (model or "").strip()
+    if value.lower().startswith("models/"):
+        value = value[7:]
+    value = re.sub(r"[\s_]+", "-", value).strip("-").lower()
+    return value or "gemini-2.5-flash"
+
 def _missing_key_reply(settings: Settings, variable: str) -> dict[str, Any]:
     """Respuesta de cortesía cuando falta la clave del proveedor LLM activo."""
     hint = ""
@@ -417,7 +432,7 @@ async def _run_gemini(
     if not settings.GEMINI_API_KEY:
         return _missing_key_reply(settings, "GEMINI_API_KEY")
 
-    model = settings.ai_model
+    model = _normalize_gemini_model(settings.ai_model)
     url = f"{settings.GEMINI_BASE_URL.rstrip('/')}/models/{model}:generateContent"
     headers = {
         "Content-Type": "application/json",
