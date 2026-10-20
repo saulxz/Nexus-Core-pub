@@ -657,8 +657,15 @@ select.nx-terminal-select {
     text-align: left;
   }
 
+  #section-terminal .nx-card-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
   .nx-terminal-picker {
     flex: 1;
+    width: auto;
+    min-width: 0;
   }
 
   select.nx-terminal-select {
