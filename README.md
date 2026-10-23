@@ -42,6 +42,10 @@ direcciones de documentación (`192.0.2.10`). No hay credenciales ni datos reale
   por inactividad.
 - **Seguridad**: 2FA TOTP con códigos de recuperación, sesiones con CSRF, cookies
   `Secure`, rate limiting, tokens de API, auditoría encadenada y backups verificados.
+- **Auditoría de seguridad read-only**: 50 comprobaciones (+ nmap opcional) de
+  sistema, identidad, archivos, SSH, systemd, Docker, red, firewall y aplicación,
+  con severidad, evidencia, recomendación, baseline/comparación y exportación JSON.
+  No modifica el host.
 - **IA con control humano**: el asistente propone acciones; las sensibles quedan
   pendientes de confirmación.
 - **Despliegue**: servicio systemd, Docker opcional, Caddy con TLS y Cloudflare

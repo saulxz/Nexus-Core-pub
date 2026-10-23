@@ -2,7 +2,7 @@
 
 **Monitorización, administración y seguridad de infraestructura con agentes remotos**
 
-Trabajo Fin de Grado · Ciclo Formativo de Grado Superior en Sistemas Microinformáticos y Redes (SMR)  
+Trabajo Fin de Grado · Ciclo Formativo de Grado Medio en Sistemas Microinformáticos y Redes (SMR)  
 Autor: Saúl Moreno · Málaga · Octubre de 2026
 
 ---
@@ -131,6 +131,7 @@ búfer histórico); es una limitación consciente y una posible mejora futura.
 | **Monitores** | HTTP, TCP y SSL con latidos, uptime y página de estado | Vigila servicios desde el punto de vista del usuario |
 | **Histórico** | Series temporales con rangos y exportación CSV | Permite explicar tendencias y justificar decisiones |
 | **Auditoría** | Registro encadenado de accesos y acciones | Sin trazabilidad no hay administración responsable |
+| **Auditoría de seguridad** | Sistema, identidad, archivos, servicios, Docker, red, firewall y app; solo lectura | Diagnóstico accionable sin tocar el host |
 | **Seguridad** | Tokens de API, sesiones, 2FA TOTP y códigos de recuperación | Protege el panel y las credenciales |
 | **Asistente** | Chat con IA y propuestas de acciones pendientes de confirmar | Acelera el diagnóstico sin dar autonomía peligrosa a la IA |
 | **Hosts** | Inventario de la flota, alta de agentes, estado y comandos | Es la puerta al modelo multi-máquina |
@@ -237,6 +238,50 @@ TERMINAL_IDLE_SECONDS=900
 > aceptar una clave de host desconocida y el CSRF impide que otro origen abra la
 > terminal con la cookie del administrador.
 
+## 3.6 Auditoría de seguridad (solo lectura)
+
+La pestaña **Auditoría** incorpora un auditor propio inspirado en Lynis, pero con una
+vuelta de tuerca: cruza sistema, identidad, archivos, servicios, Docker, red, firewall y
+la propia aplicación, y devuelve cada hallazgo con **severidad, evidencia y
+recomendación**. La diferencia clave es que **no modifica nada**: no escribe
+configuración, no reinicia servicios, no instala paquetes y no toca permisos. Solo lee y
+ejecuta comandos de consulta.
+
+- **Sistema:** plataforma, actualizaciones pendientes, reinicio, unattended-upgrades y NTP.
+- **Identidad:** UID 0, contraseñas vacías, SSH (root, contraseña, puerto, X11) y sudoers.
+- **Archivos:** permisos de `nexus.env`, clave SSH, base de datos, token de setup y
+  auditoría; world-writable y SUID/SGID.
+- **Servicios y Docker:** unidades fallidas, usuario del servicio, contenedores
+  privilegiados, red/PID host, root, `:latest`, socket montado y permisos del socket.
+- **Red y firewall:** puertos en escucha, exposición en `0.0.0.0`, Docker API, bases de
+  datos y estado de ufw/nftables o de los perfiles de Windows. Si `nmap` está instalado,
+  se añade un escaneo activo de loopback (`-sT -Pn --top-ports 100 127.0.0.1`), sin
+  scripts ni exploits; si no, se omite. ZAP no se ejecuta desde el hub: se plantea como
+  escaneo externo.
+- **Aplicación:** 2FA, cookie Secure, `ALLOWED_HOSTS`, CORS, caducidad de sesión, cadena
+  de auditoría, tokens de API, flota, backup y límite de enrolamiento.
+- **Windows:** Defender, firewall, SMBv1, RDP y último hotfix.
+
+La puntuación parte de 100 y resta pesos por hallazgo (25 crítico, 15 alto, 7 medio, 3
+bajo; un aviso resta la mitad). Los checks omitidos no penalizan, pero se muestran con su
+motivo. En Linux se ejecutan los checks de sistema, SSH, systemd y permisos POSIX; en
+Windows se sustituyen por Defender, SMBv1, RDP y firewall, y los de Linux se marcan como
+omitidos.
+
+El endpoint `GET /api/audit/security` devuelve el informe cacheado cinco minutos;
+`POST /api/audit/security/run` fuerza una nueva pasada. Ambos exigen autenticación y el
+POST exige CSRF. El informe incluye `read_only=true`, host, plataforma, duración,
+puntuación, contadores y hallazgos; la interfaz permite filtrar por severidad y exportar
+el JSON. La auditoría no escribe en la cadena de auditoría ni en ningún otro sitio.
+
+**Baseline y comparación.** El botón **Guardar baseline** crea
+`security_audit_baseline.json` (0600) en el directorio de datos con la puntuación y los
+hallazgos actuales; **Borrar baseline** lo elimina. Con un baseline guardado, el panel
+muestra una tarjeta de comparación: nuevos, regresiones, resueltos, los que siguen
+fallando y el delta de puntuación. Endpoints: `POST` y `DELETE`
+`/api/audit/security/baseline`. Guardar o borrar el baseline es la **única escritura** y
+es una acción explícita; el resto del auditor sigue siendo de solo lectura.
+
 ---
 
 # 4. Datos y persistencia
@@ -247,7 +292,7 @@ de datos, fácil de copiar y restaurar. El esquema evoluciona con migraciones ve
 | Tabla | Contenido |
 |---|---|
 | `metric_samples` | Muestras de CPU, RAM, swap, disco, carga y temperatura, por host |
-| `metric_rollups` | Agregados por minuto y hora para históricos largos |
+| `metric_rollups` | Agregados por minuto (1m), 5 minutos (5m) y hora (1h) |
 | `hosts` | Inventario de la flota (local y agentes), estado y token |
 | `host_state` | Último inventario del agente (contenedores, servicios, versión) |
 | `commands` | Órdenes enviadas a un agente, estado, resultado y error |
@@ -259,7 +304,7 @@ de datos, fácil de copiar y restaurar. El esquema evoluciona con migraciones ve
 ## 4.1 Muestreo y agregación
 
 - El colector muestrea cada **5 segundos**.
-- Se calculan agregados por minuto y por hora para que el histórico no crezca sin límite.
+- Se calculan agregados por minuto (1m), 5 minutos (5m) y hora (1h) para que el histórico no crezca sin límite.
 - La retención y los rollups permiten mantener meses de tendencia con un peso pequeño.
 - El histórico se consulta por host y por rango; el CSV exporta exactamente lo que se ve.
 
@@ -370,13 +415,14 @@ Dos opciones habituales:
 
 1. **Cloudflare Tunnel**: `cloudflared` abre una conexión saliente y Cloudflare publica el
    panel con HTTPS. Un **Quick Tunnel** es gratis, no requiere cuenta y cambia de URL; sirve
-   para pruebas. Un **Named Tunnel** con dominio y **Cloudflare Access** es la opción estable
-   y añade login por email antes de llegar al panel.
+   para pruebas. Un **Named Tunnel** con dominio es la opción estable. Cloudflare Access
+   añadiría SSO, pero **no forma parte de esta versión**.
 2. **VPS con Caddy**: el hub escucha en `127.0.0.1:8000`, Caddy termina TLS y añade HSTS y
    cabeceras de seguridad. El firewall solo permite SSH, 80 y 443.
 
-En ambos casos el panel **no** debe escuchar en `0.0.0.0` cuando se publica; se enlaza a
-localhost y el proxy/túnel hace de puerta.
+En ambos casos el panel **no** debe escuchar en `0.0.0.0` cuando se publica. La unidad
+systemd trae `0.0.0.0:8000` para el primer arranque en LAN; `/etc/nexus/nexus.env` lo
+sobreescribe a `127.0.0.1:8000` y el proxy/túnel hace de puerta.
 
 ---
 
@@ -424,7 +470,17 @@ sudo bash deploy/install.sh
 ```
 
 El instalador crea el usuario `nexus`, los directorios, el entorno virtual, los helpers, la
-unidad systemd y el token de primer arranque. El panel escucha en el puerto 8000.
+unidad systemd y el token de primer arranque. El puerto depende del entorno:
+
+| Entorno | Escucha | Puerto | Acceso |
+|---|---|---|---|
+| Linux, primer arranque | `0.0.0.0` | `8000` | `http://IP:8000/login.html` |
+| Linux, producción | `127.0.0.1` | `8000` | túnel o Caddy (`https://nexus.labsxz.com`) |
+| App Windows | `127.0.0.1` | `8780` | ventana pywebview |
+| Demostración | `127.0.0.1` | `8790` | solo capturas |
+
+El `0.0.0.0` es solo para el primer acceso en LAN; en producción,
+`/etc/nexus/nexus.env` fija `NEXUS_BIND_HOST=127.0.0.1`.
 
 ## 8.2 Primer arranque
 
@@ -517,7 +573,8 @@ Ejecuta el script de backup, inspecciona el archivo y restaura en una copia de l
 ## Laboratorio 8 — Publicación segura
 
 Publica el panel con un túnel o un proxy TLS en el laboratorio. Verifica HSTS, cookies Secure
-y que el puerto 8000 no es accesible desde fuera. **Pregunta:** ¿qué añade Cloudflare Access?
+y que el puerto 8000 no es accesible desde fuera. **Pregunta:** ¿qué **añadiría** Cloudflare
+Access? (No se implementó en esta versión.)
 
 ---
 
@@ -599,12 +656,15 @@ backend/
   app/
     api/                rutas HTTP (auth, hosts, alerts, monitors, sistema, seguridad)
     core/               configuración, seguridad, flota, SQLite, TOTP, auditoría
-    modules/            colector, Docker, systemd, red, SMART, FIM, diagnósticos
+    modules/            colector, Docker, systemd, red, SMART, FIM, diagnóstico local
     ai/                 proveedor, herramientas y acciones pendientes
 frontend/               panel, login, ajustes y estilos
 deploy/                 instalación, agentes, systemd, Caddy, producción y backups
 docs/                   memoria del TFG y esta guía
 ```
+
+> La herramienta remota `diagnostics` del agente **no está implementada**; el módulo
+> `diagnostics.py` del hub genera el ZIP de diagnóstico local que descarga el panel.
 
 ## 12.4 Buenas prácticas de operación
 

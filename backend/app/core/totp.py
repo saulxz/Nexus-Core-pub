@@ -90,17 +90,30 @@ def totp_code(secret: str, timestamp: float | None = None, period: int = PERIOD)
     return hotp(secret, int(moment // period), DIGITS)
 
 
-def verify(secret: str, code: str, timestamp: float | None = None, window: int = WINDOW) -> bool:
-    """Comprueba un código TOTP con tolerancia de ±``window`` periodos."""
+def verify_step(
+    secret: str, code: str, timestamp: float | None = None, window: int = WINDOW
+) -> int | None:
+    """Devuelve el contador que validó el código, o ``None`` si no es válido.
+
+    El contador permite implementar **anti-replay** en la capa de autenticación:
+    una vez aceptado el paso ``N``, los pasos ``<= N`` se rechazan. Se mantiene
+    la tolerancia ``±window`` para absorber el desfase del reloj.
+    """
     cleaned = (code or "").strip().replace(" ", "")
     if not cleaned.isdigit() or len(cleaned) != DIGITS:
-        return False
+        return None
     moment = time.time() if timestamp is None else float(timestamp)
-    counter = int(moment // PERIOD)
-    return any(
-        hmac.compare_digest(hotp(secret, counter + offset, DIGITS), cleaned)
-        for offset in range(-max(0, window), max(0, window) + 1)
-    )
+    base = int(moment // PERIOD)
+    for offset in range(-max(0, window), max(0, window) + 1):
+        counter = base + offset
+        if hmac.compare_digest(hotp(secret, counter, DIGITS), cleaned):
+            return counter
+    return None
+
+
+def verify(secret: str, code: str, timestamp: float | None = None, window: int = WINDOW) -> bool:
+    """Comprueba un código TOTP con tolerancia de ±``window`` periodos."""
+    return verify_step(secret, code, timestamp=timestamp, window=window) is not None
 
 
 # ========================= Códigos de recuperación =======================
@@ -134,4 +147,5 @@ __all__ = [
     "provisioning_uri",
     "totp_code",
     "verify",
+    "verify_step",
 ]

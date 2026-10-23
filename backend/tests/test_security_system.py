@@ -236,7 +236,13 @@ def test_totp_setup_enable_verify_and_login(
 
     with_code = anonymous_client.post(
         "/api/auth/login",
-        json={"username": TEST_USERNAME, "password": TEST_PASSWORD, "totp": totp.totp_code(secret)},
+        json={
+            "username": TEST_USERNAME,
+            "password": TEST_PASSWORD,
+            # El enable ya consumió el código del periodo actual (anti-replay);
+            # el login usa el siguiente paso para que sea un código nuevo.
+            "totp": totp.totp_code(secret, time.time() + totp.PERIOD),
+        },
     )
     assert with_code.status_code == 200, with_code.text
 

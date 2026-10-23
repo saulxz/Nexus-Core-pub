@@ -696,6 +696,9 @@ class PendingActionInfo(BaseModel):
 
     id: str = Field(..., description="Identificador de la acción pendiente.")
     tool: str = Field(..., description="Herramienta que la propuso.")
+    args: dict[str, Any] = Field(
+        default_factory=dict, description="Argumentos exactos que se ejecutarán al confirmar."
+    )
     summary: str = Field(..., description="Descripción legible de lo que hará.")
     created_at: str = Field(..., description="Momento de creación (ISO8601 UTC).")
     expires_at: str = Field(..., description="Caducidad (ISO8601 UTC).")

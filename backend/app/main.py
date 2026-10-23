@@ -40,6 +40,7 @@ from app.api.routes import router as core_router
 from app.api.routes_agent import router as agent_router
 from app.api.routes_alerts import router as alerts_router
 from app.api.routes_auth import router as auth_router
+from app.api.routes_audit import router as security_audit_router
 from app.api.routes_config import router as config_router
 from app.api.routes_hosts import router as hosts_router
 from app.api.routes_install import router as install_router
@@ -82,11 +83,16 @@ class SimpleRateLimitMiddleware(BaseHTTPMiddleware):
         path_prefix: str = "/api/chat",
         max_requests: int = 30,
         window_seconds: int = 60,
+        message: str | None = None,
     ) -> None:
         super().__init__(app)
         self.path_prefix = path_prefix
         self.max_requests = max_requests
         self.window_seconds = window_seconds
+        self.message = message or (
+            "Demasiadas peticiones al asistente. "
+            f"Espera hasta {window_seconds} segundos."
+        )
         self._hits: dict[str, deque[float]] = {}
 
     async def dispatch(
@@ -109,12 +115,7 @@ class SimpleRateLimitMiddleware(BaseHTTPMiddleware):
             logger.warning("Rate limit alcanzado para la IP {}", client_ip)
             return JSONResponse(
                 status_code=429,
-                content={
-                    "detail": (
-                        "Demasiadas peticiones al asistente. "
-                        f"Espera hasta {self.window_seconds} segundos."
-                    )
-                },
+                content={"detail": self.message},
             )
 
         bucket.append(now)
@@ -232,6 +233,17 @@ app.add_middleware(SecurityHeadersMiddleware)
 # --- Rate limiting sobre /api/chat ---
 app.add_middleware(SimpleRateLimitMiddleware)
 
+# --- Rate limiting sobre /api/agent/enroll ---
+# El enrolamiento es una credencial de alta: limita los intentos por IP para
+# dificultar el sondeo de tokens. Es un límite en memoria (una sola instancia).
+app.add_middleware(
+    SimpleRateLimitMiddleware,
+    path_prefix="/api/agent/enroll",
+    max_requests=20,
+    window_seconds=900,
+    message="Demasiados intentos de enrolamiento. Espera 15 minutos.",
+)
+
 # --- Routers de la API (prefijo /api) ---
 # auth: sin dependencia global (login/setup accesibles sin sesión).
 app.include_router(auth_router, prefix=settings.API_PREFIX)
@@ -279,6 +291,13 @@ app.include_router(
 # seguridad: tokens de API, sesiones abiertas y segundo factor (TOTP).
 app.include_router(
     security_router,
+    prefix=settings.API_PREFIX,
+    dependencies=[Depends(security.require_auth)],
+)
+# auditoría de seguridad de solo lectura: sistema, red, servicios, archivos,
+# Docker y la propia aplicación. No modifica nada.
+app.include_router(
+    security_audit_router,
     prefix=settings.API_PREFIX,
     dependencies=[Depends(security.require_auth)],
 )

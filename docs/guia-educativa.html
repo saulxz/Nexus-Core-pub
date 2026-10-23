@@ -266,6 +266,7 @@ marcadores como <code>&lt;TOKEN&gt;</code>. Ninguna credencial real aparece en e
 <li><a href="#33-ia-con-human-in-the-loop">3.3 IA con human-in-the-loop</a></li>
 <li><a href="#34-instalacion-de-servicios-apt">3.4 Instalación de servicios (apt)</a></li>
 <li><a href="#35-terminal-ssh-del-panel">3.5 Terminal SSH del panel</a></li>
+<li><a href="#36-auditoria-de-seguridad-solo-lectura">3.6 Auditoría de seguridad (solo lectura)</a></li>
 </ul>
 </li>
 <li><a href="#4-datos-y-persistencia">4. Datos y persistencia</a><ul>
@@ -492,6 +493,11 @@ búfer histórico); es una limitación consciente y una posible mejora futura.</
 <td>Sin trazabilidad no hay administración responsable</td>
 </tr>
 <tr>
+<td><strong>Auditoría de seguridad</strong></td>
+<td>Sistema, identidad, archivos, servicios, Docker, red, firewall y app; solo lectura</td>
+<td>Diagnóstico accionable sin tocar el host</td>
+</tr>
+<tr>
 <td><strong>Seguridad</strong></td>
 <td>Tokens de API, sesiones, 2FA TOTP y códigos de recuperación</td>
 <td>Protege el panel y las credenciales</td>
@@ -595,6 +601,46 @@ revocar el acceso sin depositar secretos en el navegador. El <code>known_hosts</
 aceptar una clave de host desconocida y el CSRF impide que otro origen abra la
 terminal con la cookie del administrador.</p>
 </blockquote>
+<h2 id="36-auditoria-de-seguridad-solo-lectura">3.6 Auditoría de seguridad (solo lectura)</h2>
+<p>La pestaña <strong>Auditoría</strong> incorpora un auditor propio inspirado en Lynis, pero con una
+vuelta de tuerca: cruza sistema, identidad, archivos, servicios, Docker, red, firewall y
+la propia aplicación, y devuelve cada hallazgo con <strong>severidad, evidencia y
+recomendación</strong>. La diferencia clave es que <strong>no modifica nada</strong>: no escribe
+configuración, no reinicia servicios, no instala paquetes y no toca permisos. Solo lee y
+ejecuta comandos de consulta.</p>
+<ul>
+<li><strong>Sistema:</strong> plataforma, actualizaciones pendientes, reinicio, unattended-upgrades y NTP.</li>
+<li><strong>Identidad:</strong> UID 0, contraseñas vacías, SSH (root, contraseña, puerto, X11) y sudoers.</li>
+<li><strong>Archivos:</strong> permisos de <code>nexus.env</code>, clave SSH, base de datos, token de setup y
+  auditoría; world-writable y SUID/SGID.</li>
+<li><strong>Servicios y Docker:</strong> unidades fallidas, usuario del servicio, contenedores
+  privilegiados, red/PID host, root, <code>:latest</code>, socket montado y permisos del socket.</li>
+<li><strong>Red y firewall:</strong> puertos en escucha, exposición en <code>0.0.0.0</code>, Docker API, bases de
+  datos y estado de ufw/nftables o de los perfiles de Windows. Si <code>nmap</code> está instalado,
+  se añade un escaneo activo de loopback (<code>-sT -Pn --top-ports 100 127.0.0.1</code>), sin
+  scripts ni exploits; si no, se omite. ZAP no se ejecuta desde el hub: se plantea como
+  escaneo externo.</li>
+<li><strong>Aplicación:</strong> 2FA, cookie Secure, <code>ALLOWED_HOSTS</code>, CORS, caducidad de sesión, cadena
+  de auditoría, tokens de API, flota, backup y límite de enrolamiento.</li>
+<li><strong>Windows:</strong> Defender, firewall, SMBv1, RDP y último hotfix.</li>
+</ul>
+<p>La puntuación parte de 100 y resta pesos por hallazgo (25 crítico, 15 alto, 7 medio, 3
+bajo; un aviso resta la mitad). Los checks omitidos no penalizan, pero se muestran con su
+motivo. En Linux se ejecutan los checks de sistema, SSH, systemd y permisos POSIX; en
+Windows se sustituyen por Defender, SMBv1, RDP y firewall, y los de Linux se marcan como
+omitidos.</p>
+<p>El endpoint <code>GET /api/audit/security</code> devuelve el informe cacheado cinco minutos;
+<code>POST /api/audit/security/run</code> fuerza una nueva pasada. Ambos exigen autenticación y el
+POST exige CSRF. El informe incluye <code>read_only=true</code>, host, plataforma, duración,
+puntuación, contadores y hallazgos; la interfaz permite filtrar por severidad y exportar
+el JSON. La auditoría no escribe en la cadena de auditoría ni en ningún otro sitio.</p>
+<p><strong>Baseline y comparación.</strong> El botón <strong>Guardar baseline</strong> crea
+<code>security_audit_baseline.json</code> (0600) en el directorio de datos con la puntuación y los
+hallazgos actuales; <strong>Borrar baseline</strong> lo elimina. Con un baseline guardado, el panel
+muestra una tarjeta de comparación: nuevos, regresiones, resueltos, los que siguen
+fallando y el delta de puntuación. Endpoints: <code>POST</code> y <code>DELETE</code>
+<code>/api/audit/security/baseline</code>. Guardar o borrar el baseline es la <strong>única escritura</strong> y
+es una acción explícita; el resto del auditor sigue siendo de solo lectura.</p>
 <hr />
 <h1 id="4-datos-y-persistencia">4. Datos y persistencia</h1>
 <p>Nexus-Core usa <strong>SQLite</strong> para simplificar el despliegue: un solo archivo, sin servidor de base
@@ -613,7 +659,7 @@ de datos, fácil de copiar y restaurar. El esquema evoluciona con migraciones ve
 </tr>
 <tr>
 <td><code>metric_rollups</code></td>
-<td>Agregados por minuto y hora para históricos largos</td>
+<td>Agregados por minuto (1m), 5 minutos (5m) y hora (1h)</td>
 </tr>
 <tr>
 <td><code>hosts</code></td>
@@ -648,7 +694,7 @@ de datos, fácil de copiar y restaurar. El esquema evoluciona con migraciones ve
 <h2 id="41-muestreo-y-agregacion">4.1 Muestreo y agregación</h2>
 <ul>
 <li>El colector muestrea cada <strong>5 segundos</strong>.</li>
-<li>Se calculan agregados por minuto y por hora para que el histórico no crezca sin límite.</li>
+<li>Se calculan agregados por minuto (1m), 5 minutos (5m) y hora (1h) para que el histórico no crezca sin límite.</li>
 <li>La retención y los rollups permiten mantener meses de tendencia con un peso pequeño.</li>
 <li>El histórico se consulta por host y por rango; el CSV exporta exactamente lo que se ve.</li>
 </ul>
@@ -799,13 +845,14 @@ lo que evita un falso sentido de seguridad.</p>
 <ol>
 <li><strong>Cloudflare Tunnel</strong>: <code>cloudflared</code> abre una conexión saliente y Cloudflare publica el
    panel con HTTPS. Un <strong>Quick Tunnel</strong> es gratis, no requiere cuenta y cambia de URL; sirve
-   para pruebas. Un <strong>Named Tunnel</strong> con dominio y <strong>Cloudflare Access</strong> es la opción estable
-   y añade login por email antes de llegar al panel.</li>
+   para pruebas. Un <strong>Named Tunnel</strong> con dominio es la opción estable. Cloudflare Access
+   añadiría SSO, pero <strong>no forma parte de esta versión</strong>.</li>
 <li><strong>VPS con Caddy</strong>: el hub escucha en <code>127.0.0.1:8000</code>, Caddy termina TLS y añade HSTS y
    cabeceras de seguridad. El firewall solo permite SSH, 80 y 443.</li>
 </ol>
-<p>En ambos casos el panel <strong>no</strong> debe escuchar en <code>0.0.0.0</code> cuando se publica; se enlaza a
-localhost y el proxy/túnel hace de puerta.</p>
+<p>En ambos casos el panel <strong>no</strong> debe escuchar en <code>0.0.0.0</code> cuando se publica. La unidad
+systemd trae <code>0.0.0.0:8000</code> para el primer arranque en LAN; <code>/etc/nexus/nexus.env</code> lo
+sobreescribe a <code>127.0.0.1:8000</code> y el proxy/túnel hace de puerta.</p>
 <hr />
 <h1 id="7-redes">7. Redes</h1>
 <h2 id="71-escaneo-de-la-red-local">7.1 Escaneo de la red local</h2>
@@ -838,7 +885,45 @@ cd nexus-core
 sudo bash deploy/install.sh
 </code></pre>
 <p>El instalador crea el usuario <code>nexus</code>, los directorios, el entorno virtual, los helpers, la
-unidad systemd y el token de primer arranque. El panel escucha en el puerto 8000.</p>
+unidad systemd y el token de primer arranque. El puerto depende del entorno:</p>
+<table>
+<thead>
+<tr>
+<th>Entorno</th>
+<th>Escucha</th>
+<th>Puerto</th>
+<th>Acceso</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Linux, primer arranque</td>
+<td><code>0.0.0.0</code></td>
+<td><code>8000</code></td>
+<td><code>http://IP:8000/login.html</code></td>
+</tr>
+<tr>
+<td>Linux, producción</td>
+<td><code>127.0.0.1</code></td>
+<td><code>8000</code></td>
+<td>túnel o Caddy (<code>https://nexus.labsxz.com</code>)</td>
+</tr>
+<tr>
+<td>App Windows</td>
+<td><code>127.0.0.1</code></td>
+<td><code>8780</code></td>
+<td>ventana pywebview</td>
+</tr>
+<tr>
+<td>Demostración</td>
+<td><code>127.0.0.1</code></td>
+<td><code>8790</code></td>
+<td>solo capturas</td>
+</tr>
+</tbody>
+</table>
+<p>El <code>0.0.0.0</code> es solo para el primer acceso en LAN; en producción,
+<code>/etc/nexus/nexus.env</code> fija <code>NEXUS_BIND_HOST=127.0.0.1</code>.</p>
 <h2 id="82-primer-arranque">8.2 Primer arranque</h2>
 <pre><code class="language-bash">sudo cat /var/lib/nexus/setup_token
 </code></pre>
@@ -921,7 +1006,8 @@ reinicio. <strong>Pregunta:</strong> ¿qué privilegios necesita el panel y por 
 <strong>Objetivo:</strong> comprobar integridad y entender que un backup sin restauración no es una garantía.</p>
 <h2 id="laboratorio-8-publicacion-segura">Laboratorio 8 — Publicación segura</h2>
 <p>Publica el panel con un túnel o un proxy TLS en el laboratorio. Verifica HSTS, cookies Secure
-y que el puerto 8000 no es accesible desde fuera. <strong>Pregunta:</strong> ¿qué añade Cloudflare Access?</p>
+y que el puerto 8000 no es accesible desde fuera. <strong>Pregunta:</strong> ¿qué <strong>añadiría</strong> Cloudflare
+Access? (No se implementó en esta versión.)</p>
 <hr />
 <h1 id="10-preguntas-de-repaso">10. Preguntas de repaso</h1>
 <ol>
@@ -1091,12 +1177,16 @@ y que el puerto 8000 no es accesible desde fuera. <strong>Pregunta:</strong> ¿q
   app/
     api/                rutas HTTP (auth, hosts, alerts, monitors, sistema, seguridad)
     core/               configuración, seguridad, flota, SQLite, TOTP, auditoría
-    modules/            colector, Docker, systemd, red, SMART, FIM, diagnósticos
+    modules/            colector, Docker, systemd, red, SMART, FIM, diagnóstico local
     ai/                 proveedor, herramientas y acciones pendientes
 frontend/               panel, login, ajustes y estilos
 deploy/                 instalación, agentes, systemd, Caddy, producción y backups
 docs/                   memoria del TFG y esta guía
 </code></pre>
+<blockquote>
+<p>La herramienta remota <code>diagnostics</code> del agente <strong>no está implementada</strong>; el módulo
+<code>diagnostics.py</code> del hub genera el ZIP de diagnóstico local que descarga el panel.</p>
+</blockquote>
 <h2 id="124-buenas-practicas-de-operacion">12.4 Buenas prácticas de operación</h2>
 <ul>
 <li>Cambia la contraseña inicial y activa 2FA antes de publicar el panel.</li>

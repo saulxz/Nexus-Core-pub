@@ -37,6 +37,7 @@ def _pending_info(stored: dict) -> PendingActionInfo:
     return PendingActionInfo(
         id=stored["id"],
         tool=stored["tool"],
+        args=stored.get("args") or {},
         summary=stored["summary"],
         created_at=stored["created_at"],
         expires_at=stored["expires_at"],

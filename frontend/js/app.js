@@ -66,6 +66,7 @@ const state = {
   openMonitorId: null,
   heartbeatHours: 24,
   audit: { limit: 50, offset: 0, action: '', since: '', total: 0 },
+  securityAudit: null,
   twoFactor: null,
   twoFactorSecret: null,
   twoFactorRecovery: null,
@@ -2262,6 +2263,9 @@ function renderPendingActions(pendingActions) {
     card.innerHTML = `
       <p class="nx-eyebrow">Propuesta pendiente de confirmación</p>
       <p class="nx-t-2">${escapeHtml(action.summary)}</p>
+      <p class="nx-t-3 nx-hint">Herramienta: <code>${escapeHtml(action.tool || '—')}</code></p>
+      <pre style="white-space:pre-wrap;word-break:break-word;background:#0b1220;border:1px solid #22334a;border-radius:6px;padding:8px;font-size:12px;margin:6px 0;">${escapeHtml(JSON.stringify(action.args || {}, null, 2))}</pre>
+      <p class="nx-t-3 nx-hint">Revisa la acción y los argumentos exactos. La descripción anterior la genera el modelo.</p>
       <p class="nx-t-2 nx-hint">Caduca ${escapeHtml(action.expires_at)}</p>
       <div class="nx-t-3 nx-hstack">
         <button class="btn btn-primary btn-sm" data-action-confirm="${escapeHtml(action.id)}">Confirmar y ejecutar</button>
@@ -4046,6 +4050,191 @@ async function fetchAudit() {
   }
 }
 
+// ==========================================================
+// Auditoría de seguridad (solo lectura)
+// ------------------------------------------------------------
+// El backend recorre sistema, identidad, archivos, servicios,
+// Docker, red, firewall y la propia app sin modificar nada.
+// Cada hallazgo trae severidad, evidencia y recomendación.
+// ==========================================================
+function securityAuditBadge(finding) {
+  if (finding.status === 'fail') return badgeHtml('badge-error', 'Fallo');
+  if (finding.status === 'warn') return badgeHtml('badge-warn', 'Aviso');
+  if (finding.status === 'pass') return badgeHtml('badge-running', 'OK');
+  if (finding.status === 'skipped') return badgeHtml('badge-stopped', 'Omitido');
+  return badgeHtml('badge-stopped', 'Desconocido');
+}
+
+function comparisonList(label, items) {
+  if (!items || items.length === 0) return '';
+  const text = items.slice(0, 8)
+    .map((finding) => `${escapeHtml(finding.id)} ${escapeHtml(finding.title)}`)
+    .join(' · ');
+  return `<p class="nx-t-3"><b>${escapeHtml(label)}:</b> ${text}${items.length > 8 ? ' …' : ''}</p>`;
+}
+
+function renderSecurityAudit(data) {
+  const body = $('security-audit-body');
+  if (!body) return;
+  const counts = data.counts || {};
+  const score = Number(data.score) || 0;
+  const scoreColor = score >= 85
+    ? 'var(--nx-status-ok)'
+    : score >= 60
+      ? 'var(--nx-status-warn)'
+      : 'var(--nx-status-crit)';
+  const filters = [
+    ['all', 'Todas'],
+    ['fail', 'Solo fallos'],
+    ['warn', 'Solo avisos'],
+    ['critical', 'Críticas'],
+    ['high', 'Altas'],
+    ['medium', 'Medias'],
+    ['low', 'Bajas'],
+    ['pass', 'Aprobadas'],
+    ['skipped', 'Omitidas']
+  ];
+  const findings = Array.isArray(data.findings) ? [...data.findings] : [];
+  const order = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
+  const comparison = data.comparison;
+  const comparisonHtml = comparison
+    ? `<div style="margin-top:12px;padding:12px;border:1px solid var(--nx-line, #22334a);border-radius:10px">
+        <div class="nx-hstack" style="justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <div>
+            <p class="nx-eyebrow">Comparación con baseline</p>
+            <p class="nx-meta">${escapeHtml(comparison.baseline_at || '')} · Δ puntuación ${comparison.score_delta >= 0 ? '+' : ''}${comparison.score_delta}</p>
+          </div>
+          <div class="nx-hstack" style="gap:6px;flex-wrap:wrap">
+            ${badgeHtml('badge-warn', `Nuevos ${(comparison.new_actionable || []).length}`)}
+            ${badgeHtml('badge-error', `Regresiones ${(comparison.regressed || []).length}`)}
+            ${badgeHtml('badge-running', `Resueltos ${(comparison.fixed || []).length}`)}
+            ${badgeHtml('badge-stopped', `Siguen ${(comparison.still_failing || []).length}`)}
+          </div>
+        </div>
+        ${comparisonList('Nuevos', comparison.new_actionable)}
+        ${comparisonList('Regresiones', comparison.regressed)}
+        ${comparisonList('Resueltos', comparison.fixed)}
+      </div>`
+    : '';
+  findings.sort((a, b) => (order[a.severity] ?? 9) - (order[b.severity] ?? 9));
+  const rows = findings.map((finding) => `
+    <details data-severity="${escapeHtml(finding.severity)}" data-status="${escapeHtml(finding.status)}" style="border:1px solid var(--nx-line, #22334a);border-radius:10px;padding:10px 12px;margin-top:8px">
+      <summary style="cursor:pointer;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        ${securityAuditBadge(finding)}
+        <b>${escapeHtml(finding.id)}</b>
+        <span>${escapeHtml(finding.title)}</span>
+        <span class="nx-meta">${escapeHtml(finding.category)}</span>
+      </summary>
+      <p class="nx-t-3"><b>Evidencia:</b> ${escapeHtml(finding.evidence)}</p>
+      <p><b>Recomendación:</b> ${escapeHtml(finding.recommendation)}</p>
+      ${finding.reference ? `<p class="nx-meta">${escapeHtml(finding.reference)}</p>` : ''}
+    </details>`).join('');
+  body.innerHTML = `
+    <div class="nx-hstack" style="gap:24px;align-items:center;flex-wrap:wrap">
+      <div>
+        <p class="nx-eyebrow">Puntuación</p>
+        <p style="font-size:44px;font-weight:800;line-height:1;color:${scoreColor}">${score}<span style="font-size:16px;color:var(--nx-ink-muted, #8b9bb4)">/100</span></p>
+      </div>
+      <div class="nx-hstack" style="gap:8px;flex-wrap:wrap">
+        ${badgeHtml('badge-error', `Críticas ${counts.critical || 0}`)}
+        ${badgeHtml('badge-error', `Altas ${counts.high || 0}`)}
+        ${badgeHtml('badge-warn', `Medias ${counts.medium || 0}`)}
+        ${badgeHtml('badge-running', `Bajas ${counts.low || 0}`)}
+        ${badgeHtml('badge-running', `OK ${counts.pass || 0}`)}
+        ${badgeHtml('badge-stopped', `Omitidas ${counts.skipped || 0}`)}
+      </div>
+    </div>
+    <p class="nx-meta">Solo lectura · ${escapeHtml(data.platform || '')} · ${data.duration_ms || 0} ms${data.cached ? ' · caché 5 min' : ''} · ${escapeHtml(data.generated_at || '')}</p>
+    ${comparisonHtml}
+    <div class="nx-toolbar" style="grid-template-columns:minmax(0,240px);margin-top:10px">
+      <label class="field">
+        <span class="nx-eyebrow">Filtrar</span>
+        <select id="security-audit-filter" class="input-field">
+          ${filters.map(([value, label]) => `<option value="${value}">${label}</option>`).join('')}
+        </select>
+      </label>
+    </div>
+    <div id="security-audit-findings">${rows || '<p class="nx-meta">Sin hallazgos.</p>'}</div>`;
+  const filter = $('security-audit-filter');
+  if (filter) {
+    filter.addEventListener('change', () => {
+      const value = filter.value;
+      document.querySelectorAll('#security-audit-findings details').forEach((node) => {
+        const visible = value === 'all'
+          || node.dataset.severity === value
+          || node.dataset.status === value;
+        node.style.display = visible ? '' : 'none';
+      });
+    });
+  }
+  const exportButton = $('security-audit-export');
+  if (exportButton) exportButton.disabled = false;
+  const baselineClear = $('security-audit-baseline-clear');
+  if (baselineClear) baselineClear.disabled = !comparison;
+}
+
+async function fetchSecurityAudit(force = false) {
+  const body = $('security-audit-body');
+  const button = $('security-audit-run');
+  if (!body) return;
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Analizando…';
+  }
+  body.innerHTML = '<p class="nx-meta">Analizando sistema, puertos, servicios, archivos, Docker y aplicación…</p>';
+  try {
+    const data = force
+      ? await apiFetch('/api/audit/security/run', { method: 'POST' })
+      : await apiFetch('/api/audit/security');
+    state.securityAudit = data;
+    renderSecurityAudit(data);
+  } catch (error) {
+    body.innerHTML = `<p class="nx-meta">No se pudo ejecutar la auditoría: ${escapeHtml(error.message)}</p>`;
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Ejecutar auditoría';
+    }
+  }
+}
+
+function exportSecurityAudit() {
+  if (!state.securityAudit) return;
+  const blob = new Blob([JSON.stringify(state.securityAudit, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'nexus-auditoria-seguridad.json';
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+async function saveSecurityBaseline() {
+  if (!window.confirm('¿Guardar el informe actual como baseline? Se creará security_audit_baseline.json en el directorio de datos. La auditoría en sí no cambia el host.')) return;
+  const button = $('security-audit-baseline');
+  if (button) button.disabled = true;
+  try {
+    await apiFetch('/api/audit/security/baseline', { method: 'POST' });
+    showToast('Baseline guardado.', 'success');
+    await fetchSecurityAudit(false);
+  } catch (error) {
+    showToast('No se pudo guardar el baseline: ' + error.message, 'error');
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+async function clearSecurityBaseline() {
+  if (!window.confirm('¿Borrar el baseline? Solo se elimina el archivo de comparación; el host no se toca.')) return;
+  try {
+    await apiFetch('/api/audit/security/baseline', { method: 'DELETE' });
+    showToast('Baseline borrado.', 'success');
+    await fetchSecurityAudit(false);
+  } catch (error) {
+    showToast('No se pudo borrar el baseline: ' + error.message, 'error');
+  }
+}
+
 /** Cualquier cambio de filtro vuelve a la primera página: si no,
  *  con el offset a la mitad el usuario ve una página vacía y cree
  *  que el filtro no devolvió nada. */
@@ -5700,7 +5889,7 @@ const TAB_LOADERS = {
   alerts: ensureAlertEvents,
   history: fetchHistory,
   monitors: fetchMonitors,
-  audit: fetchAudit,
+  audit: () => { fetchAudit(); fetchSecurityAudit(); },
   system: () => { fetchPorts(); fetchUpdates(); fetchSmart(); },
   containers: fetchDockerInventory
 };
@@ -6500,6 +6689,10 @@ function registerAuditListeners() {
     if (node) node.addEventListener(event, handler);
   };
   on('refresh-audit', 'click', fetchAudit);
+  on('security-audit-run', 'click', () => fetchSecurityAudit(true));
+  on('security-audit-export', 'click', exportSecurityAudit);
+  on('security-audit-baseline', 'click', saveSecurityBaseline);
+  on('security-audit-baseline-clear', 'click', clearSecurityBaseline);
   on('audit-prev', 'click', () => {
     state.audit.offset = Math.max(0, state.audit.offset - state.audit.limit);
     fetchAudit();

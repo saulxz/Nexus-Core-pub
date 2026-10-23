@@ -1595,6 +1595,22 @@
             <span id="audit-chain-note" class="nx-meta">—</span>
           </div>
 
+          <section class="panel panel--flush" data-reveal aria-label="Auditoría de seguridad">
+            <div class="nx-card-head">
+              <h3 class="panel-title">Auditoría de seguridad</h3>
+              <p class="panel-note panel-note--inline">Solo lectura: sistema, puertos, servicios, archivos, Docker, SSH y la propia aplicación. No modifica nada.</p>
+              <div class="nx-card-actions">
+                <button id="security-audit-run" type="button" class="btn btn-primary btn-sm">Ejecutar auditoría</button>
+                <button id="security-audit-baseline" type="button" class="btn btn-ghost btn-sm">Guardar baseline</button>
+                <button id="security-audit-baseline-clear" type="button" class="btn btn-ghost btn-sm" disabled>Borrar baseline</button>
+                <button id="security-audit-export" type="button" class="btn btn-ghost btn-sm" disabled>Exportar JSON</button>
+              </div>
+            </div>
+            <div id="security-audit-body" class="nx-t-3" style="padding:0 18px 18px">
+              <p class="nx-meta">Pulsa «Ejecutar auditoría» para analizar el host.</p>
+            </div>
+          </section>
+
           <section class="panel panel--flush" data-reveal aria-label="Registro de auditoría">
             <div class="nx-card-head">
               <h3 class="panel-title">Registro encadenado</h3>

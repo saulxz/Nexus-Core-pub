@@ -75,7 +75,10 @@ def init_db() -> None:
                 -- app.core.totp; aquí solo se persisten.
                 totp_secret   TEXT,
                 totp_enabled  INTEGER NOT NULL DEFAULT 0,
-                totp_recovery TEXT
+                totp_recovery TEXT,
+                -- Último paso TOTP aceptado (anti-replay). Se guarda el
+                -- contador de 30 s, no el código.
+                totp_last_step INTEGER
             );
             CREATE TABLE IF NOT EXISTS sessions (
                 token_hash  TEXT PRIMARY KEY,
@@ -93,6 +96,10 @@ def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_login_attempts_key ON login_attempts(key, ts);
             """
         )
+        # Migración idempotente para bases de datos creadas antes del anti-replay.
+        columns = {row["name"] for row in conn.execute("PRAGMA table_info(admin)")}
+        if "totp_last_step" not in columns:
+            conn.execute("ALTER TABLE admin ADD COLUMN totp_last_step INTEGER")
         conn.commit()
     finally:
         conn.close()
@@ -472,8 +479,8 @@ def stage_totp(username: str, secret: str, recovery_hashes: list[str]) -> None:
     conn = connect()
     try:
         conn.execute(
-            "UPDATE admin SET totp_secret = ?, totp_enabled = 0, totp_recovery = ? "
-            "WHERE username = ?",
+            "UPDATE admin SET totp_secret = ?, totp_enabled = 0, totp_recovery = ?, "
+            "totp_last_step = NULL WHERE username = ?",
             (secret, json.dumps(recovery_hashes, ensure_ascii=False), username),
         )
         conn.commit()
@@ -500,7 +507,8 @@ def disable_totp(username: str) -> None:
     try:
         conn.execute(
             "UPDATE admin SET totp_secret = NULL, totp_enabled = 0, "
-            "totp_recovery = NULL, updated_at = ? WHERE username = ?",
+            "totp_recovery = NULL, totp_last_step = NULL, updated_at = ? "
+            "WHERE username = ?",
             (_utc(), username),
         )
         conn.commit()
@@ -512,40 +520,77 @@ def verify_second_factor(username: str, code: str, now: float | None = None) -> 
     """Valida un segundo factor (código TOTP o de recuperación).
 
     Un **código de recuperación** se consume: si coincide con alguno de los
-    hasheados se elimina y no vuelve a servir (uso único, como en el panel de
-    Google). Los códigos TOTP solo se validan (el SAME/anti-replay exigiría
-    guardar el último contador y bloquear códigos válidos durante 30 s).
+    hasheados se elimina y no vuelve a servir (uso único).
+
+    Los códigos **TOTP** llevan **anti-replay**: se guarda el contador de 30 s
+    del último código aceptado (``admin.totp_last_step``) y se rechaza cualquier
+    paso menor o igual. Así, un código interceptado no se puede reutilizar
+    dentro de su ventana de validez. La tolerancia ±1 periodo sigue activa para
+    absorber el desfase del reloj; el precio es que un código del periodo
+    anterior al último aceptado también se rechaza.
 
     Returns:
-        ``{"ok": bool, "method": "totp" | "recovery" | None, "recovery_left": int}``.
+        ``{"ok": bool, "method": "totp" | "recovery" | None,
+        "recovery_left": int, "reason": str | None}``.
     """
     moment = _utc() if now is None else float(now)
     conn = connect()
     try:
         row = conn.execute(
-            "SELECT totp_secret, totp_recovery FROM admin WHERE username = ?", (username,)
+            "SELECT totp_secret, totp_recovery, totp_last_step "
+            "FROM admin WHERE username = ?",
+            (username,),
         ).fetchone()
         if row is None or not row["totp_secret"]:
-            return {"ok": False, "method": None, "recovery_left": 0}
+            return {"ok": False, "method": None, "recovery_left": 0, "reason": None}
 
         secret = str(row["totp_secret"])
-        if totp.verify(secret, code, timestamp=moment):
+        step = totp.verify_step(secret, code, timestamp=moment)
+        if step is not None:
+            last_step = row["totp_last_step"]
             state = get_totp_state(username)
-            return {"ok": True, "method": "totp", "recovery_left": int(state["recovery_left"])}
+            if last_step is not None and step <= int(last_step):
+                return {
+                    "ok": False,
+                    "method": None,
+                    "recovery_left": int(state["recovery_left"]),
+                    "reason": "replay",
+                }
+            conn.execute(
+                "UPDATE admin SET totp_last_step = ? WHERE username = ?",
+                (step, username),
+            )
+            conn.commit()
+            return {
+                "ok": True,
+                "method": "totp",
+                "recovery_left": int(state["recovery_left"]),
+                "reason": None,
+            }
 
         # Segundo intento: código de recuperación (uso único, comparación constante).
         stored = _recovery_hashes(row["totp_recovery"])
         digest = totp.hash_recovery_code(code)
         match = next((item for item in stored if hmac.compare_digest(item, digest)), None)
         if match is None:
-            return {"ok": False, "method": None, "recovery_left": len(stored)}
+            return {
+                "ok": False,
+                "method": None,
+                "recovery_left": len(stored),
+                "reason": None,
+            }
         remaining = [item for item in stored if item != match]
         conn.execute(
             "UPDATE admin SET totp_recovery = ? WHERE username = ?",
             (json.dumps(remaining, ensure_ascii=False), username),
         )
         conn.commit()
-        return {"ok": True, "method": "recovery", "recovery_left": len(remaining)}
+        return {
+            "ok": True,
+            "method": "recovery",
+            "recovery_left": len(remaining),
+            "reason": None,
+        }
     finally:
         conn.close()
 
