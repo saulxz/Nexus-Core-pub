@@ -100,8 +100,12 @@ chown root:root "${SUDOERS_PKG}"
 chmod 0440 "${SUDOERS_PKG}"
 visudo -cf "${SUDOERS_PKG}"
 
-echo "==> Dependencias de Python (subset del agente)"
-python3 -m pip install --no-input -r "${APP_DIR}/requirements-agent.txt"
+echo "==> Entorno virtual del agente"
+if [[ ! -x "${APP_DIR}/venv/bin/python" ]]; then
+  python3 -m venv "${APP_DIR}/venv"
+fi
+"${APP_DIR}/venv/bin/pip" install --no-input --upgrade pip
+"${APP_DIR}/venv/bin/pip" install --no-input -r "${APP_DIR}/requirements-agent.txt"
 
 if [[ "${ADD_DOCKER_GROUP}" == "yes" ]]; then
   if getent group docker >/dev/null 2>&1; then
@@ -117,7 +121,7 @@ echo "==> Enrolando el host en el hub"
 # en la lista de procesos del sistema.
 NEXUS_DATA_DIR="${CONF_DIR}" NEXUS_AGENT_CONFIG="${CONF_DIR}/config.json" \
   runuser -u "${SERVICE_USER}" -- \
-  python3 "${APP_DIR}/agent.py" enroll \
+  "${APP_DIR}/venv/bin/python" "${APP_DIR}/agent.py" enroll \
     --hub "${HUB}" \
     --enroll-token "${ENROLL_TOKEN}" \
     --name "${HOST_NAME}"
