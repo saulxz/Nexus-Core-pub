@@ -119,6 +119,7 @@ fi
 echo "==> Enrolando el host en el hub"
 # El token se pasa por entorno, no por línea de comandos, para que no quede
 # en la lista de procesos del sistema.
+cd "${APP_DIR}"
 NEXUS_DATA_DIR="${CONF_DIR}" NEXUS_AGENT_CONFIG="${CONF_DIR}/config.json" \
   runuser -u "${SERVICE_USER}" -- \
   "${APP_DIR}/venv/bin/python" "${APP_DIR}/agent.py" enroll \
