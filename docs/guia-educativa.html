@@ -578,14 +578,14 @@ sudo install -d -o saul_server -g saul_server -m 0700 /home/saul_server/.ssh
 sudo sh -c 'cat /etc/nexus/terminal_key.pub &gt;&gt; /home/saul_server/.ssh/authorized_keys'
 sudo chown saul_server:saul_server /home/saul_server/.ssh/authorized_keys
 sudo chmod 600 /home/saul_server/.ssh/authorized_keys
-sudo sh -c 'ssh-keyscan -t ed25519 127.0.0.1 192.168.1.10 &gt; /etc/nexus/terminal_known_hosts'
+sudo sh -c 'ssh-keyscan -t ed25519 127.0.0.1 192.0.2.10 &gt; /etc/nexus/terminal_known_hosts'
 sudo chown nexus:nexus /etc/nexus/terminal_key /etc/nexus/terminal_known_hosts
 sudo chmod 600 /etc/nexus/terminal_key /etc/nexus/terminal_known_hosts
 </code></pre>
 <p>En cada host remoto hay que autorizar la clave pública del hub en el usuario SSH
 correspondiente y añadir su clave de host al <code>known_hosts</code> del hub. El destino se
 declara únicamente en el servidor (<code>/etc/nexus/nexus.env</code>):</p>
-<pre><code class="language-bash">TERMINAL_TARGETS={&quot;ubuntu-server-sor&quot;:{&quot;host&quot;:&quot;192.168.1.10&quot;,&quot;port&quot;:22,&quot;user&quot;:&quot;saul_server&quot;}}
+<pre><code class="language-bash">TERMINAL_TARGETS={&quot;ubuntu-server-sor&quot;:{&quot;host&quot;:&quot;192.0.2.10&quot;,&quot;port&quot;:22,&quot;user&quot;:&quot;saul_server&quot;}}
 </code></pre>
 <p>Añade estas claves a <code>/etc/nexus/nexus.env</code> y reinicia el servicio:</p>
 <pre><code class="language-bash">TERMINAL_SSH_HOST=127.0.0.1
@@ -937,6 +937,12 @@ gestor. Después se activa el 2FA y se guardan los códigos de recuperación.</p
 </code></pre>
 <p>El agente se instala como servicio systemd, se enrola y empieza a latir. No hay que abrir
 puertos en la máquina vigilada.</p>
+<p>El instalador crea el venv, instala el subset de dependencias y ejecuta el enrolamiento
+desde <code>/opt/nexus-agent</code>; no lances <code>agent.py enroll</code> a mano desde otra ruta. Si el hub
+cambia de URL (por ejemplo, un Quick Tunnel nuevo) o se reconstruye la base, el token y
+el <code>host_id</code> del host quedan obsoletos: vuelve a ejecutar el instalador con la URL y el
+token actuales. Se creará una entrada nueva en la flota; elimina la antigua si queda
+offline.</p>
 <h2 id="84-backups-y-actualizacion">8.4 Backups y actualización</h2>
 <pre><code class="language-bash">sudo systemctl enable --now nexus-backup.timer
 sudo systemctl start nexus-backup.service
@@ -960,7 +966,15 @@ sudo bash deploy/update.sh
 </tr>
 <tr>
 <td>Un host no aparece</td>
-<td><code>systemctl status nexus-agent</code>; token, URL del hub y salida HTTPS</td>
+<td><code>systemctl status nexus-agent</code>; token, URL del hub (no un Quick Tunnel caducado) y salida HTTPS</td>
+</tr>
+<tr>
+<td>El servicio está <code>enabled</code> pero no late</td>
+<td><code>journalctl -u nexus-agent -b</code>; si ves <code>Name or service not known</code> y una URL <code>*.trycloudflare.com</code>, el túnel cambió: reenrola con la URL fija y un token nuevo</td>
+</tr>
+<tr>
+<td>El host sale duplicado o con un ID viejo</td>
+<td>El reenrolamiento crea una entrada nueva; borra la antigua offline en Hosts</td>
 </tr>
 <tr>
 <td>El túnel da 530/502</td>

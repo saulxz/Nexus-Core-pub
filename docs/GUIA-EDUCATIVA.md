@@ -209,7 +209,7 @@ sudo install -d -o saul_server -g saul_server -m 0700 /home/saul_server/.ssh
 sudo sh -c 'cat /etc/nexus/terminal_key.pub >> /home/saul_server/.ssh/authorized_keys'
 sudo chown saul_server:saul_server /home/saul_server/.ssh/authorized_keys
 sudo chmod 600 /home/saul_server/.ssh/authorized_keys
-sudo sh -c 'ssh-keyscan -t ed25519 127.0.0.1 192.168.1.10 > /etc/nexus/terminal_known_hosts'
+sudo sh -c 'ssh-keyscan -t ed25519 127.0.0.1 192.0.2.10 > /etc/nexus/terminal_known_hosts'
 sudo chown nexus:nexus /etc/nexus/terminal_key /etc/nexus/terminal_known_hosts
 sudo chmod 600 /etc/nexus/terminal_key /etc/nexus/terminal_known_hosts
 ```
@@ -219,7 +219,7 @@ correspondiente y añadir su clave de host al `known_hosts` del hub. El destino 
 declara únicamente en el servidor (`/etc/nexus/nexus.env`):
 
 ```bash
-TERMINAL_TARGETS={"ubuntu-server-sor":{"host":"192.168.1.10","port":22,"user":"saul_server"}}
+TERMINAL_TARGETS={"ubuntu-server-sor":{"host":"192.0.2.10","port":22,"user":"saul_server"}}
 ```
 
 Añade estas claves a `/etc/nexus/nexus.env` y reinicia el servicio:
@@ -503,6 +503,13 @@ sudo bash deploy/agent/install-agent.sh \
 El agente se instala como servicio systemd, se enrola y empieza a latir. No hay que abrir
 puertos en la máquina vigilada.
 
+El instalador crea el venv, instala el subset de dependencias y ejecuta el enrolamiento
+desde `/opt/nexus-agent`; no lances `agent.py enroll` a mano desde otra ruta. Si el hub
+cambia de URL (por ejemplo, un Quick Tunnel nuevo) o se reconstruye la base, el token y
+el `host_id` del host quedan obsoletos: vuelve a ejecutar el instalador con la URL y el
+token actuales. Se creará una entrada nueva en la flota; elimina la antigua si queda
+offline.
+
 ## 8.4 Backups y actualización
 
 ```bash
@@ -522,7 +529,9 @@ sudo bash deploy/update.sh
 | Síntoma | Comprobación |
 |---|---|
 | El panel no carga | `systemctl status nexus`; `curl http://127.0.0.1:8000/api/health` |
-| Un host no aparece | `systemctl status nexus-agent`; token, URL del hub y salida HTTPS |
+| Un host no aparece | `systemctl status nexus-agent`; token, URL del hub (no un Quick Tunnel caducado) y salida HTTPS |
+| El servicio está `enabled` pero no late | `journalctl -u nexus-agent -b`; si ves `Name or service not known` y una URL `*.trycloudflare.com`, el túnel cambió: reenrola con la URL fija y un token nuevo |
+| El host sale duplicado o con un ID viejo | El reenrolamiento crea una entrada nueva; borra la antigua offline en Hosts |
 | El túnel da 530/502 | El túnel no está conectado o el hub no escucha en localhost |
 | La sesión no persiste | HTTPS y cookie Secure; usa la URL HTTPS, no HTTP |
 | Docker no lista | El usuario del servicio no está en el grupo docker o el socket no existe |

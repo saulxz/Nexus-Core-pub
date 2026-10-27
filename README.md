@@ -111,7 +111,9 @@ sudo bash deploy/agent/install-agent.sh \
 ```
 
 No hay que abrir puertos en el host vigilado. El agente sale hacia el hub por HTTPS
-y reconecta solo si el hub se reinicia.
+y reconecta solo si el hub se reinicia. Si cambia la URL del hub (por ejemplo, un
+Quick Tunnel nuevo), vuelve a ejecutar el instalador con la URL y el token actuales;
+el host se reenrola.
 
 ### Publicación segura
 

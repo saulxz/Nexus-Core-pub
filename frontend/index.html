@@ -1346,7 +1346,7 @@
                   <span class="nx-hosts-step-n">2</span>
                   <span class="nx-eyebrow">Enrolar y arrancar el agente</span>
                 </div>
-                <p class="nx-hosts-step-note">En la máquina destino, con el proyecto Nexus-Core a mano. Sustituye <code>NOMBRE</code> por el nombre que verás en la flota.</p>
+                <p class="nx-hosts-step-note">Alternativa manual de desarrollo: en la máquina destino, con el proyecto y el venv a mano. Para producción usa el instalador del paso 3. Sustituye <code>NOMBRE</code> por el nombre que verás en la flota.</p>
                 <div class="nx-hosts-cmd">
                   <code id="hosts-enroll-command">—</code>
                   <button type="button" class="btn btn-ghost btn-sm" data-hosts-copy="enroll">Copiar</button>
@@ -1355,7 +1355,7 @@
                   <code id="hosts-run-command">—</code>
                   <button type="button" class="btn btn-ghost btn-sm" data-hosts-copy="run">Copiar</button>
                 </div>
-                <p class="nx-hint nx-t-2" id="hosts-run-note">El segundo comando es el bucle de servicio: informa el latido y ejecuta lo que el panel le pida. Deja el token guardado en <code>config.json</code> (0600).</p>
+                <p class="nx-hint nx-t-2" id="hosts-run-note">El segundo comando es el bucle del agente: informa el latido y ejecuta lo que el panel le pida. Para que arranque al encender, usa el instalador. Deja el token guardado en <code>config.json</code> (0600).</p>
               </div>
 
               <!-- 3. Instalador y unidad systemd -->
@@ -1368,7 +1368,7 @@
                   <code id="hosts-install-command">—</code>
                   <button type="button" class="btn btn-ghost btn-sm" data-hosts-copy="install">Copiar</button>
                 </div>
-                <p class="nx-hint nx-t-2">Copia el usuario de sistema, deja el agente en <code>/opt/nexus-agent</code>, instala la unidad <code>nexus-agent.service</code> (<code>deploy/agent/nexus-agent.service</code>) y arranca el servicio. Archivos: <code>deploy/agent/install-agent.sh</code> · <code>deploy/agent/requirements-agent.txt</code>. Añade <code>--docker</code> si quieres que el agente también gestione contenedores.</p>
+                <p class="nx-hint nx-t-2">Copia el usuario de sistema, deja el agente en <code>/opt/nexus-agent</code>, crea el venv, instala la unidad <code>nexus-agent.service</code> (<code>deploy/agent/nexus-agent.service</code>) y arranca el servicio. Archivos: <code>deploy/agent/install-agent.sh</code> · <code>deploy/agent/requirements-agent.txt</code>. Añade <code>--docker</code> si quieres que el agente también gestione contenedores. Si el host ya estaba enrolado contra otra URL (por ejemplo, un Quick Tunnel antiguo), vuelve a ejecutar el instalador con la URL actual; se creará una entrada nueva.</p>
               </div>
 
               <!-- Aviso de red: la razón por la que esto funciona sin
