@@ -148,7 +148,7 @@ def _json_safe(value: Any) -> Any:
 
 def collect_metrics() -> dict[str, Any]:
     """Métricas del host con el mismo formato que guarda el panel."""
-    from app.modules.metrics_collector import _normalize_sample
+    from app.modules.metrics_normalize import normalize_sample as _normalize_sample
     from app.modules.system_monitor import get_system_metrics
 
     return _normalize_sample(get_system_metrics())

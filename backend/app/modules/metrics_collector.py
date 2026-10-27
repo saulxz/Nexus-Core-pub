@@ -27,33 +27,15 @@ from app.core import fleet
 from app.core.db import LOCAL_HOST_ID
 from app.core.logging_conf import logger
 from app.modules import alerts, metrics_store, notifications
+from app.modules.metrics_normalize import normalize_sample
 from app.modules.system_monitor import get_system_metrics
 
 #: Periodo de muestreo (segundos).
 SAMPLE_INTERVAL = 5.0
 
 
-def _normalize_sample(raw: dict[str, Any]) -> dict[str, Any]:
-    """Traduce el dict de la API al esquema de la base de datos.
-
-    ``get_system_metrics`` devuelve nombres de la API (``cpu_percent``,
-    ``ram_percent``…) mientras que ``metric_samples`` y el motor de alertas
-    trabajan con ``cpu``, ``ram``, ``swap``, ``disk``, ``load1`` y ``temp``.
-    Se aceptan ambas formas (la normalizada gana) para no romper los
-    ``sample_fn`` inyectados en las pruebas.
-    """
-    loads = raw.get("load_avg") or []
-    load1 = raw.get("load1")
-    if load1 is None and loads:
-        load1 = loads[0]
-    return {
-        "cpu": raw.get("cpu", raw.get("cpu_percent")),
-        "ram": raw.get("ram", raw.get("ram_percent")),
-        "swap": raw.get("swap", raw.get("swap_percent")),
-        "disk": raw.get("disk", raw.get("disk_percent")),
-        "load1": load1,
-        "temp": raw.get("temp", raw.get("cpu_temp_c")),
-    }
+# Alias histórico: el colector y los tests lo usaban con este nombre.
+_normalize_sample = normalize_sample
 
 #: Periodo de reconstrucción de agregados (segundos).
 ROLLUP_INTERVAL = 60.0
