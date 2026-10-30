@@ -23,6 +23,9 @@ import com.nexuscore.mobile.data.AiSettingsDto
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.ui.platform.LocalContext
+import com.nexuscore.mobile.ui.theme.ThemeController
+import com.nexuscore.mobile.ui.theme.ThemeMode
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -304,6 +307,37 @@ fun SettingsScreen(vm: NexusViewModel) {
                     KeyValue("Hub", vm.baseUrl)
                     KeyValue("Usuario", vm.username.ifBlank { "admin" })
                     KeyValue("HTTPS", "obligatorio")
+                }
+            }
+        }
+
+        item {
+            val context = LocalContext.current
+            NexusCard {
+                Column(Modifier.padding(16.dp)) {
+                    Text("Tema", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Sigue el sistema o fija claro/oscuro en este dispositivo.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        ThemeMode.entries.forEach { option ->
+                            FilterChip(
+                                selected = ThemeController.mode == option,
+                                onClick = { ThemeController.setMode(context, option) },
+                                label = {
+                                    Text(
+                                        when (option) {
+                                            ThemeMode.SYSTEM -> "Sistema"
+                                            ThemeMode.LIGHT -> "Claro"
+                                            ThemeMode.DARK -> "Oscuro"
+                                        },
+                                    )
+                                },
+                            )
+                        }
+                    }
                 }
             }
         }

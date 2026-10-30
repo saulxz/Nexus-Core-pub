@@ -11,13 +11,15 @@ import json
 import re
 import subprocess
 
+from app.core.proc import run_hidden
+
 HELPER = "/usr/local/lib/nexus/pkg-install"
 KEY_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,31}$")
 
 
 def _run(arguments: list[str], timeout: int = 210) -> dict:
     try:
-        result = subprocess.run(
+        result = run_hidden(
             ["sudo", "-n", HELPER, *arguments],
             capture_output=True,
             text=True,

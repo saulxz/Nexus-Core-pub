@@ -26,6 +26,7 @@ from fastapi import HTTPException, status
 
 from app.core.audit import audit
 from app.core.logging_conf import logger
+from app.core.proc import run_hidden
 from app.core.paths import staging_dir
 from app.core.privileged import available as privileged_available, run_helper
 from app.modules import dhcp_probe
@@ -257,7 +258,7 @@ def _run_native_validation(service: str, path: str) -> tuple[bool, str] | None:
     else:
         return None
     try:
-        completed = subprocess.run(
+        completed = run_hidden(
             args,
             capture_output=True,
             text=True,

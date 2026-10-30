@@ -100,7 +100,7 @@ const $ = (id) => document.getElementById(id);
 /** Escapa texto para insertarlo de forma segura en HTML. */
 function escapeHtml(value) {
   return String(value ?? '')
-    .replace(/&/g, '&amp;')
+    .replace(/&/g, '&')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
@@ -2264,7 +2264,7 @@ function renderPendingActions(pendingActions) {
       <p class="nx-eyebrow">Propuesta pendiente de confirmación</p>
       <p class="nx-t-2">${escapeHtml(action.summary)}</p>
       <p class="nx-t-3 nx-hint">Herramienta: <code>${escapeHtml(action.tool || '—')}</code></p>
-      <pre style="white-space:pre-wrap;word-break:break-word;background:#0b1220;border:1px solid #22334a;border-radius:6px;padding:8px;font-size:12px;margin:6px 0;">${escapeHtml(JSON.stringify(action.args || {}, null, 2))}</pre>
+      <pre style="white-space:pre-wrap;word-break:break-word;background:var(--nx-surface-3);border:1px solid var(--nx-border);border-radius:6px;padding:8px;font-size:12px;margin:6px 0;">${escapeHtml(JSON.stringify(action.args || {}, null, 2))}</pre>
       <p class="nx-t-3 nx-hint">Revisa la acción y los argumentos exactos. La descripción anterior la genera el modelo.</p>
       <p class="nx-t-2 nx-hint">Caduca ${escapeHtml(action.expires_at)}</p>
       <div class="nx-t-3 nx-hstack">
@@ -5968,16 +5968,22 @@ function showTab(name) {
 // en que el lienzo ya tiene tamaño real. La serie RAM conserva su
 // violeta: es la única identidad cromática que no es ni estado ni azul
 // de marca.
-const CHART_COLORS = {
-  ink: '#e6edf3',
-  inkMuted: '#8b949e',
-  inkQuiet: '#7d8994',
-  surface: '#161b22',
-  border: '#30363d',
-  cpu: '#2f81f7',
-  ram: '#9d8cff',
-  mono: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
-};
+function readChartColors() {
+  const css = getComputedStyle(document.documentElement);
+  const pick = (name, fallback) => css.getPropertyValue(name).trim() || fallback;
+  return {
+    ink: pick('--nx-ink', '#e6edf3'),
+    inkMuted: pick('--nx-ink-muted', '#8b949e'),
+    inkQuiet: pick('--nx-ink-quiet', '#7d8994'),
+    surface: pick('--nx-surface', '#161b22'),
+    border: pick('--nx-border', '#30363d'),
+    cpu: pick('--nx-accent', '#2f81f7'),
+    ram: pick('--nx-accent-2', '#9d8cff'),
+    mono: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
+  };
+}
+
+let CHART_COLORS = readChartColors();
 
 /** Relleno vertical suave para cada serie, anclado abajo. */
 function chartAreaFill(hex, topAlpha) {
@@ -6000,6 +6006,35 @@ function hexToRgba(hex, alpha) {
   const b = int & 255;
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
+
+/** Recolorea las gráficas ya creadas cuando cambia el tema. */
+function refreshChartsForTheme() {
+  CHART_COLORS = readChartColors();
+  Chart.defaults.color = CHART_COLORS.inkQuiet;
+  Chart.defaults.borderColor = CHART_COLORS.border;
+  [state.chart, state.historyChart, state.heartbeatsChart].forEach((chart) => {
+    if (!chart) return;
+    Object.values(chart.options.scales || {}).forEach((scale) => {
+      if (scale.ticks) scale.ticks.color = CHART_COLORS.inkQuiet;
+      if (scale.grid) scale.grid.color = hexToRgba(CHART_COLORS.ink, 0.07);
+    });
+    const tooltip = chart.options.plugins && chart.options.plugins.tooltip;
+    if (tooltip) {
+      tooltip.backgroundColor = CHART_COLORS.surface;
+      tooltip.titleColor = CHART_COLORS.inkQuiet;
+      tooltip.bodyColor = CHART_COLORS.ink;
+      tooltip.borderColor = CHART_COLORS.border;
+    }
+    (chart.data.datasets || []).forEach((dataset) => {
+      if (dataset.pointHoverBorderColor) {
+        dataset.pointHoverBorderColor = CHART_COLORS.surface;
+      }
+    });
+    chart.update('none');
+  });
+}
+
+window.addEventListener('nx-theme-change', refreshChartsForTheme);
 
 // Puntos ocultos salvo el primero: hasta que la ventana se llena, un
 // único punto visible evita que la gráfica arranque como una cuadrícula
@@ -6356,7 +6391,12 @@ function openTerminalSession() {
   }
 
   ws.onopen = () => {
-    setTerminalStatus(`Conectado a ${target.name} por SSH.`);
+    const transport = target.transport === 'local'
+      ? 'terminal local'
+      : target.transport === 'agent'
+        ? 'agente Nexus'
+        : 'SSH';
+    setTerminalStatus(`Conectado a ${target.name} por ${transport}.`);
     try { fit.fit(); } catch (_error) { /* sin tamaño */ }
     sendTerminalResize(session);
     term.focus();

@@ -1,7 +1,7 @@
 ﻿<#
 .SYNOPSIS
   Arranca y mantiene vivo Nexus-Core en Windows: hub local + tunel fijo de
-  Cloudflare (nexus.labsxz.com).
+  Cloudflare (nexus.example.com).
 
 .DESCRIPTION
   - Si el hub no responde en 127.0.0.1:8780, lo arranca.
@@ -90,7 +90,7 @@ function Start-Hub {
     $env:NEXUS_DATA_DIR = $data
     $env:FRONTEND_DIR = $frontend
     $env:SESSION_COOKIE_SECURE = 'false'
-    $env:ALLOWED_HOSTS = 'nexus.labsxz.com,127.0.0.1,localhost'
+    $env:ALLOWED_HOSTS = 'nexus.example.com,127.0.0.1,localhost'
     $env:ENFORCE_HTTPS = 'true'
 
     Start-Process -FilePath $venv `

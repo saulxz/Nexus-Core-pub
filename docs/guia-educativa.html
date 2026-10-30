@@ -265,7 +265,7 @@ marcadores como <code>&lt;TOKEN&gt;</code>. Ninguna credencial real aparece en e
 <li><a href="#32-monitores-y-pagina-de-estado">3.2 Monitores y página de estado</a></li>
 <li><a href="#33-ia-con-human-in-the-loop">3.3 IA con human-in-the-loop</a></li>
 <li><a href="#34-instalacion-de-servicios-apt">3.4 Instalación de servicios (apt)</a></li>
-<li><a href="#35-terminal-ssh-del-panel">3.5 Terminal SSH del panel</a></li>
+<li><a href="#35-terminal-local-y-por-agente">3.5 Terminal local y por agente</a></li>
 <li><a href="#36-auditoria-de-seguridad-solo-lectura">3.6 Auditoría de seguridad (solo lectura)</a></li>
 </ul>
 </li>
@@ -553,55 +553,33 @@ instalación exige confirmación y queda registrada en Auditoría.</p>
 root. Un campo libre convertiría el panel en una shell root; el catálogo cerrado
 mantiene la superficie de ataque pequeña y auditable.</p>
 </blockquote>
-<h2 id="35-terminal-ssh-del-panel">3.5 Terminal SSH del panel</h2>
-<p>La pestaña <strong>Terminal</strong> abre una sesión SSH real dentro del navegador con xterm.js y
-un WebSocket autenticado. No hay contraseñas ni claves en el cliente: el navegador
-solo transporta el WebSocket; el hub abre la conexión SSH con una clave dedicada
-(<code>/etc/nexus/terminal_key</code>) y un <code>known_hosts</code> fijado.</p>
-<p>El desplegable <strong>Servidor</strong> lista los hosts conectados. Solo se pueden seleccionar
-los que tienen un destino SSH definido en <code>TERMINAL_TARGETS</code>; los demás aparecen
-deshabilitados con el motivo. El host local usa <code>TERMINAL_SSH_*</code> y no se incluye en
-ese mapa.</p>
+<h2 id="35-terminal-local-y-por-agente">3.5 Terminal local y por agente</h2>
+<p>La pesta?a <strong>Terminal</strong> abre una shell real dentro del navegador con xterm.js y un
+WebSocket autenticado. Hay dos transportes:</p>
 <ul>
-<li>La sesión exige cookie de administrador, token CSRF enviado en el subprotocolo
-  <code>csrf.&lt;token&gt;</code> y el mismo origen del panel.</li>
-<li>El PTY se abre como el usuario configurado en <code>TERMINAL_SSH_USER</code> o en el destino
-  remoto. Si no hay usuario, la terminal queda desactivada.</li>
-<li>Se cierra al cambiar de pestaña y tras <code>TERMINAL_IDLE_SECONDS</code> sin actividad.</li>
-<li>Los comandos se ejecutan con los permisos de ese usuario; no hay una shell root
-  implícita. Para tareas root se usa <code>sudo</code> y su contraseña, igual que en una SSH normal.</li>
-<li><code>asyncssh</code> y <code>websockets</code> son dependencias del hub; los assets de xterm.js están
-  vendorizados, sin CDN.</li>
+<li><strong>Hub local</strong>: una PTY de PowerShell en Windows o de la shell del servicio en
+  Linux. Se activa con <code>TERMINAL_LOCAL_SHELL=true</code>.</li>
+<li><strong>Agente remoto</strong>: el agente Nexus 1.1.0 abre un WebSocket saliente contra el
+  hub y expone una PTY en el host. El navegador nunca inicia una conexi?n hacia
+  el servidor: funciona detr?s de NAT, sin abrir puertos y sin SSH.</li>
+<li><strong>SSH</strong>: queda como fallback opcional para instalaciones antiguas, pero no es
+  necesario para la terminal por agente.</li>
 </ul>
-<p>Configuración mínima en el hub:</p>
-<pre><code class="language-bash">sudo ssh-keygen -t ed25519 -N '' -f /etc/nexus/terminal_key -C nexus-web-terminal
-sudo install -d -o saul_server -g saul_server -m 0700 /home/saul_server/.ssh
-sudo sh -c 'cat /etc/nexus/terminal_key.pub &gt;&gt; /home/saul_server/.ssh/authorized_keys'
-sudo chown saul_server:saul_server /home/saul_server/.ssh/authorized_keys
-sudo chmod 600 /home/saul_server/.ssh/authorized_keys
-sudo sh -c 'ssh-keyscan -t ed25519 127.0.0.1 192.0.2.10 &gt; /etc/nexus/terminal_known_hosts'
-sudo chown nexus:nexus /etc/nexus/terminal_key /etc/nexus/terminal_known_hosts
-sudo chmod 600 /etc/nexus/terminal_key /etc/nexus/terminal_known_hosts
-</code></pre>
-<p>En cada host remoto hay que autorizar la clave pública del hub en el usuario SSH
-correspondiente y añadir su clave de host al <code>known_hosts</code> del hub. El destino se
-declara únicamente en el servidor (<code>/etc/nexus/nexus.env</code>):</p>
-<pre><code class="language-bash">TERMINAL_TARGETS={&quot;ubuntu-server-sor&quot;:{&quot;host&quot;:&quot;192.0.2.10&quot;,&quot;port&quot;:22,&quot;user&quot;:&quot;saul_server&quot;}}
-</code></pre>
-<p>Añade estas claves a <code>/etc/nexus/nexus.env</code> y reinicia el servicio:</p>
-<pre><code class="language-bash">TERMINAL_SSH_HOST=127.0.0.1
-TERMINAL_SSH_PORT=22
-TERMINAL_SSH_USER=saul_server
-TERMINAL_SSH_KEY=/etc/nexus/terminal_key
-TERMINAL_SSH_KNOWN_HOSTS=/etc/nexus/terminal_known_hosts
+<p>La sesi?n exige cookie de administrador, token CSRF en el subprotocolo
+<code>csrf.&lt;token&gt;</code>, mismo origen y cierre por inactividad. El host local ejecuta la
+shell con el usuario del servicio; los agentes Linux/Kali usan <code>pty</code> y Windows
+usa ConPTY/pywinpty. No hay una shell root impl?cita.</p>
+<p>El desplegable <strong>Servidor</strong> muestra el transporte (<code>local</code>, <code>agente</code> o <code>SSH</code>).
+Los agentes 1.0.0 aparecen deshabilitados con el motivo ?actualiza el agente?
+hasta que se instala la versi?n 1.1.0.</p>
+<p>Variables relevantes:</p>
+<pre><code class="language-bash">TERMINAL_LOCAL_SHELL=true
+TERMINAL_LOCAL_SHELL_COMMAND=powershell.exe -NoLogo -NoProfile
+TERMINAL_AGENT_ENABLED=true
 TERMINAL_IDLE_SECONDS=900
 </code></pre>
-<blockquote>
-<p><strong>Por qué no se guarda la contraseña SSH:</strong> la clave dedicada permite auditar y
-revocar el acceso sin depositar secretos en el navegador. El <code>known_hosts</code> evita
-aceptar una clave de host desconocida y el CSRF impide que otro origen abra la
-terminal con la cookie del administrador.</p>
-</blockquote>
+<p>El canal del agente usa <code>/api/agent/terminal</code>; el navegador usa
+<code>/api/terminal/ws?host=ID</code>. Ambos est?n autenticados y auditados.</p>
 <h2 id="36-auditoria-de-seguridad-solo-lectura">3.6 Auditoría de seguridad (solo lectura)</h2>
 <p>La pestaña <strong>Auditoría</strong> incorpora un auditor propio inspirado en Lynis, pero con una
 vuelta de tuerca: cruza sistema, identidad, archivos, servicios, Docker, red, firewall y
@@ -915,7 +893,7 @@ unidad systemd y el token de primer arranque. El puerto depende del entorno:</p>
 <td>Linux, producción</td>
 <td><code>127.0.0.1</code></td>
 <td><code>8000</code></td>
-<td>túnel o Caddy (<code>https://nexus.labsxz.com</code>)</td>
+<td>túnel o Caddy (<code>https://nexus.example.com</code>)</td>
 </tr>
 <tr>
 <td>App Windows</td>
@@ -1010,10 +988,10 @@ interfaz es nativa y consume la misma API HTTPS del hub.</p>
 <li>Login con <strong>contraseña + TOTP</strong> (Google Authenticator), cookie de sesión y CSRF.</li>
 <li>Selector global de host; la app no replica la base SQLite del hub, consulta la API.</li>
 <li>Permite gestionar hosts, contenedores, servicios, alertas, monitores, tokens,
-  sesiones, auditoría, baseline, terminal SSH, asistente, cambio de IP, 2FA y la
+  sesiones, auditoría, baseline, terminal local/por agente, asistente, cambio de IP, 2FA y la
   configuración de IA.</li>
 <li>La sesión se guarda cifrada con Android Keystore; no se incrustan tokens <code>write</code>.</li>
-<li>APK de debug: <code>android/app/build/outputs/apk/debug/app-debug.apk</code>.</li>
+<li>APK de debug instalable por sideload en Android 8.0+ (<code>minSdk 26</code>); ABIs <code>arm64-v8a</code>, <code>armeabi-v7a</code>, <code>x86</code> y <code>x86_64</code>. La release de Play Store a?n requiere firma de producci?n.</li>
 <li>Se compila abriendo <code>android/</code> en Android Studio (SDK 37) o con
   <code>android\gradlew.bat :app:assembleDebug</code>.</li>
 </ul>
@@ -1197,7 +1175,7 @@ Access? (No se implementó en esta versión.)</p>
 <tr>
 <td>WS</td>
 <td><code>/api/terminal/ws</code></td>
-<td>Terminal SSH autenticada (xterm.js)</td>
+<td>Terminal local/agente autenticada (xterm.js)</td>
 </tr>
 <tr>
 <td>GET</td>

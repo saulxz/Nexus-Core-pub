@@ -43,5 +43,5 @@ if (-not (Test-Hub)) {
     }
 }
 
-Write-Host 'Tunel fijo: https://nexus.labsxz.com (Ctrl+C para cerrar)' -ForegroundColor Cyan
+Write-Host 'Tunel fijo: https://nexus.example.com (Ctrl+C para cerrar)' -ForegroundColor Cyan
 & $cloudflared --config $config tunnel run nexus-core

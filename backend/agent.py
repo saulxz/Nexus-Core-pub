@@ -33,12 +33,15 @@ tumbar el agente.
 from __future__ import annotations
 
 import argparse
+import asyncio
+import contextlib
 import json
 import os
 import platform
 import socket
 import subprocess
 import sys
+import threading
 import time
 import urllib.parse
 from pathlib import Path
@@ -53,7 +56,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from app.core.logging_conf import logger, setup_logging  # noqa: E402
 
 #: Versión que se informa al hub en el enrolamiento y en cada latido.
-AGENT_VERSION = "1.0.0"
+AGENT_VERSION = "1.1.0"
 
 #: Periodo del latido (segundos). Es la frecuencia de muestreo del panel.
 HEARTBEAT_INTERVAL = 5.0
@@ -526,6 +529,260 @@ def enroll(hub: str, enroll_token: str, name: str) -> tuple[int, Path]:
     return int(body["host_id"]), path
 
 
+# ============================== Terminal PTY ==============================
+#: Ruta del canal WebSocket que abre el agente hacia el hub.
+TERMINAL_PATH = "/api/agent/terminal"
+
+
+class _PtySession:
+    """PTY local del agente; Linux/macOS usan pty y Windows usa ConPTY."""
+
+    def __init__(self, session_id: str, cols: int, rows: int) -> None:
+        self.session_id = session_id
+        self.process = None
+        self.master_fd: int | None = None
+        self._windows = os.name == "nt"
+        shell = os.environ.get("NEXUS_AGENT_SHELL", "").strip()
+        if not shell:
+            shell = "powershell.exe" if self._windows else (os.environ.get("SHELL") or "/bin/sh")
+        if self._windows:
+            from winpty import PtyProcess
+
+            self.process = PtyProcess.spawn(
+                shell,
+                dimensions=(rows, cols),
+            )
+        else:
+            import fcntl
+            import pty
+            import struct
+            import termios
+
+            master, slave = pty.openpty()
+            environment = os.environ.copy()
+            environment.setdefault("TERM", "xterm-256color")
+            self.master_fd = master
+            self.process = subprocess.Popen(
+                [shell],
+                stdin=slave,
+                stdout=slave,
+                stderr=slave,
+                preexec_fn=os.setsid,
+                close_fds=True,
+                env=environment,
+            )
+            os.close(slave)
+            self.resize(cols, rows)
+
+    def read(self, size: int = 4096) -> bytes:
+        if self._windows:
+            data = self.process.read(size)
+            return data.encode("utf-8", "replace") if isinstance(data, str) else data
+        if self.master_fd is None:
+            return b""
+        return os.read(self.master_fd, size)
+
+    def write(self, data: str) -> None:
+        if self._windows:
+            self.process.write(data)
+        elif self.master_fd is not None:
+            os.write(self.master_fd, data.encode("utf-8", "replace"))
+
+    def resize(self, cols: int, rows: int) -> None:
+        if self._windows:
+            self.process.setwinsize(rows, cols)
+            return
+        import fcntl
+        import struct
+        import termios
+
+        if self.master_fd is not None:
+            fcntl.ioctl(
+                self.master_fd,
+                termios.TIOCSWINSZ,
+                struct.pack("HHHH", rows, cols, 0, 0),
+            )
+
+    def alive(self) -> bool:
+        if self._windows:
+            return bool(self.process.isalive())
+        return self.process is not None and self.process.poll() is None
+
+    def close(self) -> None:
+        if self._windows:
+            if self.process is not None and self.process.isalive():
+                self.process.terminate()
+            return
+        if self.master_fd is not None:
+            try:
+                os.close(self.master_fd)
+            except OSError:
+                pass
+            self.master_fd = None
+        if self.process is not None and self.process.poll() is None:
+            import signal
+
+            try:
+                os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
+            except OSError:
+                try:
+                    self.process.terminate()
+                except OSError:
+                    pass
+
+
+def start_terminal_channel(config: dict[str, Any]) -> None:
+    """Arranca el canal PTY del agente en un hilo independiente."""
+    try:
+        import websockets  # noqa: F401
+    except ImportError:
+        logger.warning("websockets no est? instalado: canal de terminal desactivado")
+        return
+
+    def runner() -> None:
+        try:
+            asyncio.run(_terminal_loop(config))
+        except Exception as exc:  # noqa: BLE001 - el hilo no debe tumbar el agente
+            logger.warning("Canal de terminal detenido: {}", exc)
+
+    threading.Thread(
+        target=runner,
+        name="nexus-agent-terminal",
+        daemon=True,
+    ).start()
+
+
+async def _terminal_loop(config: dict[str, Any]) -> None:
+    import websockets
+
+    hub = str(config["hub"]).rstrip("/")
+    if hub.startswith("https://"):
+        url = "wss://" + hub[len("https://"):] + TERMINAL_PATH
+    elif hub.startswith("http://"):
+        url = "ws://" + hub[len("http://"):] + TERMINAL_PATH
+    else:
+        url = hub + TERMINAL_PATH
+    headers = {"Authorization": f"Bearer {config['token']}"}
+    backoff = 2.0
+    while True:
+        sessions: dict[str, _PtySession] = {}
+        session_tasks: dict[str, asyncio.Task[Any]] = {}
+        send_lock = asyncio.Lock()
+
+        async def send(payload: dict[str, Any]) -> None:
+            async with send_lock:
+                await websocket.send(json.dumps(payload, ensure_ascii=False))
+
+        async def stream_output(session_id: str, process: _PtySession) -> None:
+            try:
+                while True:
+                    chunk = await asyncio.to_thread(process.read, 4096)
+                    if not chunk:
+                        break
+                    await send(
+                        {
+                            "type": "output",
+                            "session": session_id,
+                            "data": chunk.decode("utf-8", "replace"),
+                        }
+                    )
+            except (OSError, EOFError):
+                pass
+            finally:
+                if sessions.get(session_id) is process:
+                    sessions.pop(session_id, None)
+                with contextlib.suppress(Exception):
+                    await send({"type": "exit", "session": session_id})
+
+        try:
+            async with websockets.connect(
+                url,
+                additional_headers=headers,
+                max_size=2 * 1024 * 1024,
+                ping_interval=20,
+                ping_timeout=20,
+            ) as websocket:
+                await send(
+                    {
+                        "type": "hello",
+                        "version": AGENT_VERSION,
+                        "capabilities": ["terminal"],
+                    }
+                )
+                backoff = 2.0
+                async for raw in websocket:
+                    try:
+                        message = json.loads(raw)
+                    except json.JSONDecodeError:
+                        continue
+                    kind = message.get("type")
+                    session_id = str(message.get("session") or "")
+                    if kind == "open":
+                        if session_id in sessions:
+                            await send(
+                                {
+                                    "type": "error",
+                                    "session": session_id,
+                                    "message": "La sesi?n ya existe.",
+                                }
+                            )
+                            continue
+                        cols = max(20, min(300, int(message.get("cols", 80))))
+                        rows = max(5, min(120, int(message.get("rows", 24))))
+                        try:
+                            process = _PtySession(session_id, cols, rows)
+                        except Exception as exc:  # noqa: BLE001
+                            await send(
+                                {
+                                    "type": "error",
+                                    "session": session_id,
+                                    "message": f"No se pudo abrir la shell: {exc}",
+                                }
+                            )
+                            continue
+                        sessions[session_id] = process
+                        await send({"type": "ready", "session": session_id})
+                        session_tasks[session_id] = asyncio.create_task(
+                            stream_output(session_id, process)
+                        )
+                    elif kind == "input":
+                        process = sessions.get(session_id)
+                        if process is not None:
+                            await asyncio.to_thread(
+                                process.write,
+                                str(message.get("data", "")),
+                            )
+                    elif kind == "resize":
+                        process = sessions.get(session_id)
+                        if process is not None:
+                            cols = max(20, min(300, int(message.get("cols", 80))))
+                            rows = max(5, min(120, int(message.get("rows", 24))))
+                            await asyncio.to_thread(process.resize, cols, rows)
+                    elif kind == "close":
+                        process = sessions.pop(session_id, None)
+                        if process is not None:
+                            await asyncio.to_thread(process.close)
+                        task = session_tasks.pop(session_id, None)
+                        if task is not None:
+                            task.cancel()
+        except (
+            OSError,
+            asyncio.TimeoutError,
+            getattr(websockets, "WebSocketException", OSError),
+        ) as exc:
+            logger.warning("Canal de terminal sin conexi?n ({}); reintento", exc)
+        finally:
+            for process in list(sessions.values()):
+                with contextlib.suppress(Exception):
+                    process.close()
+            for task in list(session_tasks.values()):
+                task.cancel()
+            sessions.clear()
+            session_tasks.clear()
+        await asyncio.sleep(backoff)
+        backoff = min(backoff * 2, MAX_BACKOFF)
+
+
 def run_loop(config: dict[str, Any], once: bool = False) -> int:
     """Bucle principal: latido → sondeo → ejecución → resultado.
 
@@ -540,6 +797,8 @@ def run_loop(config: dict[str, Any], once: bool = False) -> int:
     logger.info(
         "Agente {} v{} hacia {} (host_id={})", AGENT_VERSION, AGENT_VERSION, hub, host_id
     )
+    if not once:
+        start_terminal_channel(config)
     backoff = 0.0
     with HubClient(hub, token) as client:
         while True:

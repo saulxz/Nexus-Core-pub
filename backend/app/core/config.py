@@ -104,6 +104,12 @@ class Settings(BaseSettings):
     TERMINAL_SSH_KNOWN_HOSTS: str = "/etc/nexus/terminal_known_hosts"
     TERMINAL_IDLE_SECONDS: int = 900
     TERMINAL_MAX_MESSAGE: int = 65536
+    # Terminal local del hub para Windows (sin SSH). Se activa expl?citamente:
+    # equivale a dar al administrador una shell del usuario que ejecuta Nexus.
+    TERMINAL_LOCAL_SHELL: bool = False
+    TERMINAL_LOCAL_SHELL_COMMAND: str = "powershell.exe -NoLogo -NoProfile"
+    # Canal PTY transportado por el agente (sin SSH, sin red local).
+    TERMINAL_AGENT_ENABLED: bool = True
     # Mapa JSON de destinos remotos, con clave por id/nombre/hostname del host:
     # {"ubuntu-server-sor":{"host":"192.168.1.10","port":22,"user":"saul_server"}}
     # El host local no se incluye aquí: usa TERMINAL_SSH_*.

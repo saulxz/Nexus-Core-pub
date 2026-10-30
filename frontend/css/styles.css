@@ -3215,3 +3215,57 @@ a.is-disabled:hover {
    Respaldo de `.hidden` (declarado al final del fichero)
    -------------------------------------------------- */
 .hidden { display: none; }
+
+/* ============================================================
+   TEMA CLARO (web y escritorio)
+   Los componentes usan los tokens --nx-*; este bloque solo cambia
+   los valores, no la estructura. El atributo lo pone js/theme.js.
+   ============================================================ */
+html[data-theme="light"] {
+  color-scheme: light;
+  --nx-bg: #f5f7fa;
+  --nx-surface: #ffffff;
+  --nx-surface-2: #eef2f6;
+  --nx-surface-3: #e6ebf1;
+  --nx-wash: #e9eef4;
+  --nx-surface-hover: color-mix(in srgb, var(--nx-accent) 7%, var(--nx-surface));
+  --nx-ink: #1f2933;
+  --nx-ink-soft: #3e4c59;
+  --nx-ink-muted: #616e7c;
+  --nx-ink-quiet: #7b8794;
+  --nx-ink-faint: #9aa5b1;
+  --nx-on-accent: #ffffff;
+  --nx-accent: #1f6feb;
+  --nx-accent-hover: #2f81f7;
+  --nx-accent-2: #6f56d9;
+  --nx-danger: #cf222e;
+  --nx-danger-wash: color-mix(in srgb, var(--nx-danger) 12%, var(--nx-surface));
+  --nx-ok: #1a7f37;
+  --nx-status-ok: var(--nx-ok);
+  --nx-status-warn: #8a5a00;
+  --nx-status-crit: var(--nx-danger);
+  --nx-status-unknown: var(--nx-ink-quiet);
+  --nx-status-paused: #4051b5;
+  --nx-status-paused-ink: #364fc7;
+  --nx-wash-ok: color-mix(in srgb, var(--nx-status-ok) 10%, var(--nx-surface));
+  --nx-wash-warn: color-mix(in srgb, var(--nx-status-warn) 10%, var(--nx-surface));
+  --nx-wash-crit: color-mix(in srgb, var(--nx-status-crit) 10%, var(--nx-surface));
+  --nx-wash-unknown: color-mix(in srgb, var(--nx-status-unknown) 10%, var(--nx-surface));
+  --nx-wash-paused: color-mix(in srgb, var(--nx-status-paused-ink) 10%, var(--nx-surface));
+  --nx-border: #cbd2d9;
+  --nx-border-soft: #dde3e9;
+  --nx-border-strong: #9aa5b1;
+  --nx-focus: #1f6feb;
+  --nx-focus-halo: rgba(31, 111, 235, 0.25);
+  --nx-accent-wash: rgba(31, 111, 235, 0.10);
+}
+
+html[data-theme="light"] body {
+  background-color: var(--nx-bg);
+  color: var(--nx-ink);
+}
+
+html[data-theme="light"] ::selection {
+  background: var(--nx-accent);
+  color: var(--nx-on-accent);
+}

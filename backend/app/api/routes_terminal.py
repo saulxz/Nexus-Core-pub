@@ -20,12 +20,14 @@ import asyncio
 import contextlib
 import hmac
 import json
+import os
+import uuid
 from typing import Any
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, HTTPException, Request, WebSocket, WebSocketDisconnect
 
-from app.core import fleet, security
+from app.core import agent_terminals, fleet, security
 from app.core.audit import audit
 from app.core.config import get_settings
 from app.core.logging_conf import logger
@@ -75,10 +77,23 @@ def _target_for_host(
     is_local = bool(int(host.get("is_local") or 0))
 
     if is_local:
+        if settings.TERMINAL_LOCAL_SHELL:
+            return (
+                {
+                    "kind": "local",
+                    "host": "127.0.0.1",
+                    "port": 0,
+                    "username": os.environ.get("USERNAME", ""),
+                    "key": "",
+                    "known_hosts": "",
+                },
+                None,
+            )
         if not settings.TERMINAL_SSH_USER:
             return None, "Terminal del hub no configurada."
         return (
             {
+                "kind": "ssh",
                 "host": settings.TERMINAL_SSH_HOST,
                 "port": int(settings.TERMINAL_SSH_PORT),
                 "username": settings.TERMINAL_SSH_USER,
@@ -92,6 +107,21 @@ def _target_for_host(
         return None, "Host deshabilitado."
     if not host.get("online"):
         return None, "Host sin latido."
+
+    if settings.TERMINAL_AGENT_ENABLED:
+        if agent_terminals.available(int(host.get("id") or 0)):
+            return (
+                {
+                    "kind": "agent",
+                    "host": "agent",
+                    "port": 0,
+                    "username": "",
+                    "key": "",
+                    "known_hosts": "",
+                },
+                None,
+            )
+        return None, "Agente sin canal de terminal; actualiza el agente."
 
     targets = _targets_config()
     config = (
@@ -114,6 +144,7 @@ def _target_for_host(
     known_hosts = str(config.get("known_hosts") or settings.TERMINAL_SSH_KNOWN_HOSTS)
     return (
         {
+            "kind": "ssh",
             "host": target_host,
             "port": port,
             "username": username,
@@ -158,9 +189,201 @@ async def terminal_targets(request: Request) -> dict[str, Any]:
                 "is_local": is_local,
                 "available": target is not None,
                 "reason": reason,
+                "transport": (target or {}).get("kind", "ssh"),
             }
         )
     return {"targets": items}
+
+
+async def _local_terminal(
+    websocket: WebSocket,
+    actor: str,
+    target_name: str,
+    settings: Any,
+) -> None:
+    """Shell local del hub mediante ConPTY (sin SSH)."""
+    try:
+        from winpty import PtyProcess
+    except ImportError:
+        await websocket.send_text(
+            "\r\n[Falta pywinpty en el hub: terminal local no disponible]\r\n"
+        )
+        with contextlib.suppress(Exception):
+            await websocket.close(code=1011)
+        return
+
+    process = None
+    audit("terminal.open", actor=actor, target=target_name)
+    try:
+        process = PtyProcess.spawn(
+            settings.TERMINAL_LOCAL_SHELL_COMMAND,
+            dimensions=(24, 80),
+        )
+
+        async def pump_output() -> None:
+            try:
+                while True:
+                    chunk = await asyncio.to_thread(process.read, 4096)
+                    if not chunk:
+                        break
+                    if isinstance(chunk, str):
+                        chunk = chunk.encode("utf-8", "replace")
+                    await websocket.send_bytes(chunk)
+            except (EOFError, OSError, WebSocketDisconnect):
+                pass
+            finally:
+                with contextlib.suppress(Exception):
+                    await websocket.close()
+
+        async def pump_input() -> None:
+            try:
+                while True:
+                    message = await asyncio.wait_for(
+                        websocket.receive_text(),
+                        timeout=settings.TERMINAL_IDLE_SECONDS,
+                    )
+                    if len(message) > settings.TERMINAL_MAX_MESSAGE:
+                        continue
+                    try:
+                        payload = json.loads(message)
+                    except json.JSONDecodeError:
+                        continue
+                    kind = payload.get("type")
+                    if kind == "input":
+                        data = str(payload.get("data", ""))
+                        if data:
+                            await asyncio.to_thread(process.write, data)
+                    elif kind == "resize":
+                        cols = max(20, min(300, int(payload.get("cols", 80))))
+                        rows = max(5, min(120, int(payload.get("rows", 24))))
+                        await asyncio.to_thread(process.setwinsize, rows, cols)
+            except asyncio.TimeoutError:
+                with contextlib.suppress(Exception):
+                    await websocket.send_text(
+                        "\r\n[sesi?n cerrada por inactividad]\r\n"
+                    )
+            except WebSocketDisconnect:
+                pass
+            finally:
+                with contextlib.suppress(Exception):
+                    process.terminate()
+                with contextlib.suppress(Exception):
+                    await websocket.close()
+
+        await asyncio.gather(pump_output(), pump_input(), return_exceptions=True)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Terminal local no disponible: {}", exc)
+        with contextlib.suppress(Exception):
+            await websocket.send_text(
+                f"\r\n[No se pudo abrir la terminal local: {exc}]\r\n"
+            )
+        with contextlib.suppress(Exception):
+            await websocket.close(code=1011)
+    finally:
+        if process is not None:
+            with contextlib.suppress(Exception):
+                process.terminate()
+        audit("terminal.close", actor=actor, target=target_name)
+
+
+async def _agent_terminal(
+    websocket: WebSocket,
+    actor: str,
+    host_id: int,
+    target_name: str,
+    settings: Any,
+) -> None:
+    """Relay entre el WebSocket del navegador y el canal PTY del agente."""
+    connection = agent_terminals.get(host_id)
+    if connection is None:
+        await websocket.send_text(
+            "\r\n[El agente no tiene el canal de terminal; actual?zalo]\r\n"
+        )
+        with contextlib.suppress(Exception):
+            await websocket.close(code=1011)
+        return
+
+    session_id = uuid.uuid4().hex
+    try:
+        queue = await connection.open_session(session_id, cols=80, rows=24)
+    except Exception as exc:  # noqa: BLE001
+        await websocket.send_text(f"\r\n[No se pudo abrir la terminal: {exc}]\r\n")
+        with contextlib.suppress(Exception):
+            await websocket.close(code=1011)
+        return
+
+    audit("terminal.open", actor=actor, target=target_name)
+
+    async def pump_agent() -> None:
+        while True:
+            message = await queue.get()
+            kind = message.get("type")
+            if kind == "output":
+                data = str(message.get("data", ""))
+                if data:
+                    await websocket.send_bytes(data.encode("utf-8", "replace"))
+            elif kind in {"exit", "error"}:
+                reason = str(message.get("reason") or message.get("message") or "")
+                if reason:
+                    with contextlib.suppress(Exception):
+                        await websocket.send_text(f"\r\n[{reason}]\r\n")
+                with contextlib.suppress(Exception):
+                    await websocket.close(
+                        code=1000 if kind == "exit" else 1011
+                    )
+                return
+
+    async def pump_browser() -> None:
+        try:
+            while True:
+                message = await asyncio.wait_for(
+                    websocket.receive_text(),
+                    timeout=settings.TERMINAL_IDLE_SECONDS,
+                )
+                if len(message) > settings.TERMINAL_MAX_MESSAGE:
+                    continue
+                try:
+                    payload = json.loads(message)
+                except json.JSONDecodeError:
+                    continue
+                kind = payload.get("type")
+                if kind == "input":
+                    data = str(payload.get("data", ""))
+                    if data:
+                        await connection.send(
+                            {
+                                "type": "input",
+                                "session": session_id,
+                                "data": data,
+                            }
+                        )
+                elif kind == "resize":
+                    cols = max(20, min(300, int(payload.get("cols", 80))))
+                    rows = max(5, min(120, int(payload.get("rows", 24))))
+                    await connection.send(
+                        {
+                            "type": "resize",
+                            "session": session_id,
+                            "cols": cols,
+                            "rows": rows,
+                        }
+                    )
+        except asyncio.TimeoutError:
+            with contextlib.suppress(Exception):
+                await websocket.send_text("\r\n[sesi?n cerrada por inactividad]\r\n")
+        except WebSocketDisconnect:
+            pass
+        finally:
+            with contextlib.suppress(Exception):
+                await websocket.close()
+
+    try:
+        await asyncio.gather(pump_agent(), pump_browser(), return_exceptions=True)
+    finally:
+        await connection.close_session(session_id)
+        with contextlib.suppress(Exception):
+            await websocket.close()
+        audit("terminal.close", actor=actor, target=target_name)
 
 
 @router.websocket("/terminal/ws")
@@ -208,6 +431,25 @@ async def terminal_socket(websocket: WebSocket) -> None:
     if target is None:
         await websocket.send_text(f"\r\n[{reason or 'Terminal no disponible'}]\r\n")
         await websocket.close(code=1011)
+        return
+
+    if target.get("kind") == "local":
+        await _local_terminal(
+            websocket,
+            actor,
+            str(host.get("name") or host_id),
+            settings,
+        )
+        return
+
+    if target.get("kind") == "agent":
+        await _agent_terminal(
+            websocket,
+            actor,
+            int(host_id),
+            str(host.get("name") or host_id),
+            settings,
+        )
         return
 
     try:

@@ -15,6 +15,8 @@ from __future__ import annotations
 import ipaddress
 import re
 import subprocess
+
+from app.core.proc import run_hidden
 from datetime import datetime, timezone
 from typing import Any
 
@@ -78,7 +80,7 @@ def _fallback_arp_scan(subnet: str) -> list[dict[str, Any]]:
         r".*?(?P<state>REACHABLE|STALE|DELAY|PROBE|PERMANENT|FAILED|INCOMPLETE)?\s*$"
     )
     try:
-        result = subprocess.run(
+        result = run_hidden(
             ["ip", "neigh", "show"],
             capture_output=True,
             text=True,

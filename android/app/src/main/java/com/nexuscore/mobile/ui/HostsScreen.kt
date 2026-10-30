@@ -1,4 +1,4 @@
-package com.nexuscore.mobile.ui
+﻿package com.nexuscore.mobile.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,11 +25,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nexuscore.mobile.data.HostDto
+import com.nexuscore.mobile.ui.components.AvailabilityBar
 import com.nexuscore.mobile.ui.components.EmptyState
 import com.nexuscore.mobile.ui.components.KeyValue
 import com.nexuscore.mobile.ui.components.NexusCard
 import com.nexuscore.mobile.ui.components.StatusPill
+import com.nexuscore.mobile.ui.components.statusColor
 import com.nexuscore.mobile.ui.components.formatTimestamp
+import com.nexuscore.mobile.ui.theme.NexusMono
 
 @Composable
 fun HostsScreen(vm: NexusViewModel) {
@@ -96,11 +99,13 @@ private fun HostCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
+    val online = host.online
     NexusCard {
-        Column(Modifier.padding(14.dp)) {
+        Column(Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(
@@ -109,30 +114,39 @@ private fun HostCard(
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        host.hostname ?: "—",
+                        listOfNotNull(host.os, host.hostname).joinToString(" · ").ifBlank { "—" },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 StatusPill(
-                    if (host.online) "online" else host.status,
-                    if (host.online) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error,
+                    if (online) "En línea" else "Sin latido",
+                    statusColor(if (online) "ok" else "crit"),
                 )
             }
-            Spacer(Modifier.height(8.dp))
-            KeyValue("Sistema", host.os ?: "—")
-            KeyValue("Agente", host.agentVersion ?: "—")
-            KeyValue("Último latido", host.secondsSinceSeen?.let { "hace ${it.toInt()} s" } ?: "—")
-            KeyValue("Enrolado", formatTimestamp(host.enrolledAt))
-            if (!host.notes.isNullOrBlank()) KeyValue("Notas", host.notes)
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            AvailabilityBar(online)
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    "Último latido",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    host.secondsSinceSeen?.let { "hace ${it.toInt()} s" } ?: "—",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontFamily = NexusMono,
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 if (!selected) {
                     OutlinedButton(onClick = onSelect) { Text("Seleccionar") }
                 } else {
                     Text(
                         "Seleccionado",
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.labelMedium,
                     )
                 }
@@ -181,3 +195,4 @@ private fun EditHostDialog(
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
     )
 }
+

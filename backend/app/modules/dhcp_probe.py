@@ -19,6 +19,7 @@ from typing import Any
 import psutil
 
 from app.core.logging_conf import logger
+from app.core.proc import run_hidden
 
 _SERVER_RE = re.compile(r"Server Identifier:\s*(\d{1,3}(?:\.\d{1,3}){3})")
 
@@ -49,7 +50,7 @@ def probe(timeout: int = 20) -> dict[str, Any]:
             "verdict": "unknown",
         }
     try:
-        completed = subprocess.run(
+        completed = run_hidden(
             ["nmap", "-Pn", "--script", "broadcast-dhcp-discover"],
             capture_output=True,
             text=True,

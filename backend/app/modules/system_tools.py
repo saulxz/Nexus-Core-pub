@@ -18,6 +18,8 @@ import re
 import shutil
 import socket
 import subprocess
+
+from app.core.proc import run_hidden
 from typing import Any
 
 import psutil
@@ -59,7 +61,7 @@ def run_capture(command: list[str], timeout: float = COMMAND_TIMEOUT) -> tuple[i
     llamador lo traduce a ``available=False`` con el motivo.
     """
     try:
-        completed = subprocess.run(
+        completed = run_hidden(
             command,
             capture_output=True,
             text=True,

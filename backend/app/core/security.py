@@ -37,7 +37,7 @@ from app.core.logging_conf import logger
 from app.core.paths import db_path, setup_token_path
 
 SESSION_COOKIE = "nexus_session"
-MIN_PASSWORD_LENGTH = 10
+MIN_PASSWORD_LENGTH = 9
 MAX_PASSWORD_LENGTH = 256
 
 _UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}

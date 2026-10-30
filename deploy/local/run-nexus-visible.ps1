@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-  Arranca Nexus-Core en primer plano y abre https://nexus.labsxz.com.
+  Arranca Nexus-Core en primer plano y abre https://nexus.example.com.
 
 .DESCRIPTION
   Todo ocurre en esta ventana, a la vista:
@@ -28,7 +28,7 @@ $backend  = Join-Path $repo 'backend'
 $frontend = Join-Path $repo 'frontend'
 $data     = Join-Path $env:USERPROFILE '.local\nexus-data'
 $config   = Join-Path $repo 'deploy\tunnel\config.yml'
-$dominio  = 'https://nexus.labsxz.com'
+$dominio  = 'https://nexus.example.com'
 
 $hubPid = $null
 $tunelPid = $null
@@ -62,7 +62,7 @@ function Test-Dominio {
 
 Write-Host ''
 Write-Host '==============================================' -ForegroundColor Cyan
-Write-Host '  Nexus-Core  ->  https://nexus.labsxz.com' -ForegroundColor Cyan
+Write-Host '  Nexus-Core  ->  https://nexus.example.com' -ForegroundColor Cyan
 Write-Host '==============================================' -ForegroundColor Cyan
 Write-Host ''
 
@@ -92,7 +92,7 @@ try {
         $env:NEXUS_DATA_DIR = $data
         $env:FRONTEND_DIR = $frontend
         $env:SESSION_COOKIE_SECURE = 'false'
-        $env:ALLOWED_HOSTS = 'nexus.labsxz.com,127.0.0.1,localhost'
+        $env:ALLOWED_HOSTS = 'nexus.example.com,127.0.0.1,localhost'
         $env:ENFORCE_HTTPS = 'true'
 
         Write-Host '[hub] Arrancando... (sus logs salen aqui abajo)' -ForegroundColor Yellow
@@ -151,12 +151,12 @@ try {
         Write-Host '[web] El dominio aun no responde. Revisa los logs de arriba.' -ForegroundColor Yellow
     }
 
-    if (-not (Resolve-DnsName 'nexus.labsxz.com' -ErrorAction SilentlyContinue)) {
+    if (-not (Resolve-DnsName 'nexus.example.com' -ErrorAction SilentlyContinue)) {
         Write-Host '[dns] Vaciando la cache DNS local...' -ForegroundColor Yellow
         & ipconfig /flushdns 2>$null | Out-Null
         Start-Sleep -Seconds 1
     }
-    if (-not (Resolve-DnsName 'nexus.labsxz.com' -ErrorAction SilentlyContinue)) {
+    if (-not (Resolve-DnsName 'nexus.example.com' -ErrorAction SilentlyContinue)) {
         Write-Host '[aviso] Tu DNS local aun no resuelve el dominio.' -ForegroundColor Yellow
         Write-Host '        Cambia el DNS de la Wi-Fi a 1.1.1.1 o espera unos minutos.' -ForegroundColor Yellow
     }

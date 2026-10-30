@@ -20,7 +20,7 @@ from app.schemas.models import SambaShare
 def test_security_headers_are_present() -> None:
     """El panel público añade CSP, HSTS y cabeceras de aislamiento."""
     anonymous = TestClient(app)
-    response = anonymous.get("/api/health", headers={"host": "nexus.labsxz.com"})
+    response = anonymous.get("/api/health", headers={"host": "nexus.example.com"})
     assert response.status_code == 200
     assert response.headers["content-security-policy"].startswith("default-src 'self'")
     assert response.headers["x-content-type-options"] == "nosniff"
@@ -37,11 +37,11 @@ def test_http_redirects_when_cloudflare_says_http(monkeypatch: pytest.MonkeyPatc
         client = TestClient(app)
         response = client.get(
             "/login.html",
-            headers={"host": "nexus.labsxz.com", "cf-visitor": '{"scheme":"http"}'},
+            headers={"host": "nexus.example.com", "cf-visitor": '{"scheme":"http"}'},
             follow_redirects=False,
         )
         assert response.status_code == 308
-        assert response.headers["location"].startswith("https://nexus.labsxz.com/")
+        assert response.headers["location"].startswith("https://nexus.example.com/")
     finally:
         monkeypatch.delenv("ENFORCE_HTTPS", raising=False)
         get_settings.cache_clear()

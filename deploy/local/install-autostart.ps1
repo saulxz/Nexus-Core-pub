@@ -6,7 +6,7 @@
   Registra una tarea programada que se ejecuta al iniciar sesion, en segundo
   plano, y mantiene vivos:
     - el hub en 127.0.0.1:8780
-    - el tunel de Cloudflare nexus-core (https://nexus.labsxz.com)
+    - el tunel de Cloudflare nexus-core (https://nexus.example.com)
 
   No necesita privilegios de administrador: la tarea corre como tu usuario.
   Es idempotente: volver a ejecutarlo actualiza la tarea.
@@ -47,7 +47,7 @@ Register-ScheduledTask `
     -Trigger $disparador `
     -Settings $ajustes `
     -Principal $principal `
-    -Description 'Arranca Nexus-Core (hub + tunel nexus.labsxz.com) al iniciar sesion' `
+    -Description 'Arranca Nexus-Core (hub + tunel nexus.example.com) al iniciar sesion' `
     -Force | Out-Null
 
 Start-ScheduledTask -TaskName $tarea

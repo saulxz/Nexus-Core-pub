@@ -179,64 +179,40 @@ instalación exige confirmación y queda registrada en Auditoría.
 > root. Un campo libre convertiría el panel en una shell root; el catálogo cerrado
 > mantiene la superficie de ataque pequeña y auditable.
 
-## 3.5 Terminal SSH del panel
+## 3.5 Terminal local y por agente
 
-La pestaña **Terminal** abre una sesión SSH real dentro del navegador con xterm.js y
-un WebSocket autenticado. No hay contraseñas ni claves en el cliente: el navegador
-solo transporta el WebSocket; el hub abre la conexión SSH con una clave dedicada
-(`/etc/nexus/terminal_key`) y un `known_hosts` fijado.
+La pesta?a **Terminal** abre una shell real dentro del navegador con xterm.js y un
+WebSocket autenticado. Hay dos transportes:
 
-El desplegable **Servidor** lista los hosts conectados. Solo se pueden seleccionar
-los que tienen un destino SSH definido en `TERMINAL_TARGETS`; los demás aparecen
-deshabilitados con el motivo. El host local usa `TERMINAL_SSH_*` y no se incluye en
-ese mapa.
+- **Hub local**: una PTY de PowerShell en Windows o de la shell del servicio en
+  Linux. Se activa con `TERMINAL_LOCAL_SHELL=true`.
+- **Agente remoto**: el agente Nexus 1.1.0 abre un WebSocket saliente contra el
+  hub y expone una PTY en el host. El navegador nunca inicia una conexi?n hacia
+  el servidor: funciona detr?s de NAT, sin abrir puertos y sin SSH.
+- **SSH**: queda como fallback opcional para instalaciones antiguas, pero no es
+  necesario para la terminal por agente.
 
-- La sesión exige cookie de administrador, token CSRF enviado en el subprotocolo
-  `csrf.<token>` y el mismo origen del panel.
-- El PTY se abre como el usuario configurado en `TERMINAL_SSH_USER` o en el destino
-  remoto. Si no hay usuario, la terminal queda desactivada.
-- Se cierra al cambiar de pestaña y tras `TERMINAL_IDLE_SECONDS` sin actividad.
-- Los comandos se ejecutan con los permisos de ese usuario; no hay una shell root
-  implícita. Para tareas root se usa `sudo` y su contraseña, igual que en una SSH normal.
-- `asyncssh` y `websockets` son dependencias del hub; los assets de xterm.js están
-  vendorizados, sin CDN.
+La sesi?n exige cookie de administrador, token CSRF en el subprotocolo
+`csrf.<token>`, mismo origen y cierre por inactividad. El host local ejecuta la
+shell con el usuario del servicio; los agentes Linux/Kali usan `pty` y Windows
+usa ConPTY/pywinpty. No hay una shell root impl?cita.
 
-Configuración mínima en el hub:
+El desplegable **Servidor** muestra el transporte (`local`, `agente` o `SSH`).
+Los agentes 1.0.0 aparecen deshabilitados con el motivo ?actualiza el agente?
+hasta que se instala la versi?n 1.1.0.
 
-```bash
-sudo ssh-keygen -t ed25519 -N '' -f /etc/nexus/terminal_key -C nexus-web-terminal
-sudo install -d -o saul_server -g saul_server -m 0700 /home/saul_server/.ssh
-sudo sh -c 'cat /etc/nexus/terminal_key.pub >> /home/saul_server/.ssh/authorized_keys'
-sudo chown saul_server:saul_server /home/saul_server/.ssh/authorized_keys
-sudo chmod 600 /home/saul_server/.ssh/authorized_keys
-sudo sh -c 'ssh-keyscan -t ed25519 127.0.0.1 192.0.2.10 > /etc/nexus/terminal_known_hosts'
-sudo chown nexus:nexus /etc/nexus/terminal_key /etc/nexus/terminal_known_hosts
-sudo chmod 600 /etc/nexus/terminal_key /etc/nexus/terminal_known_hosts
-```
-
-En cada host remoto hay que autorizar la clave pública del hub en el usuario SSH
-correspondiente y añadir su clave de host al `known_hosts` del hub. El destino se
-declara únicamente en el servidor (`/etc/nexus/nexus.env`):
+Variables relevantes:
 
 ```bash
-TERMINAL_TARGETS={"ubuntu-server-sor":{"host":"192.0.2.10","port":22,"user":"saul_server"}}
-```
-
-Añade estas claves a `/etc/nexus/nexus.env` y reinicia el servicio:
-
-```bash
-TERMINAL_SSH_HOST=127.0.0.1
-TERMINAL_SSH_PORT=22
-TERMINAL_SSH_USER=saul_server
-TERMINAL_SSH_KEY=/etc/nexus/terminal_key
-TERMINAL_SSH_KNOWN_HOSTS=/etc/nexus/terminal_known_hosts
+TERMINAL_LOCAL_SHELL=true
+TERMINAL_LOCAL_SHELL_COMMAND=powershell.exe -NoLogo -NoProfile
+TERMINAL_AGENT_ENABLED=true
 TERMINAL_IDLE_SECONDS=900
 ```
 
-> **Por qué no se guarda la contraseña SSH:** la clave dedicada permite auditar y
-> revocar el acceso sin depositar secretos en el navegador. El `known_hosts` evita
-> aceptar una clave de host desconocida y el CSRF impide que otro origen abra la
-> terminal con la cookie del administrador.
+El canal del agente usa `/api/agent/terminal`; el navegador usa
+`/api/terminal/ws?host=ID`. Ambos est?n autenticados y auditados.
+
 
 ## 3.6 Auditoría de seguridad (solo lectura)
 
@@ -484,7 +460,7 @@ unidad systemd y el token de primer arranque. El puerto depende del entorno:
 | Entorno | Escucha | Puerto | Acceso |
 |---|---|---|---|
 | Linux, primer arranque | `0.0.0.0` | `8000` | `http://IP:8000/login.html` |
-| Linux, producción | `127.0.0.1` | `8000` | túnel o Caddy (`https://nexus.labsxz.com`) |
+| Linux, producción | `127.0.0.1` | `8000` | túnel o Caddy (`https://nexus.example.com`) |
 | App Windows | `127.0.0.1` | `8780` | ventana pywebview |
 | Demostración | `127.0.0.1` | `8790` | solo capturas |
 
@@ -558,10 +534,10 @@ interfaz es nativa y consume la misma API HTTPS del hub.
 - Login con **contraseña + TOTP** (Google Authenticator), cookie de sesión y CSRF.
 - Selector global de host; la app no replica la base SQLite del hub, consulta la API.
 - Permite gestionar hosts, contenedores, servicios, alertas, monitores, tokens,
-  sesiones, auditoría, baseline, terminal SSH, asistente, cambio de IP, 2FA y la
+  sesiones, auditoría, baseline, terminal local/por agente, asistente, cambio de IP, 2FA y la
   configuración de IA.
 - La sesión se guarda cifrada con Android Keystore; no se incrustan tokens `write`.
-- APK de debug: `android/app/build/outputs/apk/debug/app-debug.apk`.
+- APK de debug instalable por sideload en Android 8.0+ (`minSdk 26`); ABIs `arm64-v8a`, `armeabi-v7a`, `x86` y `x86_64`. La release de Play Store a?n requiere firma de producci?n.
 - Se compila abriendo `android/` en Android Studio (SDK 37) o con
   `android\gradlew.bat :app:assembleDebug`.
 
@@ -677,7 +653,7 @@ Access? (No se implementó en esta versión.)
 | POST | `/api/agent/commands/{id}/result` | Resultado |
 | GET | `/api/metrics/prometheus` | Exportación Prometheus |
 | GET | `/api/status/page` | Página pública de estado |
-| WS | `/api/terminal/ws` | Terminal SSH autenticada (xterm.js) |
+| WS | `/api/terminal/ws` | Terminal local/agente autenticada (xterm.js) |
 | GET | `/api/terminal/targets` | Hosts conectados y disponibilidad de terminal |
 
 ## 12.2 Herramientas del agente

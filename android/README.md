@@ -13,10 +13,19 @@ Cliente **nativo** de Nexus-Core para Android. Está hecho con **Kotlin + Jetpac
 - **Cambio de IP del hub** con planificación, watchdog, confirmación y reversión.
 - **Gestión completa de 2FA**: alta, activación con código, códigos de recuperación y desactivación con contraseña.
 - **Editor de IA**: proveedor, modelo, temperatura, URLs base y claves (las claves actuales nunca se muestran).
-- Terminal SSH nativa por WebSocket (si el hub tiene `TERMINAL_TARGETS`).
+- Terminal nativa por WebSocket: PTY local del hub o shell remota transportada por el agente 1.1.0, sin SSH y sin depender de la red local.
 - Asistente con propuestas pendientes de confirmación.
 - Aviso de alertas en segundo plano con WorkManager cada 15 minutos.
 - HTTPS obligatorio, sin tráfico en claro.
+
+## Requisitos de instalaci?n
+
+- **Android 8.0 o superior** (`minSdk 26`); target SDK 37.
+- ABIs empaquetadas: `arm64-v8a`, `armeabi-v7a`, `x86` y `x86_64`.
+- El APK disponible es de **debug**, firmado con la clave de debug; se puede instalar por sideload/ADB.
+- Para Play Store hace falta una **release firmada**, keystore de producci?n, pol?tica de privacidad, ficha y AAB.
+- URL del hub editable en el login; por defecto `https://nexus.example.com`. Solo HTTPS.
+- El hub debe ser accesible por HTTPS y la cuenta debe tener 2FA activo.
 
 ## Compilar
 
@@ -38,7 +47,7 @@ app\build\outputs\apk\debug\app-debug.apk
 También hay una copia en:
 
 ```text
-dist\Nexus-Core-Android.apk
+Nexus-Core-Android.apk
 ```
 
 ## Configuración

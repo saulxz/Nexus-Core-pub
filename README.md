@@ -32,12 +32,12 @@ direcciones de documentación (`192.0.2.10`). No hay credenciales ni datos reale
 - **Flota multi-host**: un hub central y agentes en Linux/Windows. Alta con token,
   latido, reconexión automática y comandos con lista blanca.
 - **Panel unificado**: resumen de sensores, histórico, contenedores, servicios,
-  terminal SSH, red, puertos, actualizaciones, SMART, auditoría y seguridad.
+  terminal local/por agente, red, puertos, actualizaciones, SMART, auditoría y seguridad.
 - **Alertas**: umbrales con duración e histéresis, acknowledgment, snooze,
   notificaciones y monitores HTTP/TCP/SSL con página de estado.
 - **Instalador apt con allowlist**: catálogo cerrado (nginx, Samba, dnsmasq, Docker,
   Fail2ban y Redis), confirmación, auditoría y helper root-owned; local y agentes Linux.
-- **Terminal SSH**: pestaña con xterm.js, selector de hosts conectados y WebSocket
+- **Terminal local/por agente**: pestaña con xterm.js, selector de hosts conectados y WebSocket
   autenticado; clave dedicada en el hub, CSRF/origen, known_hosts fijado y cierre
   por inactividad.
 - **Seguridad**: 2FA TOTP con códigos de recuperación, sesiones con CSRF, cookies
@@ -128,6 +128,9 @@ cd android
 ```
 
 El APK de debug queda en `android/app/build/outputs/apk/debug/app-debug.apk`.
+**Android 8.0+ (`minSdk 26`)**, ABIs `arm64-v8a`, `armeabi-v7a`, `x86` y `x86_64`.
+El APK de debug est? firmado con clave de debug y sirve para sideload; la release
+de Play Store requiere firma de producci?n, pol?tica de privacidad y ficha.
 La URL del hub se configura en la pantalla de login; el valor de ejemplo es
 `https://nexus.example.com`.
 

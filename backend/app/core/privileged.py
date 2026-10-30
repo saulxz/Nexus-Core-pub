@@ -14,6 +14,8 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+
+from app.core.proc import run_hidden
 from typing import Any
 
 from app.core.logging_conf import logger
@@ -43,7 +45,7 @@ def run_helper(name: str, args: list[str], timeout: float = 45.0) -> dict[str, A
         }
     command = ["sudo", "-n", f"{HELPERS_DIR}/{name}", *args]
     try:
-        completed = subprocess.run(
+        completed = run_hidden(
             command,
             capture_output=True,
             text=True,

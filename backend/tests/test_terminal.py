@@ -30,7 +30,7 @@ def test_terminal_targets_lists_local_host(client: TestClient) -> None:
     targets = response.json()["targets"]
     assert any(target["is_local"] for target in targets)
     for target in targets:
-        assert set(target) == {"id", "name", "is_local", "available", "reason"}
+        assert set(target) == {"id", "name", "is_local", "available", "reason", "transport"}
 
 
 def test_terminal_rejects_anonymous_session() -> None:

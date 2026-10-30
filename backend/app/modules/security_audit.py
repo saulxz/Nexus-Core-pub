@@ -46,6 +46,7 @@ import psutil
 from app.core import api_tokens, audit as audit_log, fleet, security
 from app.core.config import get_settings
 from app.core.logging_conf import logger
+from app.core.proc import run_hidden
 from app.core.paths import audit_path, data_dir, db_path, setup_token_path
 
 READ_ONLY = True
@@ -113,7 +114,7 @@ def _unknown(check_id: str, category: str, title: str, reason: str) -> Finding:
 def _run(cmd: list[str], timeout: float = 8.0) -> tuple[int, str, str]:
     """Ejecuta un comando de consulta sin shell y con timeout."""
     try:
-        proc = subprocess.run(
+        proc = run_hidden(
             cmd, capture_output=True, text=True, timeout=timeout, check=False
         )
         return proc.returncode, (proc.stdout or "").strip(), (proc.stderr or "").strip()

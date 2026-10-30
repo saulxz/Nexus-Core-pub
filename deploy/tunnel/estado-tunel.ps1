@@ -3,7 +3,7 @@
 #   powershell -ExecutionPolicy Bypass -File deploy\tunnel\estado-tunel.ps1
 $ErrorActionPreference = 'Continue'
 
-$hostname = 'nexus.labsxz.com'
+$hostname = 'nexus.example.com'
 $cloudflared = Join-Path $env:USERPROFILE '.local\cloudflared\cloudflared.exe'
 if (-not (Test-Path -LiteralPath $cloudflared)) {
     $cmd = Get-Command cloudflared -ErrorAction SilentlyContinue

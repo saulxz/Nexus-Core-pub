@@ -7,7 +7,7 @@ Nexus-Core — App de escritorio (Windows)
    el panel en una ventana nativa.
 
 Mientras la app este abierta:
-  - https://nexus.labsxz.com sigue disponible para los usuarios Linux.
+  - https://nexus.example.com sigue disponible para los usuarios Linux.
   - Los servidores con nexus-agent pueden conectar y monitorizarse.
 Al cerrar la ventana se detienen el hub y el tunel.
 

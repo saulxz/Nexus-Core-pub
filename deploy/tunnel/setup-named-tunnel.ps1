@@ -1,12 +1,12 @@
 <#
 .SYNOPSIS
-  Configura el tunel fijo de Cloudflare para Nexus-Core (nexus.labsxz.com).
+  Configura el tunel fijo de Cloudflare para Nexus-Core (nexus.example.com).
 
 .DESCRIPTION
   Primera ejecucion:
     1. Abre el navegador para autorizar Cloudflare (elige la zona labsxz.com).
     2. Crea el tunel "nexus-core" si no existe.
-    3. Enlaza el DNS nexus.labsxz.com.
+    3. Enlaza el DNS nexus.example.com.
     4. Escribe deploy\tunnel\config.yml.
 
   Es idempotente: puedes ejecutarlo varias veces sin duplicar nada.
@@ -16,7 +16,7 @@
 $ErrorActionPreference = 'Continue'
 
 $nombreTunel = 'nexus-core'
-$hostname    = 'nexus.labsxz.com'
+$hostname    = 'nexus.example.com'
 $hubUrl      = 'http://127.0.0.1:8780'
 $zona        = 'labsxz.com'
 

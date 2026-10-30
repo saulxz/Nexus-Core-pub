@@ -37,6 +37,7 @@ import com.nexuscore.mobile.ui.components.EmptyState
 import com.nexuscore.mobile.ui.components.KeyValue
 import com.nexuscore.mobile.ui.components.NexusCard
 import com.nexuscore.mobile.ui.components.StatusPill
+import com.nexuscore.mobile.ui.components.statusColor
 import com.nexuscore.mobile.ui.components.formatTimestamp
 
 @Composable
@@ -96,9 +97,20 @@ fun AlertsScreen(vm: NexusViewModel) {
 @Composable
 private fun AlertEventCard(event: AlertEventDto, vm: NexusViewModel) {
     val color = when (event.severity) {
-        "crit" -> MaterialTheme.colorScheme.error
-        "warn" -> MaterialTheme.colorScheme.secondary
-        else -> MaterialTheme.colorScheme.primary
+        "crit" -> statusColor("crit")
+        "warn" -> statusColor("warn")
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val severity = when (event.severity) {
+        "crit" -> "Cr?tica"
+        "warn" -> "Aviso"
+        else -> event.severity
+    }
+    val state = when (event.status) {
+        "open" -> "Abierta"
+        "closed" -> "Cerrada"
+        "acked" -> "Reconocida"
+        else -> event.status
     }
     NexusCard {
         Column(Modifier.padding(14.dp)) {
@@ -111,7 +123,7 @@ private fun AlertEventCard(event: AlertEventDto, vm: NexusViewModel) {
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
-                StatusPill(event.severity, color)
+                StatusPill(severity, color)
             }
             Text(
                 event.message ?: "Sin mensaje",
@@ -120,7 +132,7 @@ private fun AlertEventCard(event: AlertEventDto, vm: NexusViewModel) {
                 modifier = Modifier.padding(top = 6.dp),
             )
             Spacer(Modifier.height(6.dp))
-            KeyValue("Estado", event.status)
+            KeyValue("Estado", state)
             KeyValue("Valor", event.value?.toString() ?: "—")
             KeyValue("Umbral", event.threshold?.toString() ?: "—")
             KeyValue("Abierta", formatTimestamp(event.openedAt))

@@ -1,4 +1,4 @@
-package com.nexuscore.mobile.ui
+﻿package com.nexuscore.mobile.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,13 +11,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.outlined.ArrowDropDown
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.LightMode
+import androidx.compose.material.icons.outlined.Logout
+import androidx.compose.material.icons.outlined.Menu
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,6 +32,7 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -45,12 +48,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nexuscore.mobile.ui.components.ErrorCard
+import com.nexuscore.mobile.ui.theme.ThemeController
+import com.nexuscore.mobile.ui.theme.ThemeMode
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,6 +65,8 @@ import kotlinx.coroutines.launch
 fun MainScreen(vm: NexusViewModel) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val darkTheme = ThemeController.isDark(isSystemInDarkTheme())
     var showDrawerMenu by remember { mutableStateOf(false) }
 
     ModalNavigationDrawer(
@@ -98,7 +107,7 @@ fun MainScreen(vm: NexusViewModel) {
                     HorizontalDivider(Modifier.padding(vertical = 10.dp))
                     NavigationDrawerItem(
                         label = { Text("Cerrar sesión") },
-                        icon = { Icon(Icons.Filled.Logout, contentDescription = null) },
+                        icon = { Icon(Icons.Outlined.Logout, contentDescription = null) },
                         selected = false,
                         onClick = {
                             scope.launch { drawerState.close() }
@@ -112,34 +121,52 @@ fun MainScreen(vm: NexusViewModel) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text(vm.section.label) },
+                    title = {
+                        Text(
+                            vm.section.label,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Filled.Menu, contentDescription = "Menú")
+                            Icon(Icons.Outlined.Menu, contentDescription = "Menu")
                         }
                     },
                     actions = {
                         HostMenu(vm)
-                        IconButton(onClick = { vm.refresh() }) {
-                            Icon(Icons.Filled.Refresh, contentDescription = "Refrescar")
-                        }
-                        IconButton(onClick = { showDrawerMenu = true }) {
-                            Icon(Icons.Filled.MoreVert, contentDescription = "Más")
+                        IconButton(
+                            onClick = {
+                                ThemeController.setMode(
+                                    context,
+                                    if (darkTheme) ThemeMode.LIGHT else ThemeMode.DARK,
+                                )
+                            },
+                        ) {
+                            Icon(
+                                if (darkTheme) Icons.Outlined.LightMode else Icons.Outlined.DarkMode,
+                                contentDescription = "Tema",
+                            )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
+                        containerColor = MaterialTheme.colorScheme.background,
+                        titleContentColor = MaterialTheme.colorScheme.onBackground,
                     ),
                 )
             },
             bottomBar = {
-                NavigationBar {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 0.dp,
+                ) {
                     BottomItem(vm, Section.DASHBOARD)
                     BottomItem(vm, Section.HOSTS)
                     BottomItem(vm, Section.ALERTS)
                     BottomItem(vm, Section.SETTINGS)
                 }
             },
+            containerColor = MaterialTheme.colorScheme.background,
         ) { innerPadding ->
             Column(
                 Modifier
@@ -242,7 +269,7 @@ private fun HostMenu(vm: NexusViewModel) {
                 vm.selectedHost?.name?.take(20) ?: "Host",
                 maxLines = 1,
             )
-            Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
+            Icon(Icons.Outlined.ArrowDropDown, contentDescription = null)
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             if (vm.hosts.isEmpty()) {
@@ -260,7 +287,7 @@ private fun HostMenu(vm: NexusViewModel) {
                     },
                     leadingIcon = {
                         if (host.id == vm.selectedHostId) {
-                            Icon(Icons.Filled.Notifications, contentDescription = null)
+                            Icon(Icons.Outlined.Notifications, contentDescription = null)
                         }
                     },
                     onClick = {
@@ -282,6 +309,16 @@ private fun androidx.compose.foundation.layout.RowScope.BottomItem(
         selected = vm.section == section,
         onClick = { vm.selectSection(section) },
         icon = { Icon(section.icon, contentDescription = null) },
-        label = { Text(section.label) },
+        label = { Text(section.label, style = MaterialTheme.typography.labelSmall) },
+        colors = NavigationBarItemDefaults.colors(
+            selectedIconColor = MaterialTheme.colorScheme.onSurface,
+            selectedTextColor = MaterialTheme.colorScheme.onSurface,
+            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            indicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+        ),
     )
 }
+
+
+

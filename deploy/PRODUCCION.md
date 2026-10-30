@@ -19,7 +19,7 @@ Agente remoto ──HTTPS saliente──▶ Caddy :443 /api/agent/*
 
 ## 1. DNS y firewall
 
-Crea el registro A `nexus.labsxz.com → IP_PUBLICA` y espera la propagación.
+Crea el registro A `nexus.example.com → IP_PUBLICA` y espera la propagación.
 
 ```bash
 sudo apt update && sudo apt install -y ufw
@@ -50,12 +50,12 @@ helpers, la unidad systemd y el token de primer arranque.
 Genera el token de enrolamiento y crea el entorno con permisos 0600:
 
 ```bash
-DOMAIN="nexus.labsxz.com"
+DOMAIN="nexus.example.com"
 TOKEN="$(openssl rand -hex 32)"
 
 sudo install -d -m 0750 /etc/nexus
 sudo cp deploy/production/nexus.env.example /etc/nexus/nexus.env
-sudo sed -i "s/nexus.labsxz.com/${DOMAIN}/g; s/cambia-esto-por-openssl-rand-hex-32/${TOKEN}/" /etc/nexus/nexus.env
+sudo sed -i "s/nexus.example.com/${DOMAIN}/g; s/cambia-esto-por-openssl-rand-hex-32/${TOKEN}/" /etc/nexus/nexus.env
 sudo chmod 0600 /etc/nexus/nexus.env
 sudo systemctl restart nexus
 ```
@@ -75,7 +75,7 @@ curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \
 sudo apt update && sudo apt install -y caddy
 
 sudo cp deploy/caddy/Caddyfile /etc/caddy/Caddyfile
-sudo sed -i "s/nexus.labsxz.com/${DOMAIN}/g" /etc/caddy/Caddyfile
+sudo sed -i "s/nexus.example.com/${DOMAIN}/g" /etc/caddy/Caddyfile
 sudo caddy validate --config /etc/caddy/Caddyfile
 sudo systemctl reload caddy
 ```

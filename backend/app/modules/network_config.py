@@ -19,6 +19,8 @@ import re
 import secrets
 import shutil
 import subprocess
+
+from app.core.proc import run_hidden
 import time
 from pathlib import Path
 from typing import Any
@@ -39,7 +41,7 @@ _TOKEN_RE = re.compile(r"^[a-f0-9]{12}$")
 def _run(args: list[str], timeout: float = 10.0) -> tuple[int, str]:
     """Ejecuta un comando de solo lectura y devuelve (código, stdout)."""
     try:
-        completed = subprocess.run(
+        completed = run_hidden(
             args,
             capture_output=True,
             text=True,

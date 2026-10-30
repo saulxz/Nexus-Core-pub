@@ -18,6 +18,8 @@ from __future__ import annotations
 import re
 import shutil
 import subprocess
+
+from app.core.proc import run_hidden
 from typing import Any
 
 from app.core.logging_conf import logger
@@ -59,7 +61,7 @@ def normalize_unit(name: str) -> str:
 def _run(args: list[str], timeout: float = 10.0) -> tuple[int, str, str]:
     """Ejecuta un comando sin shell y devuelve ``(código, stdout, stderr)``."""
     try:
-        completed = subprocess.run(
+        completed = run_hidden(
             args,
             capture_output=True,
             text=True,

@@ -1,5 +1,6 @@
 package com.nexuscore.mobile.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -7,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -26,11 +28,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nexuscore.mobile.data.MetricPoint
+import com.nexuscore.mobile.ui.theme.NexusColors
+import com.nexuscore.mobile.ui.theme.NexusMono
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -46,9 +51,10 @@ fun NexusCard(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(8.dp),
         color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp,
+        tonalElevation = 0.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         content = content,
     )
 }
@@ -62,26 +68,18 @@ fun MetricCard(
     accent: Color = MaterialTheme.colorScheme.primary,
 ) {
     NexusCard(modifier) {
-        Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier
-                        .size(8.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(accent),
-                )
-                Spacer(Modifier.size(8.dp))
-                Text(
-                    label,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Spacer(Modifier.height(8.dp))
+        Column(Modifier.padding(14.dp)) {
+            Text(
+                label.uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(5.dp))
             Text(
                 value,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+                fontFamily = NexusMono,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Medium,
             )
             if (detail != null) {
                 Text(
@@ -99,15 +97,15 @@ fun MetricCard(
 @Composable
 fun StatusPill(text: String, color: Color) {
     Surface(
-        color = color.copy(alpha = 0.16f),
-        shape = RoundedCornerShape(50),
+        color = color.copy(alpha = 0.11f),
+        shape = RoundedCornerShape(999.dp),
     ) {
         Text(
             text,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
             style = MaterialTheme.typography.labelSmall,
             color = color,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
         )
     }
 }
@@ -175,6 +173,7 @@ fun KeyValue(label: String, value: String?) {
         )
         Text(
             value ?: "—",
+            fontFamily = NexusMono,
             style = MaterialTheme.typography.bodySmall,
             fontWeight = FontWeight.Medium,
             maxLines = 2,
@@ -192,7 +191,7 @@ fun SectionTitle(title: String, trailing: String? = null) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
         if (trailing != null) {
             Text(
                 trailing,
@@ -207,7 +206,7 @@ fun SectionTitle(title: String, trailing: String? = null) {
 fun LineChart(
     points: List<MetricPoint>,
     modifier: Modifier = Modifier,
-    color: Color = MaterialTheme.colorScheme.primary,
+    color: Color = MaterialTheme.colorScheme.secondary,
 ) {
     val values = points.mapNotNull { it.value?.toFloat() }
     Column(modifier) {
@@ -229,6 +228,7 @@ fun LineChart(
         val minValue = values.minOrNull() ?: 0f
         val maxValue = values.maxOrNull() ?: 1f
         val span = (maxValue - minValue).coerceAtLeast(1f)
+        val gridColor = MaterialTheme.colorScheme.outlineVariant
         Canvas(
             Modifier
                 .fillMaxWidth()
@@ -244,21 +244,126 @@ fun LineChart(
                 val y = height - ((value - minValue) / span) * (height - 12f) - 6f
                 if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
             }
-            drawLine(
-                color.copy(alpha = 0.12f),
-                Offset(0f, height / 2),
-                Offset(width, height / 2),
-                strokeWidth = 1f,
-            )
+            val grid = gridColor
+            listOf(0f, 0.33f, 0.66f, 1f).forEach { fraction ->
+                drawLine(
+                    grid,
+                    Offset(0f, height * fraction),
+                    Offset(width, height * fraction),
+                    strokeWidth = 1f,
+                )
+            }
             drawPath(
                 path,
-                brush = Brush.linearGradient(listOf(color, color.copy(alpha = 0.55f))),
+                color = color,
                 style = Stroke(width = 3f, cap = StrokeCap.Round),
             )
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("mín ${formatNumber(minValue.toDouble())}", style = MaterialTheme.typography.labelSmall)
-            Text("máx ${formatNumber(maxValue.toDouble())}", style = MaterialTheme.typography.labelSmall)
+            Text("mín ${formatNumber(minValue.toDouble())}", fontFamily = NexusMono, style = MaterialTheme.typography.labelSmall)
+            Text("máx ${formatNumber(maxValue.toDouble())}", fontFamily = NexusMono, style = MaterialTheme.typography.labelSmall)
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        }
+    }
+}
+
+@Composable
+fun statusColor(status: String): Color {
+    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    return when (status.lowercase()) {
+        "ok", "correcto", "online", "activa" -> if (dark) NexusColors.DarkOk else NexusColors.Ok
+        "warn", "aviso" -> if (dark) NexusColors.DarkWarn else NexusColors.Warn
+        "crit", "critical", "crítico" -> if (dark) NexusColors.DarkCrit else NexusColors.Crit
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+}
+
+@Composable
+fun SensorRow(
+    name: String,
+    value: String,
+    progress: Float,
+    status: String,
+    threshold: String,
+    modifier: Modifier = Modifier,
+) {
+    val tone = statusColor(status)
+    Column(
+        modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(7.dp),
+    ) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                value,
+                fontFamily = NexusMono,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(RoundedCornerShape(999.dp))
+                .background(MaterialTheme.colorScheme.outlineVariant),
+        ) {
+            Box(
+                Modifier
+                    .fillMaxWidth(progress.coerceIn(0f, 1f))
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(tone),
+            )
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(
+                status.replaceFirstChar { it.uppercase() },
+                style = MaterialTheme.typography.labelSmall,
+                color = tone,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                threshold,
+                fontFamily = NexusMono,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+fun AvailabilityBar(
+    online: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val down = statusColor("crit")
+    val up = statusColor("ok")
+    val segments = 32
+    Row(
+        modifier
+            .fillMaxWidth()
+            .height(18.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        repeat(segments) { index ->
+            val isDown = !online && index >= segments - 5
+            Box(
+                Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(1.dp))
+                    .background(if (isDown) down else up),
+            )
         }
     }
 }
@@ -268,7 +373,7 @@ fun MonospaceText(text: String, modifier: Modifier = Modifier) {
     Text(
         text,
         modifier = modifier,
-        fontFamily = FontFamily.Monospace,
+        fontFamily = NexusMono,
         style = MaterialTheme.typography.bodySmall,
     )
 }

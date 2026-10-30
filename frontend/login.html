@@ -19,22 +19,22 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['InterVariable', 'Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
-            mono: ['Roboto Mono', 'ui-monospace', 'SFMono-Regular', 'SF Mono', 'JetBrains Mono', 'Cascadia Mono', 'Menlo', 'Consolas', 'monospace']
+            sans: ['Geist', 'Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+            mono: ['Geist Mono', 'ui-monospace', 'SFMono-Regular', 'SF Mono', 'JetBrains Mono', 'Cascadia Mono', 'Menlo', 'Consolas', 'monospace']
           },
           colors: {
-            brand: { DEFAULT: '#2f81f7', dark: '#1f6feb' },
-            nexus: { 950: '#0d1117', 900: '#161b22', 800: '#1c2128', 700: '#444c56' },
+            brand: { DEFAULT: 'var(--nx-accent)', dark: 'var(--nx-accent-hover)' },
+            nexus: { 950: 'var(--nx-bg)', 900: 'var(--nx-surface)', 800: 'var(--nx-surface-2)', 700: 'var(--nx-border-strong)' },
             slate: {
-              100: '#e6edf3', 300: '#b3bcc8', 400: '#8b949e', 500: '#7d8994',
-              600: '#565e68', 700: '#444c56', 800: '#30363d', 900: '#1c2128', 950: '#0a0d13'
+              100: 'var(--nx-ink)', 300: 'var(--nx-ink-soft)', 400: 'var(--nx-ink-muted)', 500: 'var(--nx-ink-quiet)',
+              600: 'var(--nx-ink-faint)', 700: 'var(--nx-border-strong)', 800: 'var(--nx-border)', 900: 'var(--nx-surface-2)', 950: 'var(--nx-surface-3)'
             },
-            cyan:    { 300: '#2f81f7', 400: '#2f81f7', 500: '#2f81f7' },
-            emerald: { 400: '#9d8cff', 500: '#9d8cff' },
-            violet:  { 400: '#8b949e' },
-            orange:  { 400: '#ff6b6b' },
-            red:     { 400: '#ff6b6b', 500: '#ff6b6b' },
-            danger:  '#ff6b6b'
+            cyan:    { 300: 'var(--nx-accent)', 400: 'var(--nx-accent)', 500: 'var(--nx-accent)' },
+            emerald: { 400: 'var(--nx-accent-2)', 500: 'var(--nx-accent-2)' },
+            violet:  { 400: 'var(--nx-ink-muted)' },
+            orange:  { 400: 'var(--nx-danger)' },
+            red:     { 400: 'var(--nx-danger)', 500: 'var(--nx-danger)' },
+            danger:  'var(--nx-danger)'
           },
           boxShadow: {
             glow: '0 0 0 3px rgba(47, 129, 247, 0.35)'
@@ -44,10 +44,16 @@
     };
   </script>
 
-  <link rel="stylesheet" href="/css/styles.css?v=9" />
+  <link rel="stylesheet" href="/css/styles.css?v=10" />
+  <link rel="stylesheet" href="/css/redesign.css?v=1" />
+  <script src="/js/theme.js"></script>
 </head>
 
-<body class="min-h-screen bg-nexus-950 text-slate-100 font-sans antialiased">
+<body class="min-h-screen bg-nexus-950 text-slate-100 font-sans antialiased nx-auth">
+  <div style="position:fixed;top:14px;right:14px;z-index:100">
+    <button type="button" class="btn btn-ghost btn-sm" data-theme-toggle aria-label="Cambiar tema" title="Cambiar tema">☾</button>
+  </div>
+
 
   <main class="nx-shell nx-shell-form flex min-h-screen flex-col justify-center py-10">
 
@@ -88,12 +94,12 @@
           </label>
           <label class="field">
             <span class="nx-eyebrow">Contraseña</span>
-            <input id="setup-password" type="password" class="input-field" autocomplete="new-password" minlength="10" required />
-            <span class="nx-hint">Mínimo 10 caracteres.</span>
+            <input id="setup-password" type="password" class="input-field" autocomplete="new-password" minlength="9" required />
+            <span class="nx-hint">Mínimo 9 caracteres.</span>
           </label>
           <label class="field">
             <span class="nx-eyebrow">Repite la contraseña</span>
-            <input id="setup-password2" type="password" class="input-field" autocomplete="new-password" minlength="10" required />
+            <input id="setup-password2" type="password" class="input-field" autocomplete="new-password" minlength="9" required />
           </label>
           <div class="nx-t-2">
             <button type="submit" class="btn btn-primary btn-block">Crear administrador y entrar</button>

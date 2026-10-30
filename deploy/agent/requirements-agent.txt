@@ -28,3 +28,8 @@ pydantic-settings==2.15.0
 
 # Envoltorio de Nmap para el escaneo de red (herramienta network.scan).
 python-nmap==0.7.1
+# Canal de terminal PTY saliente (agente -> hub).
+websockets==14.1
+
+# ConPTY en agentes Windows.
+pywinpty>=2.0.15; sys_platform == 'win32'

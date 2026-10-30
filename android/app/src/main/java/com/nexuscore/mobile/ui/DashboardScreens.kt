@@ -1,4 +1,4 @@
-package com.nexuscore.mobile.ui
+﻿package com.nexuscore.mobile.ui
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +25,9 @@ import com.nexuscore.mobile.ui.components.LineChart
 import com.nexuscore.mobile.ui.components.MetricCard
 import com.nexuscore.mobile.ui.components.NexusCard
 import com.nexuscore.mobile.ui.components.SectionTitle
+import com.nexuscore.mobile.ui.components.SensorRow
+import com.nexuscore.mobile.ui.components.statusColor
+import com.nexuscore.mobile.ui.theme.NexusMono
 import com.nexuscore.mobile.ui.components.StatusPill
 import com.nexuscore.mobile.ui.components.formatNumber
 import com.nexuscore.mobile.ui.components.formatPercent
@@ -33,39 +36,56 @@ import com.nexuscore.mobile.ui.components.formatUptime
 @Composable
 fun DashboardScreen(vm: NexusViewModel) {
     val metrics = vm.metrics
+    val host = vm.selectedHost
+    val critical = vm.alertEvents.count { it.status == "open" && it.severity == "crit" }
+    val warning = vm.alertEvents.count { it.status == "open" && it.severity == "warn" }
     LazyColumn(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
             NexusCard {
-                Column(Modifier.padding(16.dp)) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(
                         Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                     ) {
-                        Column {
+                        Column(Modifier.weight(1f)) {
                             Text(
-                                vm.selectedHost?.name ?: "Host",
-                                style = MaterialTheme.typography.titleMedium,
+                                host?.name ?: "Host",
+                                style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.SemiBold,
                             )
                             Text(
-                                vm.selectedHost?.hostname ?: "—",
+                                host?.hostname ?: "—",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        val online = vm.selectedHost?.online == true
                         StatusPill(
-                            if (online) "online" else "offline",
-                            if (online) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error,
+                            if (host?.online == true) "En línea" else "Sin latido",
+                            if (host?.online == true) statusColor("ok") else statusColor("crit"),
                         )
                     }
-                    Spacer(Modifier.height(10.dp))
-                    KeyValue("Sistema", vm.selectedHost?.os ?: "—")
-                    KeyValue("Agente", vm.selectedHost?.agentVersion ?: "—")
-                    KeyValue("Uptime", metrics?.takeIf { it.uptimeSeconds > 0 }?.let { formatUptime(it.uptimeSeconds) } ?: "—")
+                    if (critical > 0 || warning > 0) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (critical > 0) StatusPill("$critical críticas", statusColor("crit"))
+                            if (warning > 0) StatusPill("$warning avisos", statusColor("warn"))
+                        }
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                        listOf(
+                            "Uptime" to (metrics?.takeIf { it.uptimeSeconds > 0 }?.let { formatUptime(it.uptimeSeconds) } ?: "\u2014"),
+                            "N\u00facleos" to (metrics?.cpuCount?.takeIf { it > 0 }?.toString() ?: "\u2014"),
+                            "RAM" to (metrics?.let { formatPercent(it.ramPercent) } ?: "\u2014"),
+                        ).forEach { (label, value) ->
+                            Column(Modifier.weight(1f)) {
+                                Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(value, fontFamily = NexusMono, style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -73,55 +93,106 @@ fun DashboardScreen(vm: NexusViewModel) {
             item { EmptyState("Cargando métricas…") }
         } else {
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    MetricCard(
-                        label = "CPU",
-                        value = formatPercent(metrics.cpuPercent),
-                        detail = if (metrics.cpuCount > 0) "${metrics.cpuCount} núcleos" else "—",
-                        modifier = Modifier.weight(1f),
-                    )
-                    MetricCard(
-                        label = "RAM",
-                        value = formatPercent(metrics.ramPercent),
-                        detail = if (metrics.ramTotalMb > 0) "${formatNumber(metrics.ramUsedMb)} / ${formatNumber(metrics.ramTotalMb)} MB" else "—",
-                        modifier = Modifier.weight(1f),
-                    )
+                NexusCard {
+                    Column {
+                        Row(
+                            Modifier.fillMaxWidth().padding(16.dp, 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                        ) {
+                            Text("Sensores", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                "${host?.name ?: "local"} · ${host?.os ?: "Windows"}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        SensorRow(
+                            name = "CPU",
+                            value = formatPercent(metrics.cpuPercent),
+                            progress = (metrics.cpuPercent / 100.0).toFloat(),
+                            status = sensorStatus(metrics.cpuPercent, 80.0, 92.0),
+                            threshold = "80 / 92 %",
+                        )
+                        SensorRow(
+                            name = "RAM",
+                            value = formatPercent(metrics.ramPercent),
+                            progress = (metrics.ramPercent / 100.0).toFloat(),
+                            status = sensorStatus(metrics.ramPercent, 80.0, 92.0),
+                            threshold = "80 / 92 %",
+                        )
+                        SensorRow(
+                            name = "Disco",
+                            value = formatPercent(metrics.diskPercent),
+                            progress = (metrics.diskPercent / 100.0).toFloat(),
+                            status = sensorStatus(metrics.diskPercent, 80.0, 90.0),
+                            threshold = "80 / 90 %",
+                        )
+                        SensorRow(
+                            name = "Swap",
+                            value = formatPercent(metrics.swapPercent),
+                            progress = (metrics.swapPercent / 100.0).toFloat(),
+                            status = sensorStatus(metrics.swapPercent, 25.0, 60.0),
+                            threshold = "25 / 60 %",
+                        )
+                    }
                 }
             }
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    MetricCard(
-                        label = "Disco",
-                        value = formatPercent(metrics.diskPercent),
-                        modifier = Modifier.weight(1f),
-                    )
-                    MetricCard(
-                        label = "Swap",
-                        value = formatPercent(metrics.swapPercent),
-                        modifier = Modifier.weight(1f),
-                    )
+                val cpuPoints = vm.history?.series?.get("cpu").orEmpty()
+                NexusCard {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("CPU · 60 min", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                cpuPoints.mapNotNull { it.value }.maxOrNull()?.let { "máx ${formatNumber(it)}" } ?: "sin datos",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        LineChart(cpuPoints)
+                    }
                 }
             }
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    MetricCard(
-                        label = "Carga 1m",
-                        value = formatNumber(metrics.loadAvg.firstOrNull() ?: 0.0),
-                        modifier = Modifier.weight(1f),
-                    )
-                    MetricCard(
-                        label = "Temperatura",
-                        value = metrics.cpuTempC?.let { "%.1f °C".format(it) } ?: "—",
-                        modifier = Modifier.weight(1f),
-                    )
+                NexusCard {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Alarmas", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        if (critical == 0 && warning == 0) {
+                            Text(
+                                "Sin alarmas abiertas en esta sesión.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        } else {
+                            vm.alertEvents.filter { it.status == "open" }.take(3).forEach { event ->
+                                Row(
+                                    Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                ) {
+                                    Text(
+                                        "${event.metric?.uppercase() ?: "ALERTA"} · ${event.value?.let { formatNumber(it) } ?: "—"}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Medium,
+                                    )
+                                    StatusPill(
+                                        if (event.severity == "crit") "Crítica" else "Aviso",
+                                        statusColor(if (event.severity == "crit") "crit" else "warn"),
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
-            item { SectionTitle("CPU · últimos 60 minutos", "1h") }
-            item { ChartCard(vm.history?.series?.get("cpu").orEmpty()) }
-            item { SectionTitle("RAM · últimos 60 minutos", "1h") }
-            item { ChartCard(vm.history?.series?.get("ram").orEmpty()) }
         }
     }
+}
+
+private fun sensorStatus(value: Double, warn: Double, crit: Double): String = when {
+    value >= crit -> "crítico"
+    value >= warn -> "aviso"
+    else -> "correcto"
 }
 
 @Composable
@@ -213,3 +284,4 @@ fun HistoryScreen(vm: NexusViewModel) {
         }
     }
 }
+

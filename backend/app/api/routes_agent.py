@@ -28,13 +28,14 @@ host lo hace constante).
 from __future__ import annotations
 
 import asyncio
+import json
 import time
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, WebSocket, WebSocketDisconnect, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.core import fleet
+from app.core import agent_terminals, fleet
 from app.core.audit import audit
 from app.core.logging_conf import logger
 from app.modules import alerts, metrics_store, notifications
@@ -92,6 +93,55 @@ def require_agent(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return host
+
+
+# ========================== Terminal por agente ==========================
+@router.websocket("/agent/terminal")
+async def agent_terminal_socket(websocket: WebSocket) -> None:
+    """Canal PTY saliente del agente (autenticado por su token)."""
+    raw_auth = websocket.headers.get("authorization", "")
+    token = raw_auth[7:].strip() if raw_auth.lower().startswith("bearer ") else ""
+    if not token:
+        token = websocket.query_params.get("token", "")
+    host = fleet.authenticate(token)
+    if host is None:
+        await websocket.close(code=4401, reason="Token de agente inv?lido.")
+        return
+
+    await websocket.accept()
+    try:
+        hello_raw = await asyncio.wait_for(websocket.receive_text(), timeout=8)
+        hello = json.loads(hello_raw)
+    except (asyncio.TimeoutError, json.JSONDecodeError):
+        await websocket.close(code=4400, reason="Falta el hello del agente.")
+        return
+    if hello.get("type") != "hello":
+        await websocket.close(code=4400, reason="Mensaje inicial inv?lido.")
+        return
+
+    version = str(hello.get("version") or "0")
+    connection = agent_terminals.AgentTerminalConnection(
+        host_id=int(host["id"]),
+        host_name=str(host.get("name") or host.get("hostname") or host["id"]),
+        version=version,
+        websocket=websocket,
+    )
+    agent_terminals.register(connection)
+    logger.info(
+        "Canal de terminal conectado: host={} version={}",
+        connection.host_id,
+        version,
+    )
+    try:
+        await websocket.send_text(
+            json.dumps({"type": "welcome", "host_id": connection.host_id})
+        )
+        await connection.reader()
+    except WebSocketDisconnect:
+        pass
+    finally:
+        agent_terminals.unregister(connection)
+        logger.info("Canal de terminal desconectado: host={}", connection.host_id)
 
 
 # ============================= Enrolamiento =============================

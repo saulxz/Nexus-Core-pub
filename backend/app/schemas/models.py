@@ -193,9 +193,9 @@ class AuthSetupRequest(BaseModel):
     username: str = Field(..., min_length=3, max_length=64, description="Usuario administrador.")
     password: str = Field(
         ...,
-        min_length=10,
+        min_length=9,
         max_length=256,
-        description="Contraseña del panel (mínimo 10 caracteres).",
+        description="Contraseña del panel (mínimo 9 caracteres).",
     )
 
 
@@ -230,7 +230,7 @@ class AuthPasswordChangeRequest(BaseModel):
 
     current_password: str = Field(..., description="Contraseña actual.")
     new_password: str = Field(
-        ..., min_length=10, max_length=256, description="Nueva contraseña."
+        ..., min_length=9, max_length=256, description="Nueva contraseña."
     )
 
 
