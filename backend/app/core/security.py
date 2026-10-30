@@ -30,7 +30,7 @@ from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
 from fastapi import HTTPException, Request, Response, status
 
-from app.core import totp
+from app.core import secret_storage, totp
 from app.core.audit import audit
 from app.core.config import get_settings
 from app.core.logging_conf import logger
@@ -481,7 +481,11 @@ def stage_totp(username: str, secret: str, recovery_hashes: list[str]) -> None:
         conn.execute(
             "UPDATE admin SET totp_secret = ?, totp_enabled = 0, totp_recovery = ?, "
             "totp_last_step = NULL WHERE username = ?",
-            (secret, json.dumps(recovery_hashes, ensure_ascii=False), username),
+            (
+                secret_storage.encrypt(secret),
+                json.dumps(recovery_hashes, ensure_ascii=False),
+                username,
+            ),
         )
         conn.commit()
     finally:
@@ -544,7 +548,16 @@ def verify_second_factor(username: str, code: str, now: float | None = None) -> 
         if row is None or not row["totp_secret"]:
             return {"ok": False, "method": None, "recovery_left": 0, "reason": None}
 
-        secret = str(row["totp_secret"])
+        try:
+            secret = secret_storage.decrypt(str(row["totp_secret"]))
+        except ValueError:
+            logger.error("El secreto TOTP no se pudo descifrar; se rechaza el intento")
+            return {
+                "ok": False,
+                "method": None,
+                "recovery_left": int(get_totp_state(username)["recovery_left"]),
+                "reason": None,
+            }
         step = totp.verify_step(secret, code, timestamp=moment)
         if step is not None:
             last_step = row["totp_last_step"]

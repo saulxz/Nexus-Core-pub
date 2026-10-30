@@ -115,6 +115,22 @@ y reconecta solo si el hub se reinicia. Si cambia la URL del hub (por ejemplo, u
 Quick Tunnel nuevo), vuelve a ejecutar el instalador con la URL y el token actuales;
 el host se reenrola.
 
+### Android nativo
+
+También hay un cliente **Android nativo** en [`android/`](android/README.md), escrito
+en **Kotlin + Jetpack Compose** y sin WebView. Consume la misma API HTTPS, permite
+login con 2FA, gestionar hosts/alertas/auditoría y las operaciones principales desde
+el móvil. No replica la base SQLite del hub.
+
+```bash
+cd android
+./gradlew :app:assembleDebug
+```
+
+El APK de debug queda en `android/app/build/outputs/apk/debug/app-debug.apk`.
+La URL del hub se configura en la pantalla de login; el valor de ejemplo es
+`https://nexus.example.com`.
+
 ### Publicación segura
 
 - **Caddy + dominio**: TLS automático, HSTS y cabeceras; ver `deploy/PRODUCCION.md`.
@@ -141,7 +157,7 @@ python -m pytest backend/tests -q
 ```
 
 El proyecto incluye pruebas de autenticación, alertas, métricas, monitores,
-multi-host, seguridad y sistema. La suite actual pasa con **231 tests y 1 omitido**.
+multi-host, seguridad y sistema. La suite actual pasa con **247 tests y 1 omitido**.
 
 ---
 

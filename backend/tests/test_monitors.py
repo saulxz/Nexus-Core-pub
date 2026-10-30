@@ -917,18 +917,27 @@ def test_prometheus_counts_open_alerts_by_severity() -> None:
     assert 'nexus_alerts_open{severity="warn"} 1' in body
 
 
-def test_prometheus_endpoint_content_type() -> None:
+def test_prometheus_endpoint_content_type(monkeypatch: pytest.MonkeyPatch) -> None:
     """El endpoint sirve el Content-Type del formato de texto 0.0.4."""
-    response = TestClient(app).get("/api/metrics/prometheus")
-    assert response.status_code == 200
-    assert response.headers["content-type"] == "text/plain; version=0.0.4; charset=utf-8"
-    assert response.text.endswith("\n")
+    monkeypatch.setenv("METRICS_TOKEN", "metrics-de-prueba")
+    get_settings.cache_clear()
+    try:
+        response = TestClient(app).get(
+            "/api/metrics/prometheus",
+            headers={"Authorization": "Bearer metrics-de-prueba"},
+        )
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "text/plain; version=0.0.4; charset=utf-8"
+        assert response.text.endswith("\n")
+    finally:
+        monkeypatch.delenv("METRICS_TOKEN", raising=False)
+        get_settings.cache_clear()
 
 
-def test_prometheus_is_public_without_token() -> None:
-    """Sin METRICS_TOKEN configurado el endpoint es público."""
+def test_prometheus_is_closed_without_token() -> None:
+    """Sin METRICS_TOKEN el exportador no se publica en Internet."""
     assert get_settings().METRICS_TOKEN == ""
-    assert TestClient(app).get("/api/metrics/prometheus").status_code == 200
+    assert TestClient(app).get("/api/metrics/prometheus").status_code == 404
 
 
 def test_prometheus_requires_bearer_token_when_configured(

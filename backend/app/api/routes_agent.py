@@ -63,6 +63,11 @@ DEFAULT_POLL_SECONDS = 4
 #: Cada cuánto se comprueba la base de datos durante el long-poll.
 POLL_INTERVAL = 1.0
 
+#: Máximo de long-polls simultáneos por host. Un agente normal usa uno.
+MAX_CONCURRENT_POLLS = 2
+_active_polls: dict[int, int] = {}
+_poll_lock = asyncio.Lock()
+
 
 def require_agent(
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
@@ -236,23 +241,43 @@ async def poll_commands(
     es atómica, así que aunque dos sondeos se solapen solo uno se lo lleva.
     """
     host_id = int(host["id"])
-    deadline = time.monotonic() + max(0, wait)
-    while True:
-        command = fleet.next_pending_command(host_id)
-        if command is not None:
-            logger.info(
-                "Host {} toma el comando {} ({})", host_id, command["id"], command["tool"]
+    async with _poll_lock:
+        active = _active_polls.get(host_id, 0)
+        if active >= MAX_CONCURRENT_POLLS:
+            return Response(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                headers={"Retry-After": "5"},
+                content="Demasiados long-polls simultáneos para este host.",
             )
-            return AgentCommand(
-                id=int(command["id"]),
-                tool=str(command["tool"]),
-                args=dict(command.get("args") or {}),
-                created_at=command.get("created_at"),
-            )
-        remaining = deadline - time.monotonic()
-        if remaining <= 0:
-            return Response(status_code=status.HTTP_204_NO_CONTENT)
-        await asyncio.sleep(min(POLL_INTERVAL, remaining))
+        _active_polls[host_id] = active + 1
+    try:
+        deadline = time.monotonic() + max(0, wait)
+        while True:
+            command = fleet.next_pending_command(host_id)
+            if command is not None:
+                logger.info(
+                    "Host {} toma el comando {} ({})",
+                    host_id,
+                    command["id"],
+                    command["tool"],
+                )
+                return AgentCommand(
+                    id=int(command["id"]),
+                    tool=str(command["tool"]),
+                    args=dict(command.get("args") or {}),
+                    created_at=command.get("created_at"),
+                )
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return Response(status_code=status.HTTP_204_NO_CONTENT)
+            await asyncio.sleep(min(POLL_INTERVAL, remaining))
+    finally:
+        async with _poll_lock:
+            remaining = _active_polls.get(host_id, 1) - 1
+            if remaining <= 0:
+                _active_polls.pop(host_id, None)
+            else:
+                _active_polls[host_id] = remaining
 
 
 @router.post(

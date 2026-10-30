@@ -1,13 +1,21 @@
-# Túnel con nombre (URL fija). Requiere un dominio dado de alta en Cloudflare.
-# 1) cloudflared tunnel login
-# 2) cloudflared tunnel create nexus-core
-# 3) cloudflared tunnel route dns nexus-core nexus.tudominio.com
-# 4) Copia este fichero a %USERPROFILE%\.cloudflared\config.yml y ajusta UUID/dominio.
-# 5) cloudflared tunnel run nexus-core
+# Tunel con nombre (URL fija) para nexus.labsxz.com.
+# labsxz.com ya usa los nameservers de Cloudflare, asi que no hay que
+# cambiar DNS en el registrador.
+#
+# Pasos manuales equivalentes:
+#   1) cloudflared tunnel login
+#   2) cloudflared tunnel create nexus-core
+#   3) cloudflared tunnel route dns nexus-core nexus.labsxz.com
+#   4) Copia este fichero a %USERPROFILE%\.cloudflared\config.yml y ajusta UUID/ruta.
+#   5) cloudflared tunnel run nexus-core
+#
+# Alternativa automatizada (recomendada):
+#   powershell -ExecutionPolicy Bypass -File deploy\tunnel\setup-named-tunnel.ps1
+
 tunnel: RELLENA-EL-UUID
 credentials-file: C:\Users\TU-USUARIO\.cloudflared\RELLENA-EL-UUID.json
 
 ingress:
-  - hostname: nexus.tudominio.com
+  - hostname: nexus.labsxz.com
     service: http://127.0.0.1:8780
   - service: http_status:404

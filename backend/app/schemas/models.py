@@ -394,6 +394,15 @@ class SambaShare(BaseModel):
             raise ValueError("Lista de usuarios no válida.")
         return value
 
+    @field_validator("comment")
+    @classmethod
+    def _validate_comment(cls, value: str) -> str:
+        # El comentario se escribe literal en smb.conf: un salto de línea
+        # permitiría inyectar directivas (p. ej. root preexec).
+        if "\n" in value or "\r" in value:
+            raise ValueError("El comentario no puede contener saltos de línea.")
+        return value
+
 
 class SambaConfig(BaseModel):
     """Configuración completa de Samba gestionada por el panel."""

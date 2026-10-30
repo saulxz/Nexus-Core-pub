@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     PORT: int = 8000
     API_PREFIX: str = "/api"
     LOG_LEVEL: str = "INFO"
+    # Documentación interactiva desactivada por defecto en producción.
+    ENABLE_DOCS: bool = False
+    # Tamaño máximo de cuerpo HTTP (2 MiB); evita heartbeats/JSON gigantes.
+    MAX_REQUEST_BYTES: int = 2_097_152
     # Orígenes permitidos por CORS, separados por comas. Vacío = sin CORS
     # (same-origin), que es el modo recomendado: panel y API se sirven desde
     # el mismo host. "*" queda desaconsejado (se ignora con aviso).
@@ -51,6 +55,9 @@ class Settings(BaseSettings):
     SESSION_ABSOLUTE_HOURS: int = 8
     # Marcar la cookie como "Secure" cuando el panel se sirva por HTTPS.
     SESSION_COOKIE_SECURE: bool = False
+    # Redirigir a HTTPS cuando Cloudflare indique que la petición original fue
+    # HTTP. El panel local de pywebview (127.0.0.1) queda excluido.
+    ENFORCE_HTTPS: bool = False
     # Límite de intentos de login por usuario+IP dentro de la ventana.
     LOGIN_RATE_LIMIT: int = 5
     LOGIN_RATE_WINDOW_SECONDS: int = 900

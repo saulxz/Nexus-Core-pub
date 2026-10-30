@@ -1,17 +1,17 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es" class="scroll-smooth">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- Marca de JS: sin ella el CSS no oculta nada y la página se ve entera. -->
+  <!-- Marca de JS: sin ella el CSS no oculta nada y la pÃ¡gina se ve entera. -->
   <script>document.documentElement.classList.add('js');</script>
   <meta name="robots" content="noindex" />
-  <title>Nexus-Core · Ajustes</title>
+  <title>Nexus-Core Â· Ajustes</title>
 
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%23161b22'/%3E%3Cpath%20d='M11%2021.5v-11l10%2011v-11'%20fill='none'%20stroke='%232f81f7'%20stroke-width='2.6'%20stroke-linecap='round'%20stroke-linejoin='round'/%3E%3C/svg%3E" />
   <meta name="theme-color" content="#0d1117" />
 
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/vendor/tailwind.js"></script>
   <script>
     // Misma paleta que el panel: grafito neutro + azul corporativo.
     tailwind.config = {
@@ -66,7 +66,7 @@
         </a>
         <div class="nx-header-tools">
           <a href="/" class="btn btn-ghost btn-sm">Volver al panel</a>
-          <button id="logout-btn" type="button" class="btn btn-ghost btn-sm">Cerrar sesión</button>
+          <button id="logout-btn" type="button" class="btn btn-ghost btn-sm">Cerrar sesiÃ³n</button>
         </div>
       </div>
     </div>
@@ -82,10 +82,10 @@
       <!-- ---------- Grupo 1: proveedor y modelo ---------- -->
       <div class="nx-card-body nx-stack">
         <div class="nx-auth-head">
-          <p class="nx-eyebrow">Selección del modelo</p>
+          <p class="nx-eyebrow">SelecciÃ³n del modelo</p>
           <p class="panel-note">
-            El agente usa un único proveedor. Los cambios se escriben en el fichero
-            de configuración del servidor (permisos 0600) y se aplican al instante:
+            El agente usa un Ãºnico proveedor. Los cambios se escriben en el fichero
+            de configuraciÃ³n del servidor (permisos 0600) y se aplican al instante:
             no hace falta reiniciar ni editar ficheros a mano.
           </p>
         </div>
@@ -118,8 +118,8 @@
         <div class="nx-auth-head">
           <p class="nx-eyebrow">Claves de API</p>
           <p class="panel-note">
-            Deja vacío el campo para conservar la clave ya guardada. Las claves no se
-            muestran de vuelta ni se escriben en el registro de auditoría.
+            Deja vacÃ­o el campo para conservar la clave ya guardada. Las claves no se
+            muestran de vuelta ni se escriben en el registro de auditorÃ­a.
           </p>
         </div>
 
@@ -129,7 +129,7 @@
               <span class="nx-eyebrow">OpenAI</span>
               <span id="key-openai-state" class="nx-key-state">Sin configurar</span>
             </span>
-            <input id="key-openai" type="password" class="input-field input-field--mono" placeholder="sk-…" autocomplete="off" spellcheck="false" />
+            <input id="key-openai" type="password" class="input-field input-field--mono" placeholder="sk-â€¦" autocomplete="off" spellcheck="false" />
           </label>
 
           <label class="field">
@@ -137,7 +137,7 @@
               <span class="nx-eyebrow">Anthropic</span>
               <span id="key-anthropic-state" class="nx-key-state">Sin configurar</span>
             </span>
-            <input id="key-anthropic" type="password" class="input-field input-field--mono" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" />
+            <input id="key-anthropic" type="password" class="input-field input-field--mono" placeholder="sk-ant-â€¦" autocomplete="off" spellcheck="false" />
           </label>
 
           <label class="field">
@@ -145,7 +145,7 @@
               <span class="nx-eyebrow">Google Gemini</span>
               <span id="key-gemini-state" class="nx-key-state">Sin configurar</span>
             </span>
-            <input id="key-gemini" type="password" class="input-field input-field--mono" placeholder="AIza…" autocomplete="off" spellcheck="false" />
+            <input id="key-gemini" type="password" class="input-field input-field--mono" placeholder="AIzaâ€¦" autocomplete="off" spellcheck="false" />
           </label>
         </div>
       </div>
@@ -156,7 +156,7 @@
           <summary class="nx-summary">Endpoints personalizados</summary>
           <p class="panel-note mt-3">
             Solo para proveedores compatibles o modelos servidos por tu propia
-            infraestructura. Déjalo vacío para usar las URLs por defecto.
+            infraestructura. DÃ©jalo vacÃ­o para usar las URLs por defecto.
           </p>
           <div class="nx-form-stack mt-4">
             <label class="field">
@@ -179,7 +179,7 @@
       <div class="nx-card-body">
         <div class="nx-actions">
           <button type="submit" class="btn btn-primary" id="save-btn">Guardar cambios</button>
-          <button type="button" class="btn btn-ghost" id="test-btn">Probar conexión</button>
+          <button type="button" class="btn btn-ghost" id="test-btn">Probar conexiÃ³n</button>
           <span class="nx-actionbar-note">Se aplican en caliente, sin reiniciar</span>
         </div>
         <p id="save-status" class="nx-status hidden" role="status"></p>
@@ -187,17 +187,17 @@
     </form>
 
     <p class="nx-foot">
-      nexus-core · consola de administración · acceso auditado
+      nexus-core Â· consola de administraciÃ³n Â· acceso auditado
     </p>
   </main>
 
   <script>
     // ===================== Revelado al hacer scroll =====================
-    /* Motor del sistema, idéntico al de app.js: revela los bloques
+    /* Motor del sistema, idÃ©ntico al de app.js: revela los bloques
        [data-reveal] al entrar en pantalla, con cascada entre hermanos y
        sin desplazamiento si el usuario prefiere menos movimiento.
-       Es el MISMO bloque que app.js y login.html: esta página no
-       carga app.js porque su arranque es exclusivo del panel, así que el
+       Es el MISMO bloque que app.js y login.html: esta pÃ¡gina no
+       carga app.js porque su arranque es exclusivo del panel, asÃ­ que el
        motor tiene que llegarle sin salir del <body>. */
     function initScrollReveal() {
       const items = Array.from(document.querySelectorAll('[data-reveal]'));
@@ -264,7 +264,7 @@
       });
       if (response.status === 401) {
         window.location.href = "/login.html";
-        throw new Error("Sesión caducada");
+        throw new Error("SesiÃ³n caducada");
       }
       let body = null;
       try { body = await response.json(); } catch (_) { /* respuesta sin cuerpo */ }
@@ -278,7 +278,7 @@
     function renderKeyState(elementId, secret) {
       const el = $(elementId);
       if (secret && secret.configured) {
-        el.textContent = "Configurada · " + secret.masked;
+        el.textContent = "Configurada Â· " + secret.masked;
         el.className = "nx-key-state nx-key-state--set";
       } else {
         el.textContent = "Sin configurar";
@@ -313,7 +313,7 @@
       try {
         applyState(await api("/api/settings/ai"));
       } catch (error) {
-        setStatus("No se pudo cargar la configuración: " + error.message, "error");
+        setStatus("No se pudo cargar la configuraciÃ³n: " + error.message, "error");
       }
     }
 
@@ -329,13 +329,13 @@
       const names = { openai: "OpenAI", anthropic: "Anthropic", gemini: "Google Gemini", ollama: "Ollama" };
       if (typedProvider && typedProvider !== selectedProvider) {
         if (window.confirm(
-          `Has pegado una clave de ${names[typedProvider]} pero el proveedor seleccionado es ${names[selectedProvider]}. ¿Quieres activar ${names[typedProvider]} como proveedor?`
+          `Has pegado una clave de ${names[typedProvider]} pero el proveedor seleccionado es ${names[selectedProvider]}. Â¿Quieres activar ${names[typedProvider]} como proveedor?`
         )) {
           $("ai-provider").value = typedProvider;
         }
       }
       // Si el proveedor elegido no tiene clave pero hay otra clave guardada,
-      // se ofrece activar el que sí funciona (un solo clic).
+      // se ofrece activar el que sÃ­ funciona (un solo clic).
       const chosen = $("ai-provider").value;
       const chosenNeedsKey = ["openai", "anthropic", "gemini"].includes(chosen) &&
         !(currentKeys[chosen] && currentKeys[chosen].configured);
@@ -345,7 +345,7 @@
       if (chosenNeedsKey && readyProviders.length >= 1) {
         const alt = readyProviders[0];
         if (window.confirm(
-          `El proveedor seleccionado (${names[chosen]}) no tiene clave, pero tienes una clave de ${names[alt]} guardada. ¿Activar ${names[alt]}?`
+          `El proveedor seleccionado (${names[chosen]}) no tiene clave, pero tienes una clave de ${names[alt]} guardada. Â¿Activar ${names[alt]}?`
         )) {
           $("ai-provider").value = alt;
         }
@@ -375,7 +375,7 @@
         const activeKey = state.keys[state.provider];
         if (activeKey && !activeKey.configured) {
           setStatus(
-            `Guardado, pero el proveedor activo (${state.provider}) todavía no tiene clave: el asistente responderá con un aviso hasta que se la añadas.`,
+            `Guardado, pero el proveedor activo (${state.provider}) todavÃ­a no tiene clave: el asistente responderÃ¡ con un aviso hasta que se la aÃ±adas.`,
             "error"
           );
         } else {
@@ -389,14 +389,14 @@
     });
 
     $("test-btn").addEventListener("click", async () => {
-      setStatus("Probando conexión con el proveedor…", "info");
+      setStatus("Probando conexiÃ³n con el proveedorâ€¦", "info");
       $("test-btn").disabled = true;
       try {
         const result = await api("/api/settings/ai/test", { method: "POST" });
         if (result.ok) {
-          setStatus(`Conexión correcta: ${result.provider} / ${result.model} · ${result.latency_ms} ms.`, "ok");
+          setStatus(`ConexiÃ³n correcta: ${result.provider} / ${result.model} Â· ${result.latency_ms} ms.`, "ok");
         } else {
-          setStatus("Fallo de conexión: " + result.detail, "error");
+          setStatus("Fallo de conexiÃ³n: " + result.detail, "error");
         }
       } catch (error) {
         setStatus("Error al probar: " + error.message, "error");

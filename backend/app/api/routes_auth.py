@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request, Response, status
 
-from app.core import security
+from app.core import security, web_security
 from app.core.audit import audit
 from app.core.config import get_settings
 from app.schemas.models import (
@@ -24,21 +24,30 @@ router = APIRouter(tags=["auth"])
 
 
 def _client_ip(request: Request) -> str:
-    """IP del cliente (para la limitación de intentos y la auditoría)."""
-    return request.client.host if request.client else "desconocida"
+    """IP real del cliente (Cloudflare/XFF solo desde el proxy local)."""
+    return web_security.client_ip(request)
 
 
-def _open_session(username: str, response: Response, *, reason: str) -> AuthSessionResponse:
+def _open_session(
+    request: Request, username: str, response: Response, *, reason: str
+) -> AuthSessionResponse:
     """Crea la sesión, fija la cookie y devuelve el token CSRF."""
     settings = get_settings()
     token, csrf, _expires = security.create_session(
         username, settings.SESSION_IDLE_MINUTES, settings.SESSION_ABSOLUTE_HOURS
     )
+    # Secure en cualquier host público (aunque cloudflared entregue HTTP al
+    # origen) y en HTTPS; el panel local de pywebview sigue funcionando por HTTP.
+    secure = (
+        settings.SESSION_COOKIE_SECURE
+        or web_security.is_https(request)
+        or (settings.ENFORCE_HTTPS and not web_security.is_local_request(request))
+    )
     security.set_session_cookie(
         response,
         token,
         max_age=int(settings.SESSION_ABSOLUTE_HOURS * 3600),
-        secure=settings.SESSION_COOKIE_SECURE,
+        secure=secure,
     )
     audit("auth.session.created", actor=username, details={"motivo": reason})
     return AuthSessionResponse(authenticated=True, username=username, csrf=csrf)
@@ -59,10 +68,12 @@ async def setup_status() -> AuthSetupStatusResponse:
     response_model=AuthSessionResponse,
     summary="Completa el primer arranque",
 )
-async def setup(payload: AuthSetupRequest, response: Response) -> AuthSessionResponse:
+async def setup(
+    payload: AuthSetupRequest, request: Request, response: Response
+) -> AuthSessionResponse:
     """Crea el administrador con el token de configuración y abre sesión."""
     security.complete_setup(payload.token, payload.username, payload.password)
-    return _open_session(payload.username.strip(), response, reason="setup")
+    return _open_session(request, payload.username.strip(), response, reason="setup")
 
 
 @router.post("/auth/login", response_model=AuthSessionResponse, summary="Inicia sesión")
@@ -129,7 +140,7 @@ async def login(
 
     security.clear_login_attempts(user_key)
     audit("auth.login", actor=username, result="ok", details={"ip": ip})
-    return _open_session(username, response, reason="login")
+    return _open_session(request, username, response, reason="login")
 
 
 @router.post("/auth/logout", summary="Cierra la sesión")

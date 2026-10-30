@@ -1,0 +1,68 @@
+# Nexus-Core Android
+
+Cliente **nativo** de Nexus-Core para Android. Está hecho con **Kotlin + Jetpack Compose** y no usa WebView: toda la interfaz es nativa.
+
+## Estado
+
+- 14 secciones nativas: Resumen, Hosts, Contenedores, Servicios, Red, Alertas, Histórico, Monitores, Auditoría, Sistema, Seguridad, Terminal, Asistente y Ajustes.
+- Login con **usuario + contraseña + TOTP** (Google Authenticator).
+- Sesión persistente con cookie HTTP-only y **CSRF**.
+- Selector global de host y datos del hub central.
+- Auditor Lynis-style con puntuación, hallazgos, baseline y registro.
+- Acciones principales: hosts, contenedores, servicios, alertas, monitores, tokens y sesiones.
+- **Cambio de IP del hub** con planificación, watchdog, confirmación y reversión.
+- **Gestión completa de 2FA**: alta, activación con código, códigos de recuperación y desactivación con contraseña.
+- **Editor de IA**: proveedor, modelo, temperatura, URLs base y claves (las claves actuales nunca se muestran).
+- Terminal SSH nativa por WebSocket (si el hub tiene `TERMINAL_TARGETS`).
+- Asistente con propuestas pendientes de confirmación.
+- Aviso de alertas en segundo plano con WorkManager cada 15 minutos.
+- HTTPS obligatorio, sin tráfico en claro.
+
+## Compilar
+
+Requisitos: Android Studio 2026.2 o compatible, SDK Android 37 y Build Tools 36.
+
+Abre la carpeta `android/` directamente en Android Studio y pulsa **Run**, o desde consola:
+
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
+.\gradlew.bat :app:assembleDebug
+```
+
+APK:
+
+```text
+app\build\outputs\apk\debug\app-debug.apk
+```
+
+También hay una copia en:
+
+```text
+dist\Nexus-Core-Android.apk
+```
+
+## Configuración
+
+- URL por defecto: `https://nexus.example.com`.
+- Usuario: el mismo del panel.
+- 2FA: el código de Google Authenticator o un código de recuperación.
+- La app no guarda la contraseña; guarda la sesión cifrada con Android Keystore.
+
+## Límites conscientes
+
+- **No FCM**: la sincronización en segundo plano usa WorkManager (mínimo 15 minutos). Para push inmediato habría que añadir Firebase/FCM al hub.
+- **Cambio de IP** solo está soportado en el hub local con netplan; en un host remoto se hace desde el panel web.
+- **Reconfigurar 2FA** invalida el secreto anterior en cuanto se inicia el alta; la app avisa y muestra los códigos nuevos una única vez.
+- La terminal solo funciona en hosts con destino en `TERMINAL_TARGETS`; si no está configurado, muestra el motivo.
+- La app consulta el hub en vivo; no replica la SQLite central ni guarda una copia completa de la base de datos.
+- Los logs/stats locales de contenedores dependen de que el hub exponga esas rutas; en hosts remotos se ejecutan por el agente.
+- APK de debug firmado con la clave de debug. Para distribuirlo por Play Store hay que crear una release firmada, política de privacidad y ficha de tienda.
+
+## Seguridad
+
+- HTTPS y validación de certificado del sistema.
+- Sin `usesCleartextTraffic`.
+- Cookie de sesión Secure/HttpOnly, CSRF en cada mutación.
+- Credenciales de sesión en `EncryptedSharedPreferences`.
+- No se incrustan tokens `write` en la app.
+- Confirmación explícita para eliminar contenedores, reglas, hosts y limpiar Docker.

@@ -302,6 +302,7 @@ marcadores como <code>&lt;TOKEN&gt;</code>. Ninguna credencial real aparece en e
 <li><a href="#83-agente-en-otra-maquina">8.3 Agente en otra máquina</a></li>
 <li><a href="#84-backups-y-actualizacion">8.4 Backups y actualización</a></li>
 <li><a href="#85-diagnostico-rapido">8.5 Diagnóstico rápido</a></li>
+<li><a href="#86-cliente-android-nativo">8.6 Cliente Android nativo</a></li>
 </ul>
 </li>
 <li><a href="#9-laboratorios-para-el-aula">9. Laboratorios para el aula</a><ul>
@@ -790,8 +791,8 @@ hacia dentro.</p>
 </tr>
 <tr>
 <td>Datos</td>
-<td>Backups con integridad y permisos 0600</td>
-<td>La copia también es un secreto</td>
+<td>TOTP, IA y backups cifrados; claves fuera del directorio de datos</td>
+<td>Una copia robada no debe revelar secretos</td>
 </tr>
 <tr>
 <td>IA</td>
@@ -831,6 +832,13 @@ lo que evita un falso sentido de seguridad.</p>
   ejecuta apt sin recibir comandos del panel. Las unidades relajan el sandbox para que apt
   escriba, pero la aplicación y el agente siguen como usuarios sin privilegios.</li>
 <li>El escaneo de red se limita a rangos privados y requiere autorización.</li>
+<li>Los tokens de API con ámbito <code>read</code> no pueden leer el token de enrolamiento.</li>
+<li><code>/docs</code>, <code>/openapi.json</code> y Prometheus quedan cerrados por defecto; si se necesita
+  Prometheus, se define <code>METRICS_TOKEN</code>.</li>
+<li>Los comentarios de Samba no aceptan CR/LF y el agente exige HTTPS; el hub limita
+  el tamaño del cuerpo y los long-polls por host.</li>
+<li>El rate limiting usa <code>CF-Connecting-IP</code> cuando la petición llega desde loopback
+  (Cloudflare), no una cabecera arbitraria del cliente.</li>
 </ul>
 <h2 id="65-secretos-y-configuracion">6.5 Secretos y configuración</h2>
 <ul>
@@ -838,7 +846,8 @@ lo que evita un falso sentido de seguridad.</p>
   ejemplos con marcadores.</li>
 <li>El token de enrolamiento se puede rotar; los hosts ya enrolados conservan su token propio.</li>
 <li>La configuración de producción vive en <code>/etc/nexus/nexus.env</code> con permisos 0600.</li>
-<li>Los backups incluyen secretos: se guardan cifrados o fuera del servidor y con permisos 0600.</li>
+<li>TOTP, claves de IA y backups se cifran con Fernet; la clave maestra queda fuera de
+  <code>NEXUS_DATA_DIR</code> y no se incluye en los backups. Los archivos siguen siendo 0600.</li>
 </ul>
 <h2 id="66-despliegue-en-internet">6.6 Despliegue en Internet</h2>
 <p>Dos opciones habituales:</p>
@@ -991,6 +1000,26 @@ sudo bash deploy/update.sh
 </tbody>
 </table>
 <hr />
+<h2 id="86-cliente-android-nativo">8.6 Cliente Android nativo</h2>
+<p>Además del panel web, Nexus-Core incluye una aplicación <strong>Android nativa</strong> en
+<code>android/</code>, escrita en <strong>Kotlin + Jetpack Compose</strong>. No usa WebView: toda la
+interfaz es nativa y consume la misma API HTTPS del hub.</p>
+<ul>
+<li><strong>14 secciones</strong>: Resumen, Hosts, Contenedores, Servicios, Red, Alertas,
+  Histórico, Monitores, Auditoría, Sistema, Seguridad, Terminal, Asistente y Ajustes.</li>
+<li>Login con <strong>contraseña + TOTP</strong> (Google Authenticator), cookie de sesión y CSRF.</li>
+<li>Selector global de host; la app no replica la base SQLite del hub, consulta la API.</li>
+<li>Permite gestionar hosts, contenedores, servicios, alertas, monitores, tokens,
+  sesiones, auditoría, baseline, terminal SSH, asistente, cambio de IP, 2FA y la
+  configuración de IA.</li>
+<li>La sesión se guarda cifrada con Android Keystore; no se incrustan tokens <code>write</code>.</li>
+<li>APK de debug: <code>android/app/build/outputs/apk/debug/app-debug.apk</code>.</li>
+<li>Se compila abriendo <code>android/</code> en Android Studio (SDK 37) o con
+  <code>android\gradlew.bat :app:assembleDebug</code>.</li>
+</ul>
+<p>Límites actuales: las notificaciones en segundo plano usan WorkManager cada 15
+minutos (no FCM), el cambio de IP solo aplica al hub local con netplan y la app
+no guarda una copia offline completa.</p>
 <h1 id="9-laboratorios-para-el-aula">9. Laboratorios para el aula</h1>
 <blockquote>
 <p>Todos los ejercicios se hacen en una red de laboratorio propia y con autorización. No se
@@ -1194,6 +1223,7 @@ Access? (No se implementó en esta versión.)</p>
     modules/            colector, Docker, systemd, red, SMART, FIM, diagnóstico local
     ai/                 proveedor, herramientas y acciones pendientes
 frontend/               panel, login, ajustes y estilos
+android/                app nativa Kotlin + Jetpack Compose
 deploy/                 instalación, agentes, systemd, Caddy, producción y backups
 docs/                   memoria del TFG y esta guía
 </code></pre>

@@ -28,7 +28,7 @@ from typing import Any, AsyncIterator, Callable
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -53,7 +53,7 @@ from app.api.routes_services import router as services_router
 from app.api.routes_settings import router as settings_router
 from app.api.routes_system import router as system_router
 from app.api.routes_terminal import router as terminal_router
-from app.core import db, security, settings_store
+from app.core import db, security, settings_store, web_security
 from app.core.audit import audit
 from app.core.config import get_settings
 from app.core.logging_conf import logger, setup_logging
@@ -103,7 +103,7 @@ class SimpleRateLimitMiddleware(BaseHTTPMiddleware):
         if not request.url.path.startswith(self.path_prefix):
             return await call_next(request)
 
-        client_ip = request.client.host if request.client else "desconocido"
+        client_ip = web_security.client_ip(request)
         now = time.monotonic()
         bucket = self._hits.setdefault(client_ip, deque())
 
@@ -135,11 +135,74 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("Referrer-Policy", "same-origin")
+        response.headers.setdefault("Content-Security-Policy", web_security.CSP)
+        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()")
+        response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+        response.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
+        # En un host público se envía siempre: el navegador ignora HSTS sobre
+        # HTTP y lo aplica en cuanto recibe la primera respuesta HTTPS.
+        if not web_security.is_local_request(request):
+            response.headers.setdefault(
+                "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+            )
         # El panel se sirve como ficheros estáticos: se fuerza la revalidación
         # para que una actualización del código se vea con un simple recargar.
         if not request.url.path.startswith("/api"):
             response.headers.setdefault("Cache-Control", "no-cache")
+        else:
+            # Las respuestas autenticadas no deben quedar en cachés del navegador
+            # ni de intermediarios. Las rutas públicas de estado conservan su
+            # propia política, que se escribió antes y no se sobrescribe.
+            public_cache = (
+                request.url.path in {"/api/health", "/api/metrics/prometheus"}
+                or request.url.path.startswith("/api/status/")
+            )
+            if not public_cache:
+                response.headers.setdefault("Cache-Control", "no-store")
+                response.headers.setdefault("Pragma", "no-cache")
         return response
+
+
+class MaxBodySizeMiddleware(BaseHTTPMiddleware):
+    """Rechaza cuerpos HTTP demasiado grandes antes de parsearlos."""
+
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Any]) -> Any:
+        if request.method in {"POST", "PUT", "PATCH"}:
+            raw = request.headers.get("content-length", "")
+            try:
+                length = int(raw) if raw else 0
+            except ValueError:
+                length = 0
+            if length > get_settings().MAX_REQUEST_BYTES:
+                return JSONResponse(
+                    status_code=413,
+                    content={
+                        "detail": (
+                            "El cuerpo de la petición supera el límite de "
+                            f"{get_settings().MAX_REQUEST_BYTES} bytes."
+                        )
+                    },
+                )
+        return await call_next(request)
+
+
+class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
+    """Fuerza HTTPS cuando Cloudflare indica que el cliente usó HTTP.
+
+    No se redirige el panel local de pywebview (127.0.0.1/localhost) ni las
+    peticiones sin cabecera de proxy: en ese caso no se puede saber el esquema
+    original y un redirect a ciegas podría crear un bucle con cloudflared.
+    """
+
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Any]) -> Any:
+        if (
+            get_settings().ENFORCE_HTTPS
+            and not web_security.is_local_request(request)
+            and (request.headers.get("cf-visitor") or request.headers.get("x-forwarded-proto"))
+            and web_security.request_scheme(request) == "http"
+        ):
+            return RedirectResponse(web_security.https_url(request), status_code=308)
+        return await call_next(request)
 
 
 # ============================ Ciclo de vida ============================
@@ -200,6 +263,9 @@ app = FastAPI(
         "Plataforma Web de Orquestación de Infraestructura y Ciberseguridad "
         "con Agente de IA Integrado en entorno Edge (Raspberry Pi)."
     ),
+    docs_url="/docs" if settings.ENABLE_DOCS else None,
+    redoc_url="/redoc" if settings.ENABLE_DOCS else None,
+    openapi_url="/openapi.json" if settings.ENABLE_DOCS else None,
     lifespan=lifespan,
 )
 
@@ -227,8 +293,10 @@ if settings.allowed_hosts_list != ["*"]:
         TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts_list
     )
 
-# --- Cabeceras de seguridad ---
+# --- Cabeceras de seguridad, HTTPS y tamaño de cuerpo ---
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(HTTPSRedirectMiddleware)
+app.add_middleware(MaxBodySizeMiddleware)
 
 # --- Rate limiting sobre /api/chat ---
 app.add_middleware(SimpleRateLimitMiddleware)

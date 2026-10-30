@@ -365,7 +365,7 @@ hacia dentro.
 | Autorización | Lista blanca de herramientas e imágenes | El panel no es una shell remota |
 | Privilegios | Servicio como usuario no root + helpers sudo acotados | Un fallo en la app no es root directo |
 | Auditoría | Registro encadenado por hash | Detecta manipulación y permite reconstruir acciones |
-| Datos | Backups con integridad y permisos 0600 | La copia también es un secreto |
+| Datos | TOTP, IA y backups cifrados; claves fuera del directorio de datos | Una copia robada no debe revelar secretos |
 | IA | Propuestas pendientes de confirmación | La IA no actúa sin una persona |
 
 ## 6.2 Autenticación y 2FA
@@ -400,6 +400,14 @@ lo que evita un falso sentido de seguridad.
   ejecuta apt sin recibir comandos del panel. Las unidades relajan el sandbox para que apt
   escriba, pero la aplicación y el agente siguen como usuarios sin privilegios.
 - El escaneo de red se limita a rangos privados y requiere autorización.
+- Los tokens de API con ámbito `read` no pueden leer el token de enrolamiento.
+- `/docs`, `/openapi.json` y Prometheus quedan cerrados por defecto; si se necesita
+  Prometheus, se define `METRICS_TOKEN`.
+- Los comentarios de Samba no aceptan CR/LF y el agente exige HTTPS; el hub limita
+  el tamaño del cuerpo y los long-polls por host.
+- El rate limiting usa `CF-Connecting-IP` cuando la petición llega desde loopback
+  (Cloudflare), no una cabecera arbitraria del cliente.
+
 
 ## 6.5 Secretos y configuración
 
@@ -407,7 +415,8 @@ lo que evita un falso sentido de seguridad.
   ejemplos con marcadores.
 - El token de enrolamiento se puede rotar; los hosts ya enrolados conservan su token propio.
 - La configuración de producción vive en `/etc/nexus/nexus.env` con permisos 0600.
-- Los backups incluyen secretos: se guardan cifrados o fuera del servidor y con permisos 0600.
+- TOTP, claves de IA y backups se cifran con Fernet; la clave maestra queda fuera de
+  `NEXUS_DATA_DIR` y no se incluye en los backups. Los archivos siguen siendo 0600.
 
 ## 6.6 Despliegue en Internet
 
@@ -537,6 +546,28 @@ sudo bash deploy/update.sh
 | Docker no lista | El usuario del servicio no está en el grupo docker o el socket no existe |
 
 ---
+
+## 8.6 Cliente Android nativo
+
+Además del panel web, Nexus-Core incluye una aplicación **Android nativa** en
+`android/`, escrita en **Kotlin + Jetpack Compose**. No usa WebView: toda la
+interfaz es nativa y consume la misma API HTTPS del hub.
+
+- **14 secciones**: Resumen, Hosts, Contenedores, Servicios, Red, Alertas,
+  Histórico, Monitores, Auditoría, Sistema, Seguridad, Terminal, Asistente y Ajustes.
+- Login con **contraseña + TOTP** (Google Authenticator), cookie de sesión y CSRF.
+- Selector global de host; la app no replica la base SQLite del hub, consulta la API.
+- Permite gestionar hosts, contenedores, servicios, alertas, monitores, tokens,
+  sesiones, auditoría, baseline, terminal SSH, asistente, cambio de IP, 2FA y la
+  configuración de IA.
+- La sesión se guarda cifrada con Android Keystore; no se incrustan tokens `write`.
+- APK de debug: `android/app/build/outputs/apk/debug/app-debug.apk`.
+- Se compila abriendo `android/` en Android Studio (SDK 37) o con
+  `android\gradlew.bat :app:assembleDebug`.
+
+Límites actuales: las notificaciones en segundo plano usan WorkManager cada 15
+minutos (no FCM), el cambio de IP solo aplica al hub local con netplan y la app
+no guarda una copia offline completa.
 
 # 9. Laboratorios para el aula
 
@@ -668,6 +699,7 @@ backend/
     modules/            colector, Docker, systemd, red, SMART, FIM, diagnóstico local
     ai/                 proveedor, herramientas y acciones pendientes
 frontend/               panel, login, ajustes y estilos
+android/                app nativa Kotlin + Jetpack Compose
 deploy/                 instalación, agentes, systemd, Caddy, producción y backups
 docs/                   memoria del TFG y esta guía
 ```

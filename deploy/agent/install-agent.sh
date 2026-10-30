@@ -60,6 +60,11 @@ if [[ -z "${HUB}" || -z "${ENROLL_TOKEN}" ]]; then
   exit 1
 fi
 
+if [[ ! "${HUB}" =~ ^https:// ]]; then
+  echo "El hub debe usar HTTPS (https://...). No se permite enviar el token por HTTP." >&2
+  exit 1
+fi
+
 echo "==> Comprobando dependencias del sistema"
 if ! command -v python3 >/dev/null 2>&1; then
   echo "Falta python3. Instálalo (apt install python3 python3-pip) y vuelve a ejecutar." >&2

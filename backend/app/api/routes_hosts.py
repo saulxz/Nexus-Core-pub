@@ -189,6 +189,13 @@ async def enrollment_info(request: Request) -> EnrollmentInfo:
     usa ese; si no, se genera uno persistente la primera vez.
     """
     actor = _actor(request)
+    session = request.state.session
+    if session.get("auth_kind") == "token" and session.get("scope") != "write":
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "El token de enrolamiento exige un token de API con ámbito 'write' "
+            "o la sesión del panel.",
+        )
     token = fleet.enrollment_token()
     if not token:  # pragma: no cover - solo si el directorio no es escribible
         raise HTTPException(

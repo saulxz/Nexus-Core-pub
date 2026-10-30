@@ -1,25 +1,25 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es" class="scroll-smooth">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- Marca de JS: sin ella el CSS no oculta nada y la página se ve entera. -->
+  <!-- Marca de JS: sin ella el CSS no oculta nada y la pÃ¡gina se ve entera. -->
   <script>document.documentElement.classList.add('js');</script>
-  <meta name="description" content="Nexus-Core — Consola de administración de infraestructura y ciberseguridad para servidores Linux." />
-  <title>Nexus-Core · Consola de infraestructura</title>
+  <meta name="description" content="Nexus-Core â€” Consola de administraciÃ³n de infraestructura y ciberseguridad para servidores Linux." />
+  <title>Nexus-Core Â· Consola de infraestructura</title>
 
-  <!-- Favicon SVG en línea, sin petición externa: monograma "N" geométrico. -->
+  <!-- Favicon SVG en lÃ­nea, sin peticiÃ³n externa: monograma "N" geomÃ©trico. -->
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%23161b22'/%3E%3Cpath%20d='M11%2021.5v-11l10%2011v-11'%20fill='none'%20stroke='%232f81f7'%20stroke-width='2.6'%20stroke-linecap='round'%20stroke-linejoin='round'/%3E%3C/svg%3E" />
   <meta name="theme-color" content="#0d1117" />
 
-  <!-- Tailwind CSS (Play CDN) -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind CSS vendorizado (sin CDN) -->
+  <script src="/vendor/tailwind.js"></script>
   <script>
-    // Paleta corporativa: grafito neutro + un único azul. Tailwind es la
-    // segunda capa de color —la primera son los tokens --nx-* del CSS—, así
+    // Paleta corporativa: grafito neutro + un Ãºnico azul. Tailwind es la
+    // segunda capa de color â€”la primera son los tokens --nx-* del CSSâ€”, asÃ­
     // que reasignar sus valores recolorea a la vez las utilidades del HTML y
-    // las clases que app.js asigna por código. Mismas claves y mismos roles
-    // que antes; lo único que cambia es el valor.
+    // las clases que app.js asigna por cÃ³digo. Mismas claves y mismos roles
+    // que antes; lo Ãºnico que cambia es el valor.
     tailwind.config = {
       theme: {
         extend: {
@@ -28,14 +28,14 @@
             mono: ['Roboto Mono', 'ui-monospace', 'SFMono-Regular', 'SF Mono', 'JetBrains Mono', 'Cascadia Mono', 'Menlo', 'Consolas', 'monospace']
           },
           colors: {
-            // Marca: azul corporativo. `dark` es el paso pulsado, un azul más
+            // Marca: azul corporativo. `dark` es el paso pulsado, un azul mÃ¡s
             // profundo. Nunca se usa como filete de color.
             brand: { DEFAULT: '#2f81f7', dark: '#1f6feb' },
             // Superficies: papel, superficie, elevada, filete fuerte.
             nexus: { 950: '#0d1117', 900: '#161b22', 800: '#1c2128', 700: '#444c56' },
             // "slate" pasa a ser la escala de tinta neutra sobre grafito.
-            // 500 baja un escalón real frente a 400 y 600 queda por debajo
-            // de AA a propósito: son metadatos y estados deshabilitados.
+            // 500 baja un escalÃ³n real frente a 400 y 600 queda por debajo
+            // de AA a propÃ³sito: son metadatos y estados deshabilitados.
             slate: {
               100: '#e6edf3',
               300: '#b3bcc8',
@@ -51,7 +51,7 @@
             // sin inventar tonos nuevos.
             //   cyan    -> acento / serie CPU  #2f81f7
             //   emerald -> serie RAM           #9d8cff
-            //   violet  -> tinta 3º            #8b949e
+            //   violet  -> tinta 3Âº            #8b949e
             //   orange / red -> peligro       #ff6b6b
             cyan:    { 300: '#2f81f7', 400: '#2f81f7', 500: '#2f81f7' },
             emerald: { 400: '#9d8cff', 500: '#9d8cff' },
@@ -68,10 +68,10 @@
     };
   </script>
 
-  <!-- Chart.js para la gráfica de telemetría -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+  <!-- Chart.js para la grÃ¡fica de telemetrÃ­a -->
+  <script src="/vendor/chart.umd.min.js"></script>
 
-  <!-- Tipografía: pilas del sistema, sin descargas externas -->
+  <!-- TipografÃ­a: pilas del sistema, sin descargas externas -->
   <link rel="stylesheet" href="/css/styles.css?v=15" />
 <link rel="stylesheet" href="/vendor/xterm/xterm.css">
 </head>
@@ -80,7 +80,7 @@
 
   <!-- ===================== CABECERA =====================
        Tres filas divididas por filetes, como el cromo de un
-       dispositivo: barra de marca, riel de pestañas y franja de
+       dispositivo: barra de marca, riel de pestaÃ±as y franja de
        estado. No hay ninguna tarjeta flotante. -->
   <header class="nx-header">
     <div class="nx-shell">
@@ -109,7 +109,7 @@
         </div>
       </div>
 
-      <!-- Riel de pestañas -->
+      <!-- Riel de pestaÃ±as -->
       <div class="nx-nav-row">
         <nav class="nx-tabs" aria-label="Secciones">
           <button type="button" data-tab="dashboard" class="tab-btn tab-active" aria-controls="section-dashboard">Resumen</button>
@@ -118,9 +118,9 @@
           <button type="button" data-tab="services" class="tab-btn" aria-controls="section-services">Servicios</button>
           <button type="button" data-tab="alerts" class="tab-btn" aria-controls="section-alerts">Alertas</button>
           <button type="button" data-tab="hosts" class="tab-btn" aria-controls="section-hosts">Hosts</button>
-          <button type="button" data-tab="history" class="tab-btn" aria-controls="section-history">Histórico</button>
+          <button type="button" data-tab="history" class="tab-btn" aria-controls="section-history">HistÃ³rico</button>
           <button type="button" data-tab="monitors" class="tab-btn" aria-controls="section-monitors">Monitores</button>
-          <button type="button" data-tab="audit" class="tab-btn" aria-controls="section-audit">Auditoría</button>
+          <button type="button" data-tab="audit" class="tab-btn" aria-controls="section-audit">AuditorÃ­a</button>
           <button type="button" data-tab="system" class="tab-btn" aria-controls="section-system">Sistema</button>
           <button type="button" data-tab="security" class="tab-btn" aria-controls="section-security">Seguridad</button>
           <button type="button" data-tab="terminal" class="tab-btn" aria-controls="section-terminal">Terminal</button>
@@ -129,22 +129,22 @@
       </div>
 
       <!-- ===== Franja de estado global =====
-           Tira plana de ancho completo bajo las pestañas: filete
+           Tira plana de ancho completo bajo las pestaÃ±as: filete
            inferior, fondo de cromo, sin radio. A la izquierda el LED
-           global y el veredicto en una línea; a la derecha los
+           global y el veredicto en una lÃ­nea; a la derecha los
            contadores por severidad y los mandos de sondeo. Los
            contadores son enlaces de verdad: al pulsarlos se baja al
            panel de alarmas con ese filtro puesto. El orden es
-           OK → Aviso → Crítico, y la severidad manda: si hay un solo
-           crítico, el veredicto lo dice sin necesidad de contar. -->
+           OK â†’ Aviso â†’ CrÃ­tico, y la severidad manda: si hay un solo
+           crÃ­tico, el veredicto lo dice sin necesidad de contar. -->
       <section class="nx-statusbar" id="status-bar" aria-label="Estado general del sistema">
         <div class="nx-verdict">
           <span class="nx-led nx-led--idle" id="status-verdict-led" aria-hidden="true"></span>
           <span class="nx-verdict-title" id="status-verdict-title" role="status" aria-live="polite">Comprobando el host</span>
-          <span class="nx-verdict-sub" id="status-verdict-sub">Esperando la primera lectura de telemetría.</span>
-          <!-- Ámbito del veredicto: los contadores de severidad se
-               recalculan contra el host elegido, así que la franja
-               declara cuál es. Nunca se presenta como local lo que
+          <span class="nx-verdict-sub" id="status-verdict-sub">Esperando la primera lectura de telemetrÃ­a.</span>
+          <!-- Ãmbito del veredicto: los contadores de severidad se
+               recalculan contra el host elegido, asÃ­ que la franja
+               declara cuÃ¡l es. Nunca se presenta como local lo que
                viene de un agente remoto. -->
           <span class="nx-scope" id="scope-chip" data-scope="local">
             <i class="nx-led nx-led--idle" id="scope-led" aria-hidden="true"></i>
@@ -154,38 +154,38 @@
 
         <div class="nx-strip-tools">
           <!-- Selector global de host. Compacto y nativo del cromo:
-               micro-rótulo + LED de estado + select. La elección
-               dirige Resumen e Histórico y se recuerda en localStorage. -->
+               micro-rÃ³tulo + LED de estado + select. La elecciÃ³n
+               dirige Resumen e HistÃ³rico y se recuerda en localStorage. -->
           <div class="nx-hostsel">
             <span class="nx-hostsel-label">Host</span>
             <i class="nx-led nx-led--idle" id="host-select-led" aria-hidden="true"></i>
-            <label class="nx-sr-only" for="host-select">Host que se está vigilando</label>
+            <label class="nx-sr-only" for="host-select">Host que se estÃ¡ vigilando</label>
             <select id="host-select" class="nx-hostsel-select" aria-describedby="host-select-note">
               <option value="1">Este servidor</option>
             </select>
-            <span class="nx-sr-only" id="host-select-note">La elección se recuerda en este navegador y dirige el Resumen y el Histórico.</span>
+            <span class="nx-sr-only" id="host-select-note">La elecciÃ³n se recuerda en este navegador y dirige el Resumen y el HistÃ³rico.</span>
           </div>
           <span class="nx-strip-sep" aria-hidden="true"></span>
           <div class="nx-counts">
             <button type="button" class="nx-count nx-count--ok" id="chip-ok" data-severity="ok" aria-pressed="false">
               <span class="nx-led nx-led--ok" aria-hidden="true"></span>
               <span class="nx-count-label">OK</span>
-              <span class="nx-count-value" id="count-ok">—</span>
+              <span class="nx-count-value" id="count-ok">â€”</span>
             </button>
             <button type="button" class="nx-count nx-count--warn" id="chip-warn" data-severity="warn" aria-pressed="false">
               <span class="nx-led nx-led--warn" aria-hidden="true"></span>
-              <span class="nx-count-label">Atención</span>
-              <span class="nx-count-value" id="count-warn">—</span>
+              <span class="nx-count-label">AtenciÃ³n</span>
+              <span class="nx-count-value" id="count-warn">â€”</span>
             </button>
             <button type="button" class="nx-count nx-count--crit" id="chip-crit" data-severity="crit" aria-pressed="false">
               <span class="nx-led nx-led--crit" aria-hidden="true"></span>
-              <span class="nx-count-label">Crítico</span>
-              <span class="nx-count-value" id="count-crit">—</span>
+              <span class="nx-count-label">CrÃ­tico</span>
+              <span class="nx-count-value" id="count-crit">â€”</span>
             </button>
           </div>
           <span class="nx-strip-sep" aria-hidden="true"></span>
-          <!-- Mando de sondeo: un botón, dos iconos. Al pausar pasa a
-               "reanudar" y la cuenta atrás se congela. -->
+          <!-- Mando de sondeo: un botÃ³n, dos iconos. Al pausar pasa a
+               "reanudar" y la cuenta atrÃ¡s se congela. -->
           <button id="poll-toggle" type="button" class="nx-poll-btn" aria-pressed="false"
                   aria-describedby="poll-countdown">
             <svg class="nx-icon-pause" viewBox="0 0 16 16" fill="none" stroke="currentColor"
@@ -198,9 +198,9 @@
             </svg>
             <span id="poll-toggle-label">Pausar</span>
           </button>
-          <span id="poll-countdown" class="nx-meta"><span class="nx-poll-prefix">próximo muestreo en </span><span id="poll-seconds">—</span></span>
-          <span class="nx-meta-sep" aria-hidden="true">·</span>
-          <span id="metrics-updated" class="nx-meta">—</span>
+          <span id="poll-countdown" class="nx-meta"><span class="nx-poll-prefix">prÃ³ximo muestreo en </span><span id="poll-seconds">â€”</span></span>
+          <span class="nx-meta-sep" aria-hidden="true">Â·</span>
+          <span id="metrics-updated" class="nx-meta">â€”</span>
         </div>
       </section>
     </div>
@@ -213,27 +213,27 @@
       <!-- ------------------ Columna principal ------------------ -->
       <div class="min-w-0">
 
-        <!-- SECCIÓN: RESUMEN -->
+        <!-- SECCIÃ“N: RESUMEN -->
         <section id="section-dashboard" class="tab-section nx-stack" aria-label="Resumen del sistema">
 
-          <!-- Aviso de ámbito: al elegir un host remoto, el Resumen
+          <!-- Aviso de Ã¡mbito: al elegir un host remoto, el Resumen
                mezcla dos fuentes (sensores del agente + inventarios
                locales) y lo dice antes de que se lea como una sola. -->
           <p class="nx-status nx-status--warn hidden" id="dashboard-scope-note" role="status"></p>
 
           <!-- ===== Sensores =====
-               Anatomía de lista de sensores de PRTG: una tabla, no
+               AnatomÃ­a de lista de sensores de PRTG: una tabla, no
                seis tarjetas. Cada fila es un canal con su LED, su
                nombre, su valor en mono alineado a la derecha, su
-               micro-barra, su tendencia de la sesión, sus umbrales y
-               la hora de su última lectura. app.js escribe dentro de
+               micro-barra, su tendencia de la sesiÃ³n, sus umbrales y
+               la hora de su Ãºltima lectura. app.js escribe dentro de
                estas celdas exactamente los mismos ids de siempre. -->
           <section class="panel panel--flush" data-reveal aria-label="Sensores del host">
             <div class="nx-card-head">
               <h2 class="panel-title">Sensores</h2>
-              <p class="panel-note panel-note--inline">CPU, memoria, swap, disco, carga y temperatura · una lectura cada 5 s</p>
+              <p class="panel-note panel-note--inline">CPU, memoria, swap, disco, carga y temperatura Â· una lectura cada 5 s</p>
               <div class="nx-card-actions">
-                <span class="nx-meta" id="sensor-scope-note">Lectura local · 5 s</span>
+                <span class="nx-meta" id="sensor-scope-note">Lectura local Â· 5 s</span>
                 <span class="nx-meta">6 canales</span>
                 <button id="refresh-metrics" type="button" class="btn btn-ghost btn-sm">
                   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13.4 8a5.4 5.4 0 1 1-1.58-3.82"/><path d="M13.4 2.6v3.1h-3.1"/></svg>
@@ -271,7 +271,7 @@
                   </td>
                   <td class="nx-sr-c-thr"><span class="nx-stat-foot">80 / 92 %</span></td>
                   <td class="nx-sr-c-state"><span class="nx-sr-st" id="state-cpu">Sin dato</span></td>
-                  <td class="nx-sr-c-fresh"><span class="nx-fresh" id="fresh-cpu">—</span></td>
+                  <td class="nx-sr-c-fresh"><span class="nx-fresh" id="fresh-cpu">â€”</span></td>
                 </tr>
 
                 <tr class="nx-sensor" data-sensor="ram" data-status="unknown">
@@ -288,7 +288,7 @@
                   </td>
                   <td class="nx-sr-c-thr"><span class="nx-stat-foot">80 / 92 %</span></td>
                   <td class="nx-sr-c-state"><span class="nx-sr-st" id="state-ram">Sin dato</span></td>
-                  <td class="nx-sr-c-fresh"><span class="nx-fresh" id="fresh-ram">—</span></td>
+                  <td class="nx-sr-c-fresh"><span class="nx-fresh" id="fresh-ram">â€”</span></td>
                 </tr>
 
                 <tr class="nx-sensor" data-sensor="swap" data-status="unknown">
@@ -305,12 +305,12 @@
                   </td>
                   <td class="nx-sr-c-thr"><span class="nx-stat-foot">25 / 60 %</span></td>
                   <td class="nx-sr-c-state"><span class="nx-sr-st" id="state-swap">Sin dato</span></td>
-                  <td class="nx-sr-c-fresh"><span class="nx-fresh" id="fresh-swap">—</span></td>
+                  <td class="nx-sr-c-fresh"><span class="nx-fresh" id="fresh-swap">â€”</span></td>
                 </tr>
 
                 <tr class="nx-sensor" data-sensor="disk" data-status="unknown">
                   <td class="nx-sr-c-led"><i class="nx-led nx-led--idle" id="led-disk" aria-hidden="true"></i></td>
-                  <td class="nx-sr-name">Disco raíz</td>
+                  <td class="nx-sr-name">Disco raÃ­z</td>
                   <td class="nx-sr-c-val"><span class="nx-sr-val" id="metric-disk">--</span><span class="nx-sr-unit">%</span></td>
                   <td class="nx-sr-c-bar"><div class="progress-track"><div id="bar-disk" class="progress-fill nx-fill--disk unknown" style="width:0%"></div></div></td>
                   <td class="nx-sr-c-spark">
@@ -322,15 +322,15 @@
                   </td>
                   <td class="nx-sr-c-thr"><span class="nx-stat-foot">80 / 90 %</span></td>
                   <td class="nx-sr-c-state"><span class="nx-sr-st" id="state-disk">Sin dato</span></td>
-                  <td class="nx-sr-c-fresh"><span class="nx-fresh" id="fresh-disk">—</span></td>
+                  <td class="nx-sr-c-fresh"><span class="nx-fresh" id="fresh-disk">â€”</span></td>
                 </tr>
 
-                <!-- La carga se lee por núcleo: 1.00 significa "un núcleo
+                <!-- La carga se lee por nÃºcleo: 1.00 significa "un nÃºcleo
                      saturado". El divisor sale del propio /api/metrics. -->
                 <tr class="nx-sensor" data-sensor="load" data-status="unknown">
                   <td class="nx-sr-c-led"><i class="nx-led nx-led--idle" id="led-load" aria-hidden="true"></i></td>
                   <td class="nx-sr-name">Carga 1m</td>
-                  <td class="nx-sr-c-val"><span class="nx-sr-val" id="metric-load">--</span><span class="nx-sr-unit" id="metric-load-unit">/núc.</span></td>
+                  <td class="nx-sr-c-val"><span class="nx-sr-val" id="metric-load">--</span><span class="nx-sr-unit" id="metric-load-unit">/nÃºc.</span></td>
                   <td class="nx-sr-c-bar"><div class="progress-track"><div id="bar-load" class="progress-fill unknown" style="width:0%"></div></div></td>
                   <td class="nx-sr-c-spark">
                     <svg class="nx-spark" id="spark-load" viewBox="0 0 120 32" preserveAspectRatio="none" aria-hidden="true" focusable="false">
@@ -339,15 +339,15 @@
                       <circle class="nx-spark-dot" id="spark-load-dot" r="1.6" cx="-10" cy="-10"></circle>
                     </svg>
                   </td>
-                  <td class="nx-sr-c-thr"><span class="nx-stat-foot" id="metric-load-note">Aviso 0.70 · crítico 1.00</span></td>
+                  <td class="nx-sr-c-thr"><span class="nx-stat-foot" id="metric-load-note">Aviso 0.70 Â· crÃ­tico 1.00</span></td>
                   <td class="nx-sr-c-state"><span class="nx-sr-st" id="state-load">Sin dato</span></td>
-                  <td class="nx-sr-c-fresh"><span class="nx-fresh" id="fresh-load">—</span></td>
+                  <td class="nx-sr-c-fresh"><span class="nx-fresh" id="fresh-load">â€”</span></td>
                 </tr>
 
                 <tr class="nx-sensor" data-sensor="temp" data-status="unknown">
                   <td class="nx-sr-c-led"><i class="nx-led nx-led--idle" id="led-temp" aria-hidden="true"></i></td>
                   <td class="nx-sr-name">Temperatura</td>
-                  <td class="nx-sr-c-val"><span class="nx-sr-val" id="metric-temp">--</span><span class="nx-sr-unit">°C</span></td>
+                  <td class="nx-sr-c-val"><span class="nx-sr-val" id="metric-temp">--</span><span class="nx-sr-unit">Â°C</span></td>
                   <td class="nx-sr-c-bar"><div class="progress-track"><div id="bar-temp" class="progress-fill unknown" style="width:0%"></div></div></td>
                   <td class="nx-sr-c-spark">
                     <svg class="nx-spark" id="spark-temp" viewBox="0 0 120 32" preserveAspectRatio="none" aria-hidden="true" focusable="false">
@@ -358,7 +358,7 @@
                   </td>
                   <td class="nx-sr-c-thr"><span class="nx-stat-foot" id="metric-temp-note">Sin sensor en este host</span></td>
                   <td class="nx-sr-c-state"><span class="nx-sr-st" id="state-temp">Sin dato</span></td>
-                  <td class="nx-sr-c-fresh"><span class="nx-fresh" id="fresh-temp">—</span></td>
+                  <td class="nx-sr-c-fresh"><span class="nx-fresh" id="fresh-temp">â€”</span></td>
                 </tr>
               </tbody>
             </table>
@@ -366,21 +366,21 @@
           </section>
 
           <!-- ===== Alarmas =====
-               Como la lista de mensajes de PRTG: solo lo que NO está
-               bien, más lo que se acaba de recuperar. Se deriva en el
+               Como la lista de mensajes de PRTG: solo lo que NO estÃ¡
+               bien, mÃ¡s lo que se acaba de recuperar. Se deriva en el
                navegador a partir de las mismas muestras que ya se
-               estaban pidiendo, así que no añade ninguna llamada al
+               estaban pidiendo, asÃ­ que no aÃ±ade ninguna llamada al
                backend ni carga a la Raspberry. Los filtros son un
-               riel de pestañas plano en la cabecera del panel. -->
+               riel de pestaÃ±as plano en la cabecera del panel. -->
           <section class="panel panel--flush" id="alarms-panel" data-reveal aria-label="Alarmas">
             <div class="nx-card-head">
               <h2 class="panel-title">Alarmas</h2>
-              <p class="panel-note panel-note--inline">Eventos de esta sesión: cruces de umbral, contenedores y conexión</p>
+              <p class="panel-note panel-note--inline">Eventos de esta sesiÃ³n: cruces de umbral, contenedores y conexiÃ³n</p>
               <div class="nx-card-actions">
                 <fieldset class="nx-seg">
                   <legend class="nx-sr-only">Filtrar alarmas</legend>
                   <button type="button" class="nx-seg-btn" data-alarm-filter="all" aria-pressed="true">Todas</button>
-                  <button type="button" class="nx-seg-btn" data-alarm-filter="crit" aria-pressed="false">Críticas<span class="nx-seg-count" data-alarm-count="crit"></span></button>
+                  <button type="button" class="nx-seg-btn" data-alarm-filter="crit" aria-pressed="false">CrÃ­ticas<span class="nx-seg-count" data-alarm-count="crit"></span></button>
                   <button type="button" class="nx-seg-btn" data-alarm-filter="warn" aria-pressed="false">Avisos<span class="nx-seg-count" data-alarm-count="warn"></span></button>
                   <button type="button" class="nx-seg-btn" data-alarm-filter="ok" aria-pressed="false">Recuperadas<span class="nx-seg-count" data-alarm-count="ok"></span></button>
                 </fieldset>
@@ -390,26 +390,26 @@
                  aria-label="Registro de alarmas"></div>
           </section>
 
-          <!-- Gráfica: ventana móvil de CPU y RAM. Leyenda propia en la
+          <!-- GrÃ¡fica: ventana mÃ³vil de CPU y RAM. Leyenda propia en la
                cabecera (Chart.js viene con la suya desactivada). -->
           <section class="panel panel--flush" data-reveal aria-label="Uso de recursos">
             <div class="nx-card-head">
               <h2 class="panel-title">Uso de recursos</h2>
-              <p class="panel-note panel-note--inline">Ventana móvil de 20 muestras</p>
+              <p class="panel-note panel-note--inline">Ventana mÃ³vil de 20 muestras</p>
               <div class="nx-legend">
                 <span class="nx-chip"><i class="nx-swatch nx-swatch--cpu" aria-hidden="true"></i>CPU</span>
                 <span class="nx-chip"><i class="nx-swatch nx-swatch--ram" aria-hidden="true"></i>RAM</span>
               </div>
             </div>
             <div class="nx-chart-frame">
-              <canvas id="resource-chart" role="img" aria-label="Porcentaje de uso de CPU y RAM durante los últimos 100 segundos"></canvas>
+              <canvas id="resource-chart" role="img" aria-label="Porcentaje de uso de CPU y RAM durante los Ãºltimos 100 segundos"></canvas>
             </div>
           </section>
 
           <!-- Contexto del host: valores en mono, etiquetas en micro-versalitas. -->
           <div class="nx-facts" data-reveal>
             <div class="nx-fact">
-              <span class="nx-fact-label">Núcleos</span>
+              <span class="nx-fact-label">NÃºcleos</span>
               <span class="nx-fact-value" id="info-cpu-count">--</span>
             </div>
             <div class="nx-fact">
@@ -431,7 +431,7 @@
           </div>
         </section>
 
-        <!-- SECCIÓN: CONTENEDORES -->
+        <!-- SECCIÃ“N: CONTENEDORES -->
         <section id="section-containers" class="tab-section nx-stack hidden" aria-label="Contenedores">
           <div class="nx-section-head" data-reveal>
             <h2 class="nx-section-title">Contenedores</h2>
@@ -439,14 +439,14 @@
           </div>
 
           <!-- Visible solo cuando el host elegido en la cabecera no es
-               el local: la sección sigue siendo la del hub. -->
+               el local: la secciÃ³n sigue siendo la del hub. -->
           <p class="nx-status nx-status--warn hidden" id="localonly-containers" role="status"></p>
 
           <!-- Despliegue -->
           <section class="panel panel--flush" data-reveal aria-label="Desplegar contenedor">
             <div class="nx-card-head">
               <h3 class="panel-title">Desplegar un servicio</h3>
-              <p class="panel-note panel-note--inline">La imagen se descarga si no está en caché. El puerto es opcional: sin él el contenedor no se publica.</p>
+              <p class="panel-note panel-note--inline">La imagen se descarga si no estÃ¡ en cachÃ©. El puerto es opcional: sin Ã©l el contenedor no se publica.</p>
             </div>
             <div class="nx-card-body">
               <form id="deploy-form" class="grid grid-cols-1 gap-2 sm:grid-cols-4">
@@ -500,7 +500,7 @@
                     <th scope="col">Imagen</th>
 <th scope="col">Estado</th>
                   <th scope="col" class="nx-th-num">Puertos</th>
-                  <th scope="col" class="nx-cell-actions">Acción</th>
+                  <th scope="col" class="nx-cell-actions">AcciÃ³n</th>
                 </tr>
               </thead>
               <tbody id="containers-table">
@@ -511,13 +511,13 @@
           </section>
 
           <!-- ===== Detalle de un contenedor =====
-               Registros y consumo en vivo. Sigue el patrón del detalle
+               Registros y consumo en vivo. Sigue el patrÃ³n del detalle
                de servicio: un panel que aparece bajo la tabla, no una
-               columna más ni una tarjeta dentro de la fila. -->
+               columna mÃ¡s ni una tarjeta dentro de la fila. -->
           <section id="container-detail" class="panel panel--flush hidden" aria-label="Detalle del contenedor">
             <div class="nx-card-head">
               <h3 class="panel-title">Detalle del contenedor</h3>
-              <p id="container-detail-title" class="panel-note panel-note--inline mono">—</p>
+              <p id="container-detail-title" class="panel-note panel-note--inline mono">â€”</p>
               <div class="nx-card-actions">
                 <button id="container-detail-refresh" class="btn btn-ghost btn-sm" type="button">Refrescar</button>
                 <button id="container-detail-close" class="btn btn-ghost btn-sm" type="button">Cerrar</button>
@@ -529,7 +529,7 @@
             <div class="nx-card-body">
               <div class="nx-toolbar" style="border-bottom:0;background:transparent;padding-inline:0">
                 <label class="field">
-                  <span class="nx-eyebrow">Líneas de registro</span>
+                  <span class="nx-eyebrow">LÃ­neas de registro</span>
                   <select id="container-logs-tail" class="input-field">
                     <option value="50">50</option>
                     <option value="100" selected>100</option>
@@ -538,15 +538,15 @@
                   </select>
                 </label>
               </div>
-              <pre id="container-logs" class="nx-code">—</pre>
+              <pre id="container-logs" class="nx-code">â€”</pre>
             </div>
           </section>
 
-          <!-- ===== Inventario Docker: volúmenes, redes e imágenes =====
+          <!-- ===== Inventario Docker: volÃºmenes, redes e imÃ¡genes =====
                Tres bloques, una tabla cada uno. En un host sin Docker
                los tres responden con available:false y su motivo; se
-               pinta ese motivo en la fila vacía en lugar de fingir
-               un inventario vacío que no se ha podido leer. -->
+               pinta ese motivo en la fila vacÃ­a en lugar de fingir
+               un inventario vacÃ­o que no se ha podido leer. -->
           <div class="nx-section-head" data-reveal>
             <h3 class="nx-section-title">Inventario Docker</h3>
             <div class="nx-card-actions">
@@ -554,21 +554,21 @@
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13.4 8a5.4 5.4 0 1 1-1.58-3.82"/><path d="M13.4 2.6v3.1h-3.1"/></svg>
                 Refrescar
               </button>
-              <button id="docker-prune" type="button" class="btn btn-danger btn-sm">Limpiar imágenes</button>
+              <button id="docker-prune" type="button" class="btn btn-danger btn-sm">Limpiar imÃ¡genes</button>
             </div>
           </div>
 
           <div class="nx-stack">
-            <section class="panel panel--flush" data-reveal aria-label="Volúmenes Docker">
+            <section class="panel panel--flush" data-reveal aria-label="VolÃºmenes Docker">
               <div class="nx-card-head">
-                <h4 class="panel-title">Volúmenes</h4>
-                <div class="nx-card-actions"><span id="docker-volumes-count" class="nx-meta">—</span></div>
+                <h4 class="panel-title">VolÃºmenes</h4>
+                <div class="nx-card-actions"><span id="docker-volumes-count" class="nx-meta">â€”</span></div>
               </div>
               <div class="nx-table-scroll nx-table-scroll--short">
                 <table class="data-table">
-                  <thead><tr><th scope="col">Nombre</th><th scope="col">Driver</th><th scope="col">Ámbito</th><th scope="col">Punto de montaje</th></tr></thead>
+                  <thead><tr><th scope="col">Nombre</th><th scope="col">Driver</th><th scope="col">Ãmbito</th><th scope="col">Punto de montaje</th></tr></thead>
                   <tbody id="docker-volumes-table">
-                    <tr><td colspan="4" class="empty-row"><span class="nx-empty"><span class="nx-empty-label">Cargando</span><span class="nx-empty-text">Consultando los volúmenes.</span></span></td></tr>
+                    <tr><td colspan="4" class="empty-row"><span class="nx-empty"><span class="nx-empty-label">Cargando</span><span class="nx-empty-text">Consultando los volÃºmenes.</span></span></td></tr>
                   </tbody>
                 </table>
               </div>
@@ -577,11 +577,11 @@
             <section class="panel panel--flush" data-reveal aria-label="Redes Docker">
               <div class="nx-card-head">
                 <h4 class="panel-title">Redes</h4>
-                <div class="nx-card-actions"><span id="docker-networks-count" class="nx-meta">—</span></div>
+                <div class="nx-card-actions"><span id="docker-networks-count" class="nx-meta">â€”</span></div>
               </div>
               <div class="nx-table-scroll nx-table-scroll--short">
                 <table class="data-table">
-                  <thead><tr><th scope="col">Nombre</th><th scope="col">Driver</th><th scope="col">Ámbito</th><th scope="col" class="nx-cell-actions">Interna</th></tr></thead>
+                  <thead><tr><th scope="col">Nombre</th><th scope="col">Driver</th><th scope="col">Ãmbito</th><th scope="col" class="nx-cell-actions">Interna</th></tr></thead>
                   <tbody id="docker-networks-table">
                     <tr><td colspan="4" class="empty-row"><span class="nx-empty"><span class="nx-empty-label">Cargando</span><span class="nx-empty-text">Consultando las redes.</span></span></td></tr>
                   </tbody>
@@ -589,16 +589,16 @@
               </div>
             </section>
 
-            <section class="panel panel--flush" data-reveal aria-label="Imágenes Docker">
+            <section class="panel panel--flush" data-reveal aria-label="ImÃ¡genes Docker">
               <div class="nx-card-head">
-                <h4 class="panel-title">Imágenes</h4>
-                <div class="nx-card-actions"><span id="docker-images-count" class="nx-meta">—</span></div>
+                <h4 class="panel-title">ImÃ¡genes</h4>
+                <div class="nx-card-actions"><span id="docker-images-count" class="nx-meta">â€”</span></div>
               </div>
               <div class="nx-table-scroll nx-table-scroll--short">
                 <table class="data-table">
-                  <thead><tr><th scope="col">ID</th><th scope="col">Etiquetas</th><th scope="col" class="nx-th-num">Tamaño</th><th scope="col">Creada</th></tr></thead>
+                  <thead><tr><th scope="col">ID</th><th scope="col">Etiquetas</th><th scope="col" class="nx-th-num">TamaÃ±o</th><th scope="col">Creada</th></tr></thead>
                   <tbody id="docker-images-table">
-                    <tr><td colspan="4" class="empty-row"><span class="nx-empty"><span class="nx-empty-label">Cargando</span><span class="nx-empty-text">Consultando las imágenes.</span></span></td></tr>
+                    <tr><td colspan="4" class="empty-row"><span class="nx-empty"><span class="nx-empty-label">Cargando</span><span class="nx-empty-text">Consultando las imÃ¡genes.</span></span></td></tr>
                   </tbody>
                 </table>
               </div>
@@ -606,20 +606,20 @@
           </div>
         </section>
 
-        <!-- SECCIÓN: RED -->
+        <!-- SECCIÃ“N: RED -->
         <section id="section-network" class="tab-section nx-stack hidden" aria-label="Red">
           <div class="nx-section-head" data-reveal>
             <h2 class="nx-section-title">Red</h2>
-            <span class="nx-meta">Inventario y auditoría local</span>
+            <span class="nx-meta">Inventario y auditorÃ­a local</span>
           </div>
 
           <p class="nx-status nx-status--warn hidden" id="localonly-network" role="status"></p>
 
-          <!-- Interfaces de la propia máquina -->
+          <!-- Interfaces de la propia mÃ¡quina -->
           <section class="panel panel--flush" data-reveal aria-label="Interfaces de red">
             <div class="nx-card-head">
-              <h3 class="panel-title">Interfaces de esta máquina</h3>
-              <p id="network-summary" class="panel-note panel-note--inline">—</p>
+              <h3 class="panel-title">Interfaces de esta mÃ¡quina</h3>
+              <p id="network-summary" class="panel-note panel-note--inline">â€”</p>
               <div class="nx-card-actions">
                 <button id="refresh-network-state" type="button" class="btn btn-ghost btn-sm">
                   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13.4 8a5.4 5.4 0 1 1-1.58-3.82"/><path d="M13.4 2.6v3.1h-3.1"/></svg>
@@ -633,8 +633,8 @@
                   <tr>
                     <th scope="col">Interfaz</th>
                     <th scope="col">Estado</th>
-                    <th scope="col">Dirección IP</th>
-                    <th scope="col">Máscara</th>
+                    <th scope="col">DirecciÃ³n IP</th>
+                    <th scope="col">MÃ¡scara</th>
                     <th scope="col">MAC</th>
                     <th scope="col" class="nx-th-num">MTU</th>
                   </tr>
@@ -675,7 +675,7 @@
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th scope="col">Dirección IP</th>
+                    <th scope="col">DirecciÃ³n IP</th>
                     <th scope="col">Estado</th>
                     <th scope="col">MAC</th>
                     <th scope="col">Hostname</th>
@@ -688,13 +688,13 @@
             </div>
           </section>
 
-          <!-- Cambio de IP con reversión automática -->
-          <section class="panel panel--flush" data-reveal aria-label="Dirección IP de la máquina">
+          <!-- Cambio de IP con reversiÃ³n automÃ¡tica -->
+          <section class="panel panel--flush" data-reveal aria-label="DirecciÃ³n IP de la mÃ¡quina">
             <div class="nx-card-head">
-              <h3 class="panel-title">Dirección IP de la máquina</h3>
+              <h3 class="panel-title">DirecciÃ³n IP de la mÃ¡quina</h3>
               <p class="panel-note panel-note--inline">Previsualiza el cambio antes de aplicarlo. Al aplicar, la red se revierte sola si no confirmas desde la nueva IP.</p>
               <div class="nx-card-actions">
-                <span id="netcfg-renderer" class="nx-meta">—</span>
+                <span id="netcfg-renderer" class="nx-meta">â€”</span>
               </div>
             </div>
             <div class="nx-card-body">
@@ -706,7 +706,7 @@
                   <input id="netcfg-iface" class="input-field input-field--mono" placeholder="eth0" />
                 </label>
                 <label class="field">
-                  <span class="nx-eyebrow">Dirección IP</span>
+                  <span class="nx-eyebrow">DirecciÃ³n IP</span>
                   <input id="netcfg-address" class="input-field input-field--mono" placeholder="192.168.1.50" />
                 </label>
                 <label class="field">
@@ -746,7 +746,7 @@
           </section>
         </section>
 
-        <!-- SECCIÓN: SERVICIOS -->
+        <!-- SECCIÃ“N: SERVICIOS -->
         <section id="section-services" class="tab-section nx-stack hidden" aria-label="Servicios">
           <div class="nx-section-head" data-reveal>
             <h2 class="nx-section-title">Servicios</h2>
@@ -763,8 +763,8 @@
           <details class="panel panel--flush nx-details" data-reveal>
             <summary class="nx-details__summary">
               <span class="nx-details__title">Instalar servicios (apt)</span>
-              <span class="panel-note panel-note--inline">Catálogo con lista blanca. La instalación exige confirmación y queda auditada.</span>
-              <span class="nx-details__chevron" aria-hidden="true">⌄</span>
+              <span class="panel-note panel-note--inline">CatÃ¡logo con lista blanca. La instalaciÃ³n exige confirmaciÃ³n y queda auditada.</span>
+              <span class="nx-details__chevron" aria-hidden="true">âŒ„</span>
             </summary>
             <div class="nx-card-body">
               <p id="install-status" class="nx-hint"></p>
@@ -782,12 +782,12 @@
             </div>
 
             <!-- Barra de filtros: una fila dentro del panel, encima de
-                 la tabla —el patrón de PRTG—, no controles sueltos
+                 la tabla â€”el patrÃ³n de PRTGâ€”, no controles sueltos
                  flotando fuera. -->
             <div class="nx-toolbar">
               <label class="field">
                 <span class="nx-eyebrow">Buscar</span>
-                <input id="services-search" type="search" class="input-field input-field--mono" placeholder="smb, dnsmasq, nginx…" />
+                <input id="services-search" type="search" class="input-field input-field--mono" placeholder="smb, dnsmasq, nginxâ€¦" />
               </label>
               <label class="field">
                 <span class="nx-eyebrow">Estado</span>
@@ -799,7 +799,7 @@
                 </select>
               </label>
               <label class="field">
-                <span class="nx-eyebrow">Ámbito</span>
+                <span class="nx-eyebrow">Ãmbito</span>
                 <select id="services-scope" class="input-field">
                   <option value="all">Todos los servicios</option>
                   <option value="target">Solo los del panel</option>
@@ -814,7 +814,7 @@
                     <th scope="col">Unidad</th>
                     <th scope="col">Estado</th>
                     <th scope="col">Subestado</th>
-                    <th scope="col">Descripción</th>
+                    <th scope="col">DescripciÃ³n</th>
                     <th scope="col" class="nx-cell-actions">Acciones</th>
                   </tr>
                 </thead>
@@ -828,7 +828,7 @@
           <section id="service-detail" class="panel panel--flush hidden" aria-label="Detalle del servicio">
             <div class="nx-card-head">
               <h3 class="panel-title">Detalle de la unidad</h3>
-              <p id="service-detail-title" class="panel-note panel-note--inline mono">—</p>
+              <p id="service-detail-title" class="panel-note panel-note--inline mono">â€”</p>
               <div class="nx-card-actions">
                 <button id="service-detail-close" class="btn btn-ghost btn-sm" type="button">Cerrar</button>
               </div>
@@ -836,16 +836,16 @@
             <div class="nx-card-body">
               <div id="service-detail-body"></div>
               <details class="nx-disclosure nx-block-top">
-                <summary class="nx-summary">Últimos logs (journalctl)</summary>
+                <summary class="nx-summary">Ãšltimos logs (journalctl)</summary>
                 <pre id="service-detail-logs" class="nx-code"></pre>
               </details>
             </div>
           </section>
 
-          <section id="config-panel" class="panel panel--flush hidden" aria-label="Configuración del servicio">
+          <section id="config-panel" class="panel panel--flush hidden" aria-label="ConfiguraciÃ³n del servicio">
             <div class="nx-card-head">
-              <h3 class="panel-title">Configuración guiada</h3>
-              <p id="config-title" class="panel-note panel-note--inline mono">—</p>
+              <h3 class="panel-title">ConfiguraciÃ³n guiada</h3>
+              <p id="config-title" class="panel-note panel-note--inline mono">â€”</p>
               <div class="nx-card-actions">
                 <button id="config-close" class="btn btn-ghost btn-sm" type="button">Cerrar</button>
               </div>
@@ -870,16 +870,16 @@
         </section>
 
         <!-- ================================================================
-             SECCIÓN: ALERTAS
-             Cinco dominios distintos que comparten una pestaña: qué se
-             dispara, qué ha pasado, a quién se avisa, cuándo se silencia
-             el panel y qué está esperando una decisión humana. El riel
-             de sub-pestañas es el del mismo lenguaje que el principal.
+             SECCIÃ“N: ALERTAS
+             Cinco dominios distintos que comparten una pestaÃ±a: quÃ© se
+             dispara, quÃ© ha pasado, a quiÃ©n se avisa, cuÃ¡ndo se silencia
+             el panel y quÃ© estÃ¡ esperando una decisiÃ³n humana. El riel
+             de sub-pestaÃ±as es el del mismo lenguaje que el principal.
              ================================================================ -->
         <section id="section-alerts" class="tab-section nx-stack hidden" aria-label="Alertas">
           <div class="nx-section-head" data-reveal>
             <h2 class="nx-section-title">Alertas</h2>
-            <span class="nx-meta">Reglas, eventos, avisos y remediación</span>
+            <span class="nx-meta">Reglas, eventos, avisos y remediaciÃ³n</span>
           </div>
 
           <section class="panel panel--flush" data-reveal aria-label="Alertas">
@@ -895,7 +895,7 @@
             <div class="nx-subpanel" data-subgroup="alerts" data-subpanel="rules" role="tabpanel">
               <div class="nx-card-head">
                 <h3 class="panel-title">Reglas de alarma</h3>
-                <p class="panel-note panel-note--inline">Cada regla mira una métrica y abre un evento cuando la condición se mantiene</p>
+                <p class="panel-note panel-note--inline">Cada regla mira una mÃ©trica y abre un evento cuando la condiciÃ³n se mantiene</p>
                 <div class="nx-card-actions">
                   <button id="alerts-rules-new" type="button" class="btn btn-primary btn-sm">Nueva regla</button>
                   <button id="refresh-alert-rules" type="button" class="btn btn-ghost btn-sm">
@@ -905,9 +905,9 @@
                 </div>
               </div>
 
-              <!-- Formulario de alta/edición. Sin crear, la tabla es lo
-                   único que hay: guardar una regla es un formulario
-                   corto, no un diálogo. -->
+              <!-- Formulario de alta/ediciÃ³n. Sin crear, la tabla es lo
+                   Ãºnico que hay: guardar una regla es un formulario
+                   corto, no un diÃ¡logo. -->
               <div id="alert-rule-form-wrap" class="nx-card-body hidden">
                 <form id="alert-rule-form" autocomplete="off">
                   <div class="nx-form-grid nx-form-grid--3">
@@ -916,7 +916,7 @@
                       <input id="rule-name" type="text" maxlength="80" required class="input-field" placeholder="CPU sostenida" />
                     </label>
                     <label class="field">
-                      <span class="nx-eyebrow">Métrica</span>
+                      <span class="nx-eyebrow">MÃ©trica</span>
                       <select id="rule-metric" class="input-field input-field--mono">
                         <option value="cpu">cpu</option>
                         <option value="ram">ram</option>
@@ -927,7 +927,7 @@
                       </select>
                     </label>
                     <label class="field">
-                      <span class="nx-eyebrow">Condición</span>
+                      <span class="nx-eyebrow">CondiciÃ³n</span>
                       <div class="nx-field-row">
                         <select id="rule-op" class="input-field input-field--mono">
                           <option value="&gt;">&gt; mayor que</option>
@@ -937,15 +937,15 @@
                       </div>
                     </label>
                     <label class="field">
-                      <span class="nx-eyebrow">Umbral de recuperación · opcional</span>
-                      <input id="rule-clear-threshold" type="number" step="any" class="input-field input-field--mono" placeholder="sin histéresis" />
+                      <span class="nx-eyebrow">Umbral de recuperaciÃ³n Â· opcional</span>
+                      <input id="rule-clear-threshold" type="number" step="any" class="input-field input-field--mono" placeholder="sin histÃ©resis" />
                     </label>
                     <label class="field">
-                      <span class="nx-eyebrow">Duración mínima · s</span>
+                      <span class="nx-eyebrow">DuraciÃ³n mÃ­nima Â· s</span>
                       <input id="rule-duration" type="number" min="0" max="86400" step="1" value="0" class="input-field input-field--mono" />
                     </label>
                     <label class="field">
-                      <span class="nx-eyebrow">Remediación automática</span>
+                      <span class="nx-eyebrow">RemediaciÃ³n automÃ¡tica</span>
                       <select id="rule-remediation" class="input-field input-field--mono">
                         <option value="">Ninguna</option>
                         <option value="docker_prune_images">docker_prune_images</option>
@@ -959,12 +959,12 @@
                       <input type="checkbox" id="rule-enabled" checked />
                       <span>Regla activa</span>
                     </label>
-                    <span class="nx-hint nx-grow">La severidad la decide el motor según cuánto se desvía la métrica de su umbral.</span>
+                    <span class="nx-hint nx-grow">La severidad la decide el motor segÃºn cuÃ¡nto se desvÃ­a la mÃ©trica de su umbral.</span>
                   </div>
                   <div class="nx-actionbar">
                     <button id="rule-save" type="submit" class="btn btn-primary">Guardar regla</button>
                     <button id="rule-cancel" type="button" class="btn btn-ghost">Cancelar</button>
-                    <span class="nx-actionbar-note" id="rule-form-note">Se creará una regla nueva</span>
+                    <span class="nx-actionbar-note" id="rule-form-note">Se crearÃ¡ una regla nueva</span>
                   </div>
                   <p id="rule-status" class="nx-status hidden"></p>
                 </form>
@@ -975,13 +975,13 @@
                   <thead>
                     <tr>
                       <th scope="col">Nombre</th>
-                      <th scope="col">Métrica</th>
-                      <th scope="col">Condición</th>
-                      <th scope="col" class="nx-th-num">Duración</th>
+                      <th scope="col">MÃ©trica</th>
+                      <th scope="col">CondiciÃ³n</th>
+                      <th scope="col" class="nx-th-num">DuraciÃ³n</th>
                       <th scope="col">Severidad</th>
-                      <th scope="col">Remediación</th>
+                      <th scope="col">RemediaciÃ³n</th>
                       <th scope="col">Estado</th>
-                      <th scope="col" class="nx-cell-actions">Acción</th>
+                      <th scope="col" class="nx-cell-actions">AcciÃ³n</th>
                     </tr>
                   </thead>
                   <tbody id="alert-rules-table">
@@ -1021,7 +1021,7 @@
                       <th scope="col">Abierto</th>
                       <th scope="col">Estado</th>
                       <th scope="col">Reconocido por</th>
-                      <th scope="col" class="nx-cell-actions">Acción</th>
+                      <th scope="col" class="nx-cell-actions">AcciÃ³n</th>
                     </tr>
                   </thead>
                   <tbody id="alert-events-table">
@@ -1034,7 +1034,7 @@
             <!-- ---------- (c) CANALES ---------- -->
             <div class="nx-subpanel hidden" data-subgroup="alerts" data-subpanel="channels" role="tabpanel">
               <div class="nx-card-head">
-                <h3 class="panel-title">Canales de notificación</h3>
+                <h3 class="panel-title">Canales de notificaciÃ³n</h3>
                 <p class="panel-note panel-note--inline">Telegram, webhook y correo. Las credenciales solo se guardan: el panel nunca vuelve a leerlas</p>
                 <div class="nx-card-actions">
                   <button id="channel-new" type="button" class="btn btn-primary btn-sm">Nuevo canal</button>
@@ -1063,7 +1063,7 @@
                     <label class="field">
                       <span class="nx-eyebrow">Activo</span>
                       <select id="channel-enabled" class="input-field">
-                        <option value="1">Sí</option>
+                        <option value="1">SÃ­</option>
                         <option value="0">No</option>
                       </select>
                     </label>
@@ -1075,7 +1075,7 @@
                   <div id="channel-fields-telegram" class="nx-t-3 nx-form-grid">
                     <label class="field">
                       <span class="nx-eyebrow">Token del bot</span>
-                      <input id="channel-tg-token" type="text" class="input-field input-field--mono" placeholder="123456:ABC-DEF…" autocomplete="off" />
+                      <input id="channel-tg-token" type="text" class="input-field input-field--mono" placeholder="123456:ABC-DEFâ€¦" autocomplete="off" />
                     </label>
                     <label class="field">
                       <span class="nx-eyebrow">Chat ID</span>
@@ -1088,8 +1088,8 @@
                       <input id="channel-wh-url" type="url" class="input-field input-field--mono" placeholder="https://ejemplo.invalid/hook" />
                     </label>
                     <label class="field">
-                      <span class="nx-eyebrow">Cabecera Authorization · opcional</span>
-                      <input id="channel-wh-auth" type="text" class="input-field input-field--mono" placeholder="Bearer …" autocomplete="off" />
+                      <span class="nx-eyebrow">Cabecera Authorization Â· opcional</span>
+                      <input id="channel-wh-auth" type="text" class="input-field input-field--mono" placeholder="Bearer â€¦" autocomplete="off" />
                     </label>
                   </div>
                   <div id="channel-fields-smtp" class="nx-t-3 nx-form-grid hidden">
@@ -1102,11 +1102,11 @@
                       <input id="channel-smtp-port" type="number" min="1" max="65535" value="587" class="input-field input-field--mono" />
                     </label>
                     <label class="field">
-                      <span class="nx-eyebrow">Usuario · opcional</span>
+                      <span class="nx-eyebrow">Usuario Â· opcional</span>
                       <input id="channel-smtp-user" type="text" class="input-field" autocomplete="off" />
                     </label>
                     <label class="field">
-                      <span class="nx-eyebrow">Contraseña · opcional</span>
+                      <span class="nx-eyebrow">ContraseÃ±a Â· opcional</span>
                       <input id="channel-smtp-pass" type="password" class="input-field" autocomplete="new-password" />
                     </label>
                     <label class="field">
@@ -1119,11 +1119,11 @@
                     </label>
                   </div>
 
-                  <p class="nx-hint nx-t-3">Al editar, deja en blanco el campo de credencial para conservar la que ya está guardada: el servidor solo recibe los campos que escribas.</p>
+                  <p class="nx-hint nx-t-3">Al editar, deja en blanco el campo de credencial para conservar la que ya estÃ¡ guardada: el servidor solo recibe los campos que escribas.</p>
                   <div class="nx-actionbar">
                     <button id="channel-save" type="submit" class="btn btn-primary">Guardar canal</button>
                     <button id="channel-cancel" type="button" class="btn btn-ghost">Cancelar</button>
-                    <span class="nx-actionbar-note" id="channel-form-note">Se creará un canal nuevo</span>
+                    <span class="nx-actionbar-note" id="channel-form-note">Se crearÃ¡ un canal nuevo</span>
                   </div>
                   <p id="channel-status" class="nx-status hidden"></p>
                 </form>
@@ -1137,8 +1137,8 @@
                       <th scope="col">Tipo</th>
                       <th scope="col">Destino</th>
                       <th scope="col">Estado</th>
-                      <th scope="col">Último envío</th>
-                      <th scope="col" class="nx-cell-actions">Acción</th>
+                      <th scope="col">Ãšltimo envÃ­o</th>
+                      <th scope="col" class="nx-cell-actions">AcciÃ³n</th>
                     </tr>
                   </thead>
                   <tbody id="channels-table">
@@ -1167,20 +1167,20 @@
                   <div class="nx-form-grid nx-form-grid--3">
                     <label class="field">
                       <span class="nx-eyebrow">Nombre</span>
-                      <input id="mw-name" type="text" maxlength="80" required class="input-field" placeholder="Actualización del sistema" />
+                      <input id="mw-name" type="text" maxlength="80" required class="input-field" placeholder="ActualizaciÃ³n del sistema" />
                     </label>
                     <label class="field">
-                      <span class="nx-eyebrow">Empieza · ISO-8601</span>
+                      <span class="nx-eyebrow">Empieza Â· ISO-8601</span>
                       <input id="mw-start" type="text" required class="input-field input-field--mono" placeholder="2026-10-18T02:00:00Z" />
                     </label>
                     <label class="field">
-                      <span class="nx-eyebrow">Termina · ISO-8601</span>
+                      <span class="nx-eyebrow">Termina Â· ISO-8601</span>
                       <input id="mw-end" type="text" required class="input-field input-field--mono" placeholder="2026-10-18T04:00:00Z" />
                     </label>
                     <label class="field">
                       <span class="nx-eyebrow">Activa</span>
                       <select id="mw-enabled" class="input-field">
-                        <option value="1">Sí</option>
+                        <option value="1">SÃ­</option>
                         <option value="0">No</option>
                       </select>
                     </label>
@@ -1188,7 +1188,7 @@
                   <div class="nx-actionbar">
                     <button id="mw-save" type="submit" class="btn btn-primary">Guardar ventana</button>
                     <button id="mw-cancel" type="button" class="btn btn-ghost">Cancelar</button>
-                    <span class="nx-actionbar-note" id="mw-form-note">Se creará una ventana nueva</span>
+                    <span class="nx-actionbar-note" id="mw-form-note">Se crearÃ¡ una ventana nueva</span>
                   </div>
                   <p id="mw-status" class="nx-status hidden"></p>
                 </form>
@@ -1202,7 +1202,7 @@
                       <th scope="col">Empieza</th>
                       <th scope="col">Termina</th>
                       <th scope="col">Estado</th>
-                      <th scope="col" class="nx-cell-actions">Acción</th>
+                      <th scope="col" class="nx-cell-actions">AcciÃ³n</th>
                     </tr>
                   </thead>
                   <tbody id="mw-table">
@@ -1212,14 +1212,14 @@
               </div>
             </div>
 
-            <!-- ---------- (e) PROPUESTAS DE REMEDIACIÓN ----------
+            <!-- ---------- (e) PROPUESTAS DE REMEDIACIÃ“N ----------
                  La parte que toca el host nunca se ejecuta sola: la
-                 lista enseña qué proposes el motor y por qué, y las
-                 dos únicas acciones son confirmar y cancelar. -->
+                 lista enseÃ±a quÃ© proposes el motor y por quÃ©, y las
+                 dos Ãºnicas acciones son confirmar y cancelar. -->
             <div class="nx-subpanel hidden" data-subgroup="alerts" data-subpanel="proposals" role="tabpanel">
               <div class="nx-card-head">
-                <h3 class="panel-title">Propuestas de remediación</h3>
-                <p class="panel-note panel-note--inline">El motor propone, nunca ejecuta: una propuesta toca el host solo si la confirmas aquí</p>
+                <h3 class="panel-title">Propuestas de remediaciÃ³n</h3>
+                <p class="panel-note panel-note--inline">El motor propone, nunca ejecuta: una propuesta toca el host solo si la confirmas aquÃ­</p>
                 <div class="nx-card-actions">
                   <button id="refresh-proposals" type="button" class="btn btn-ghost btn-sm">
                     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13.4 8a5.4 5.4 0 1 1-1.58-3.82"/><path d="M13.4 2.6v3.1h-3.1"/></svg>
@@ -1233,19 +1233,19 @@
         </section>
 
         <!-- ================================================================
-             SECCIÓN: HOSTS
+             SECCIÃ“N: HOSTS
              ------------------------------------------------------------
              La flota. El hub tira de cada host: el local con el
-             colector de métricas (5 s, en vivo) y los remotos con su
-             agente, que conecta hacia fuera y manda su instantánea y su
-             latido. Aquí se ve quién está en la flota, con qué estado, y
+             colector de mÃ©tricas (5 s, en vivo) y los remotos con su
+             agente, que conecta hacia fuera y manda su instantÃ¡nea y su
+             latido. AquÃ­ se ve quiÃ©n estÃ¡ en la flota, con quÃ© estado, y
              se da de alta un host nuevo copiando el comando de
              enrolamiento.
              ================================================================ -->
         <section id="section-hosts" class="tab-section nx-stack hidden" aria-label="Hosts">
           <div class="nx-section-head" data-reveal>
             <h2 class="nx-section-title">Hosts</h2>
-            <span class="nx-meta" id="hosts-summary">—</span>
+            <span class="nx-meta" id="hosts-summary">â€”</span>
             <div class="nx-card-actions">
               <button id="hosts-refresh" type="button" class="btn btn-ghost btn-sm">
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13.4 8a5.4 5.4 0 1 1-1.58-3.82"/><path d="M13.4 2.6v3.1h-3.1"/></svg>
@@ -1258,9 +1258,9 @@
           <section class="panel panel--flush" data-reveal aria-label="Inventario de hosts">
             <div class="nx-card-head">
               <h3 class="panel-title">Flota</h3>
-              <p class="panel-note panel-note--inline">Un host está en línea si su latido es más reciente que la ventana de conexión (30 s)</p>
+              <p class="panel-note panel-note--inline">Un host estÃ¡ en lÃ­nea si su latido es mÃ¡s reciente que la ventana de conexiÃ³n (30 s)</p>
               <div class="nx-card-actions">
-                <span class="nx-meta" id="hosts-counts">—</span>
+                <span class="nx-meta" id="hosts-counts">â€”</span>
               </div>
             </div>
             <div class="nx-sr-scroll">
@@ -1273,7 +1273,7 @@
                     <th scope="col">Sistema</th>
                     <th scope="col">Agente</th>
                     <th scope="col">Alta</th>
-                    <th scope="col" class="nx-th-num">Último latido</th>
+                    <th scope="col" class="nx-th-num">Ãšltimo latido</th>
                     <th scope="col">Habilitado</th>
                     <th scope="col" class="nx-th-num">Acciones</th>
                   </tr>
@@ -1282,9 +1282,9 @@
               </table>
             </div>
 
-            <!-- Edición en línea: el mismo patrón que el de monitores
+            <!-- EdiciÃ³n en lÃ­nea: el mismo patrÃ³n que el de monitores
                  (cuerpo desplegable bajo la cabecera de la tabla), sin
-                 modal ni diálogo propio. -->
+                 modal ni diÃ¡logo propio. -->
             <div id="hosts-edit-wrap" class="nx-card-body hidden">
               <form id="hosts-edit-form" autocomplete="off">
                 <div class="nx-eyebrow" id="hosts-edit-title">Editar host</div>
@@ -1295,20 +1295,20 @@
                   </label>
                   <label class="field">
                     <span class="nx-eyebrow">Notas internas</span>
-                    <input id="hosts-edit-notes" type="text" maxlength="200" class="input-field" placeholder="Rack, ubicación, responsable…" />
+                    <input id="hosts-edit-notes" type="text" maxlength="200" class="input-field" placeholder="Rack, ubicaciÃ³n, responsableâ€¦" />
                   </label>
                   <label class="field">
                     <span class="nx-eyebrow">Habilitado</span>
                     <select id="hosts-edit-enabled" class="input-field">
-                      <option value="1">Sí — el agente autentica</option>
-                      <option value="0">No — el token deja de servir</option>
+                      <option value="1">SÃ­ â€” el agente autentica</option>
+                      <option value="0">No â€” el token deja de servir</option>
                     </select>
                   </label>
                 </div>
                 <div class="nx-actionbar">
                   <button id="hosts-edit-save" type="submit" class="btn btn-primary">Guardar cambios</button>
                   <button id="hosts-edit-cancel" type="button" class="btn btn-ghost">Cancelar</button>
-                  <span class="nx-actionbar-note" id="hosts-edit-note">Deshabilitar un host revoca su token en la práctica.</span>
+                  <span class="nx-actionbar-note" id="hosts-edit-note">Deshabilitar un host revoca su token en la prÃ¡ctica.</span>
                 </div>
                 <p id="hosts-edit-status" class="nx-status hidden"></p>
               </form>
@@ -1319,12 +1319,12 @@
                El token es un secreto del hub: quien lo tenga puede
                dar de alta un host. Se muestra porque hace falta para
                instalar el agente, y se avisa de lo que es. -->
-          <section class="panel panel--flush" data-reveal aria-label="Añadir un host a la flota">
+          <section class="panel panel--flush" data-reveal aria-label="AÃ±adir un host a la flota">
             <div class="nx-card-head">
-              <h3 class="panel-title">Añadir host</h3>
-              <p class="panel-note panel-note--inline">El agente se instala en la máquina destino y se da de alta contra este hub</p>
+              <h3 class="panel-title">AÃ±adir host</h3>
+              <p class="panel-note panel-note--inline">El agente se instala en la mÃ¡quina destino y se da de alta contra este hub</p>
               <div class="nx-card-actions">
-                <span class="nx-meta" id="hosts-enroll-source">—</span>
+                <span class="nx-meta" id="hosts-enroll-source">â€”</span>
               </div>
             </div>
             <div class="nx-card-body">
@@ -1336,8 +1336,8 @@
                   <span class="nx-strip-sep" aria-hidden="true"></span>
                   <button id="hosts-copy-token" type="button" class="btn btn-ghost btn-sm">Copiar token</button>
                 </div>
-                <pre class="nx-code nx-hosts-code" id="hosts-enroll-token">—</pre>
-                <p class="nx-hint nx-t-2" id="hosts-enroll-warning">—</p>
+                <pre class="nx-code nx-hosts-code" id="hosts-enroll-token">â€”</pre>
+                <p class="nx-hint nx-t-2" id="hosts-enroll-warning">â€”</p>
               </div>
 
               <!-- 2. Dos comandos: enrolar y arrancar. -->
@@ -1346,13 +1346,13 @@
                   <span class="nx-hosts-step-n">2</span>
                   <span class="nx-eyebrow">Enrolar y arrancar el agente</span>
                 </div>
-                <p class="nx-hosts-step-note">Alternativa manual de desarrollo: en la máquina destino, con el proyecto y el venv a mano. Para producción usa el instalador del paso 3. Sustituye <code>NOMBRE</code> por el nombre que verás en la flota.</p>
+                <p class="nx-hosts-step-note">Alternativa manual de desarrollo: en la mÃ¡quina destino, con el proyecto y el venv a mano. Para producciÃ³n usa el instalador del paso 3. Sustituye <code>NOMBRE</code> por el nombre que verÃ¡s en la flota.</p>
                 <div class="nx-hosts-cmd">
-                  <code id="hosts-enroll-command">—</code>
+                  <code id="hosts-enroll-command">â€”</code>
                   <button type="button" class="btn btn-ghost btn-sm" data-hosts-copy="enroll">Copiar</button>
                 </div>
                 <div class="nx-hosts-cmd">
-                  <code id="hosts-run-command">—</code>
+                  <code id="hosts-run-command">â€”</code>
                   <button type="button" class="btn btn-ghost btn-sm" data-hosts-copy="run">Copiar</button>
                 </div>
                 <p class="nx-hint nx-t-2" id="hosts-run-note">El segundo comando es el bucle del agente: informa el latido y ejecuta lo que el panel le pida. Para que arranque al encender, usa el instalador. Deja el token guardado en <code>config.json</code> (0600).</p>
@@ -1365,52 +1365,52 @@
                   <span class="nx-eyebrow">O el instalador, si es Linux</span>
                 </div>
                 <div class="nx-hosts-cmd">
-                  <code id="hosts-install-command">—</code>
+                  <code id="hosts-install-command">â€”</code>
                   <button type="button" class="btn btn-ghost btn-sm" data-hosts-copy="install">Copiar</button>
                 </div>
-                <p class="nx-hint nx-t-2">Copia el usuario de sistema, deja el agente en <code>/opt/nexus-agent</code>, crea el venv, instala la unidad <code>nexus-agent.service</code> (<code>deploy/agent/nexus-agent.service</code>) y arranca el servicio. Archivos: <code>deploy/agent/install-agent.sh</code> · <code>deploy/agent/requirements-agent.txt</code>. Añade <code>--docker</code> si quieres que el agente también gestione contenedores. Si el host ya estaba enrolado contra otra URL (por ejemplo, un Quick Tunnel antiguo), vuelve a ejecutar el instalador con la URL actual; se creará una entrada nueva.</p>
+                <p class="nx-hint nx-t-2">Copia el usuario de sistema, deja el agente en <code>/opt/nexus-agent</code>, crea el venv, instala la unidad <code>nexus-agent.service</code> (<code>deploy/agent/nexus-agent.service</code>) y arranca el servicio. Archivos: <code>deploy/agent/install-agent.sh</code> Â· <code>deploy/agent/requirements-agent.txt</code>. AÃ±ade <code>--docker</code> si quieres que el agente tambiÃ©n gestione contenedores. Si el host ya estaba enrolado contra otra URL (por ejemplo, un Quick Tunnel antiguo), vuelve a ejecutar el instalador con la URL actual; se crearÃ¡ una entrada nueva.</p>
               </div>
 
-              <!-- Aviso de red: la razón por la que esto funciona sin
+              <!-- Aviso de red: la razÃ³n por la que esto funciona sin
                    abrir nada en el firewall. -->
               <p class="nx-status nx-status--ok nx-t-3" id="hosts-outbound-note">
-                El agente se conecta <strong>hacia fuera</strong> por HTTPS contra este panel: no escucha en ningún puerto y no hay que abrir reglas de entrada. Funciona detrás de NAT o de un cortafuegos; lo único que hace falta es salida TCP al hub.
+                El agente se conecta <strong>hacia fuera</strong> por HTTPS contra este panel: no escucha en ningÃºn puerto y no hay que abrir reglas de entrada. Funciona detrÃ¡s de NAT o de un cortafuegos; lo Ãºnico que hace falta es salida TCP al hub.
               </p>
             </div>
           </section>
 
-          <!-- Cómo funciona, en una línea por idea. -->
-          <section class="panel" data-reveal aria-label="Cómo funciona la flota">
+          <!-- CÃ³mo funciona, en una lÃ­nea por idea. -->
+          <section class="panel" data-reveal aria-label="CÃ³mo funciona la flota">
             <div class="nx-card-head nx-card-head--plain">
-              <h3 class="panel-title">Cómo funciona</h3>
+              <h3 class="panel-title">CÃ³mo funciona</h3>
             </div>
             <div class="nx-card-body">
               <ul class="nx-hosts-how">
-                <li><span class="nx-eyebrow">El hub tira, no empuja</span>No hay sondeo del hub hacia los hosts: cada agente abre su propia conexión, manda su latido y sus métricas, y se queda a la espera de órdenes.</li>
-                <li><span class="nx-eyebrow">Este servidor es un host más</span>El <em>id 1</em> es la máquina donde corre el panel. Su latido lo mantiene el colector local, así que aparece en línea mientras el servicio está arrancado, y no se puede deshabilitar ni eliminar.</li>
-                <li><span class="nx-eyebrow">Cada agente con su token</span>Al enrolarse, un agente recibe su propio token y lo presenta en cada petición. Solo se guarda su hash, y desactivar el host en la tabla lo invalida al instante.</li>
-                <li><span class="nx-eyebrow">Qué se ve de cada host</span>Con el selector de la cabecera eliges qué host alimenta el Resumen y el Histórico. Contenedores, red y servicios siguen siendo, por ahora, del servidor local.</li>
+                <li><span class="nx-eyebrow">El hub tira, no empuja</span>No hay sondeo del hub hacia los hosts: cada agente abre su propia conexiÃ³n, manda su latido y sus mÃ©tricas, y se queda a la espera de Ã³rdenes.</li>
+                <li><span class="nx-eyebrow">Este servidor es un host mÃ¡s</span>El <em>id 1</em> es la mÃ¡quina donde corre el panel. Su latido lo mantiene el colector local, asÃ­ que aparece en lÃ­nea mientras el servicio estÃ¡ arrancado, y no se puede deshabilitar ni eliminar.</li>
+                <li><span class="nx-eyebrow">Cada agente con su token</span>Al enrolarse, un agente recibe su propio token y lo presenta en cada peticiÃ³n. Solo se guarda su hash, y desactivar el host en la tabla lo invalida al instante.</li>
+                <li><span class="nx-eyebrow">QuÃ© se ve de cada host</span>Con el selector de la cabecera eliges quÃ© host alimenta el Resumen y el HistÃ³rico. Contenedores, red y servicios siguen siendo, por ahora, del servidor local.</li>
               </ul>
             </div>
           </section>
         </section>
 
         <!-- ================================================================
-             SECCIÓN: HISTÓRICO
+             SECCIÃ“N: HISTÃ“RICO
              Una sola vista: el rango, las series y el export. La
              multitemporada vive en el backend (una muestra por minuto
              en 24 h, por hora en 30 d), no en un selector de zoom.
              ================================================================ -->
-        <section id="section-history" class="tab-section nx-stack hidden" aria-label="Histórico">
+        <section id="section-history" class="tab-section nx-stack hidden" aria-label="HistÃ³rico">
           <div class="nx-section-head" data-reveal>
-            <h2 class="nx-section-title">Histórico</h2>
+            <h2 class="nx-section-title">HistÃ³rico</h2>
             <span class="nx-meta">Series guardadas por el backend</span>
           </div>
 
-          <section class="panel panel--flush" data-reveal aria-label="Histórico de métricas">
+          <section class="panel panel--flush" data-reveal aria-label="HistÃ³rico de mÃ©tricas">
             <div class="nx-card-head">
               <h3 class="panel-title">Uso de recursos</h3>
-              <p id="history-window-note" class="panel-note panel-note--inline">—</p>
+              <p id="history-window-note" class="panel-note panel-note--inline">â€”</p>
               <div class="nx-card-actions">
                 <a id="history-csv" class="btn btn-ghost btn-sm" href="/api/metrics-export.csv?range=24h" download>Descargar CSV</a>
                 <span class="nx-meta hidden" id="history-csv-note"></span>
@@ -1434,7 +1434,7 @@
             </div>
 
             <div class="nx-card-body">
-              <div class="nx-eyebrow">Métricas</div>
+              <div class="nx-eyebrow">MÃ©tricas</div>
               <div class="nx-picks nx-t-2" id="history-picks">
                 <button type="button" class="nx-pick nx-pick-cpu" data-pick="cpu" aria-pressed="true"><i class="nx-pick-swatch" aria-hidden="true"></i>CPU</button>
                 <button type="button" class="nx-pick nx-pick-ram" data-pick="ram" aria-pressed="true"><i class="nx-pick-swatch" aria-hidden="true"></i>RAM</button>
@@ -1446,23 +1446,23 @@
             </div>
 
             <div class="nx-chart-frame" style="height:18rem">
-              <canvas id="history-chart" role="img" aria-label="Histórico de las métricas seleccionadas"></canvas>
+              <canvas id="history-chart" role="img" aria-label="HistÃ³rico de las mÃ©tricas seleccionadas"></canvas>
             </div>
             <p id="history-empty" class="nx-status hidden"></p>
           </section>
         </section>
 
         <!-- ================================================================
-             SECCIÓN: MONITORES
+             SECCIÃ“N: MONITORES
              Sondas externas: HTTP, TCP y TLS sobre un objetivo. La
              tabla es la fuente de verdad y el detalle con los latidos
-             es la serie histórica de una fila concreta.
+             es la serie histÃ³rica de una fila concreta.
              ================================================================ -->
         <section id="section-monitors" class="tab-section nx-stack hidden" aria-label="Monitores">
           <div class="nx-section-head" data-reveal>
             <h2 class="nx-section-title">Monitores</h2>
             <div class="nx-card-actions">
-              <a id="status-page-link" class="btn btn-ghost btn-sm" href="/api/status/page" target="_blank" rel="noopener">Página de estado pública</a>
+              <a id="status-page-link" class="btn btn-ghost btn-sm" href="/api/status/page" target="_blank" rel="noopener">PÃ¡gina de estado pÃºblica</a>
               <button id="refresh-monitors" type="button" class="btn btn-ghost btn-sm">
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13.4 8a5.4 5.4 0 1 1-1.58-3.82"/><path d="M13.4 2.6v3.1h-3.1"/></svg>
                 Refrescar
@@ -1484,7 +1484,7 @@
                 <div class="nx-form-grid nx-form-grid--3">
                   <label class="field">
                     <span class="nx-eyebrow">Nombre</span>
-                    <input id="mon-name" type="text" maxlength="80" required class="input-field" placeholder="API de producción" />
+                    <input id="mon-name" type="text" maxlength="80" required class="input-field" placeholder="API de producciÃ³n" />
                   </label>
                   <label class="field">
                     <span class="nx-eyebrow">Tipo</span>
@@ -1503,25 +1503,25 @@
                     <input id="mon-port" type="number" min="1" max="65535" class="input-field input-field--mono" placeholder="443" />
                   </label>
                   <label class="field">
-                    <span class="nx-eyebrow">Intervalo · s</span>
+                    <span class="nx-eyebrow">Intervalo Â· s</span>
                     <input id="mon-interval" type="number" min="10" max="86400" value="60" required class="input-field input-field--mono" />
                   </label>
                   <label class="field">
-                    <span class="nx-eyebrow">Tiempo máximo · s</span>
+                    <span class="nx-eyebrow">Tiempo mÃ¡ximo Â· s</span>
                     <input id="mon-timeout" type="number" min="1" max="30" value="5" required class="input-field input-field--mono" />
                   </label>
                   <label class="field" id="mon-expected-field">
-                    <span class="nx-eyebrow">Código esperado · opcional</span>
+                    <span class="nx-eyebrow">CÃ³digo esperado Â· opcional</span>
                     <input id="mon-expected" type="number" min="100" max="599" class="input-field input-field--mono" placeholder="cualquier 2xx/3xx" />
                   </label>
                   <label class="field" id="mon-keyword-field">
-                    <span class="nx-eyebrow">Texto esperado · opcional</span>
+                    <span class="nx-eyebrow">Texto esperado Â· opcional</span>
                     <input id="mon-keyword" type="text" maxlength="200" class="input-field input-field--mono" placeholder="ok" />
                   </label>
                   <label class="field">
                     <span class="nx-eyebrow">Activo</span>
                     <select id="mon-enabled" class="input-field">
-                      <option value="1">Sí</option>
+                      <option value="1">SÃ­</option>
                       <option value="0">No</option>
                     </select>
                   </label>
@@ -1529,7 +1529,7 @@
                 <div class="nx-actionbar">
                   <button id="mon-save" type="submit" class="btn btn-primary">Guardar monitor</button>
                   <button id="mon-cancel" type="button" class="btn btn-ghost">Cancelar</button>
-                  <span class="nx-actionbar-note" id="mon-form-note">Se creará un monitor nuevo</span>
+                  <span class="nx-actionbar-note" id="mon-form-note">Se crearÃ¡ un monitor nuevo</span>
                 </div>
                 <p id="mon-status" class="nx-status hidden"></p>
               </form>
@@ -1544,12 +1544,12 @@
                     <th scope="col">Tipo</th>
                     <th scope="col">Objetivo</th>
                     <th scope="col" class="nx-th-num">Latencia</th>
-                    <th scope="col">Última comprobación</th>
+                    <th scope="col">Ãšltima comprobaciÃ³n</th>
                     <th scope="col" class="nx-th-num">24 h</th>
                     <th scope="col" class="nx-th-num">7 d</th>
                     <th scope="col" class="nx-th-num">30 d</th>
-                    <th scope="col" class="nx-th-num">Cert. días</th>
-                    <th scope="col" class="nx-cell-actions">Acción</th>
+                    <th scope="col" class="nx-th-num">Cert. dÃ­as</th>
+                    <th scope="col" class="nx-cell-actions">AcciÃ³n</th>
                   </tr>
                 </thead>
                 <tbody id="monitors-table">
@@ -1562,7 +1562,7 @@
           <section id="monitor-detail" class="panel panel--flush hidden" aria-label="Latidos del monitor">
             <div class="nx-card-head">
               <h3 class="panel-title">Latidos</h3>
-              <p id="monitor-detail-title" class="panel-note panel-note--inline mono">—</p>
+              <p id="monitor-detail-title" class="panel-note panel-note--inline mono">â€”</p>
               <div class="nx-card-actions">
                 <fieldset class="nx-seg">
                   <legend class="nx-sr-only">Ventana de latidos</legend>
@@ -1577,41 +1577,41 @@
               <div class="nx-kv" id="monitor-detail-facts"></div>
             </div>
             <div class="nx-chart-frame" style="height:10rem">
-              <canvas id="heartbeats-chart" role="img" aria-label="Latencia de cada comprobación"></canvas>
+              <canvas id="heartbeats-chart" role="img" aria-label="Latencia de cada comprobaciÃ³n"></canvas>
             </div>
           </section>
         </section>
 
         <!-- ================================================================
-             SECCIÓN: AUDITORÍA
+             SECCIÃ“N: AUDITORÃA
              Un registro encadenado por hash: cada fila apunta a la
-             anterior, así que el panel enseña si la cadena sigue
-             cerrando bien. El filtro de acción es de coincidencia
-             EXACTA porque es el nombre del evento, no una búsqueda.
+             anterior, asÃ­ que el panel enseÃ±a si la cadena sigue
+             cerrando bien. El filtro de acciÃ³n es de coincidencia
+             EXACTA porque es el nombre del evento, no una bÃºsqueda.
              ================================================================ -->
-        <section id="section-audit" class="tab-section nx-stack hidden" aria-label="Auditoría">
+        <section id="section-audit" class="tab-section nx-stack hidden" aria-label="AuditorÃ­a">
           <div class="nx-section-head" data-reveal>
-            <h2 class="nx-section-title">Auditoría</h2>
-            <span id="audit-chain-note" class="nx-meta">—</span>
+            <h2 class="nx-section-title">AuditorÃ­a</h2>
+            <span id="audit-chain-note" class="nx-meta">â€”</span>
           </div>
 
-          <section class="panel panel--flush" data-reveal aria-label="Auditoría de seguridad">
+          <section class="panel panel--flush" data-reveal aria-label="AuditorÃ­a de seguridad">
             <div class="nx-card-head">
-              <h3 class="panel-title">Auditoría de seguridad</h3>
-              <p class="panel-note panel-note--inline">Solo lectura: sistema, puertos, servicios, archivos, Docker, SSH y la propia aplicación. No modifica nada.</p>
+              <h3 class="panel-title">AuditorÃ­a de seguridad</h3>
+              <p class="panel-note panel-note--inline">Solo lectura: sistema, puertos, servicios, archivos, Docker, SSH y la propia aplicaciÃ³n. No modifica nada.</p>
               <div class="nx-card-actions">
-                <button id="security-audit-run" type="button" class="btn btn-primary btn-sm">Ejecutar auditoría</button>
+                <button id="security-audit-run" type="button" class="btn btn-primary btn-sm">Ejecutar auditorÃ­a</button>
                 <button id="security-audit-baseline" type="button" class="btn btn-ghost btn-sm">Guardar baseline</button>
                 <button id="security-audit-baseline-clear" type="button" class="btn btn-ghost btn-sm" disabled>Borrar baseline</button>
                 <button id="security-audit-export" type="button" class="btn btn-ghost btn-sm" disabled>Exportar JSON</button>
               </div>
             </div>
             <div id="security-audit-body" class="nx-t-3" style="padding:0 18px 18px">
-              <p class="nx-meta">Pulsa «Ejecutar auditoría» para analizar el host.</p>
+              <p class="nx-meta">Pulsa Â«Ejecutar auditorÃ­aÂ» para analizar el host.</p>
             </div>
           </section>
 
-          <section class="panel panel--flush" data-reveal aria-label="Registro de auditoría">
+          <section class="panel panel--flush" data-reveal aria-label="Registro de auditorÃ­a">
             <div class="nx-card-head">
               <h3 class="panel-title">Registro encadenado</h3>
               <p class="panel-note panel-note--inline">Cada entrada incluye el hash de la anterior; si la cadena se rompe, salta arriba</p>
@@ -1625,12 +1625,12 @@
 
             <div class="nx-toolbar" style="grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr)">
               <label class="field">
-                <span class="nx-eyebrow">Acción · exacta</span>
+                <span class="nx-eyebrow">AcciÃ³n Â· exacta</span>
                 <input id="audit-action" type="search" class="input-field input-field--mono" placeholder="auth.login" list="audit-action-list" />
                 <datalist id="audit-action-list"></datalist>
               </label>
               <label class="field">
-                <span class="nx-eyebrow">Desde · ISO</span>
+                <span class="nx-eyebrow">Desde Â· ISO</span>
                 <input id="audit-since" type="text" class="input-field input-field--mono" placeholder="2026-10-17T00:00:00" />
               </label>
               <label class="field">
@@ -1650,7 +1650,7 @@
                   <tr>
                     <th scope="col" class="nx-th-num">#</th>
                     <th scope="col">Hora</th>
-                    <th scope="col">Acción</th>
+                    <th scope="col">AcciÃ³n</th>
                     <th scope="col">Actor</th>
                     <th scope="col">Objetivo</th>
                     <th scope="col">Resultado</th>
@@ -1665,8 +1665,8 @@
 
             <div class="nx-pager">
               <div class="nx-pager-info">
-                <p id="audit-range" class="nx-meta">—</p>
-                <p id="audit-chain-detail" class="nx-meta nx-pager-note">—</p>
+                <p id="audit-range" class="nx-meta">â€”</p>
+                <p id="audit-chain-detail" class="nx-meta nx-pager-note">â€”</p>
               </div>
               <div class="nx-pager-moves">
                 <button id="audit-prev" type="button" class="btn btn-ghost btn-sm">Anterior</button>
@@ -1677,24 +1677,24 @@
         </section>
 
         <!-- ================================================================
-             SECCIÓN: SISTEMA
+             SECCIÃ“N: SISTEMA
              Lo que el host es: puertos que escucha, actualizaciones
              pendientes y salud de los discos. Los tres bloques
-             comparten un patrón: si el backend no puede leerlos,
-            dice POR QUÉ en vez de mostrar una tabla vacía.
+             comparten un patrÃ³n: si el backend no puede leerlos,
+            dice POR QUÃ‰ en vez de mostrar una tabla vacÃ­a.
              ================================================================ -->
         <section id="section-system" class="tab-section nx-stack hidden" aria-label="Sistema">
           <div class="nx-section-head" data-reveal>
             <h2 class="nx-section-title">Sistema</h2>
             <div class="nx-card-actions">
-              <a id="diagnostics-download" class="btn btn-ghost btn-sm" href="/api/system/diagnostics" download>Descargar diagnóstico</a>
+              <a id="diagnostics-download" class="btn btn-ghost btn-sm" href="/api/system/diagnostics" download>Descargar diagnÃ³stico</a>
             </div>
           </div>
 
           <section class="panel panel--flush" data-reveal aria-label="Puertos en escucha">
             <div class="nx-card-head">
               <h3 class="panel-title">Puertos en escucha</h3>
-              <p id="ports-note" class="panel-note panel-note--inline">—</p>
+              <p id="ports-note" class="panel-note panel-note--inline">â€”</p>
               <div class="nx-card-actions">
                 <button id="refresh-ports" type="button" class="btn btn-ghost btn-sm">
                   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13.4 8a5.4 5.4 0 1 1-1.58-3.82"/><path d="M13.4 2.6v3.1h-3.1"/></svg>
@@ -1707,7 +1707,7 @@
                 <thead>
                   <tr>
                     <th scope="col">Familia</th>
-                    <th scope="col">Dirección</th>
+                    <th scope="col">DirecciÃ³n</th>
                     <th scope="col" class="nx-th-num">Puerto</th>
                     <th scope="col">Estado</th>
                     <th scope="col">Proceso</th>
@@ -1752,11 +1752,11 @@
         </section>
 
         <!-- ================================================================
-             SECCIÓN: SEGURIDAD
+             SECCIÃ“N: SEGURIDAD
              Tres cosas distintas y de socializing muy distinto: una
              credencial que se emite y se guarda, unas sesiones que se
              pueden cortar, y un segundo factor que se puede dejar a
-             medias. Por eso van en sub-pestañas.
+             medias. Por eso van en sub-pestaÃ±as.
              ================================================================ -->
         <section id="section-security" class="tab-section nx-stack hidden" aria-label="Seguridad">
           <div class="nx-section-head" data-reveal>
@@ -1785,15 +1785,15 @@
                 </div>
               </div>
 
-              <!-- El token recién creado. Es un plano hundido, no un
-                   diálogo: se queda en la página hasta que recargas,
-                   y el aviso ámbar explica que no habrá segunda
+              <!-- El token reciÃ©n creado. Es un plano hundido, no un
+                   diÃ¡logo: se queda en la pÃ¡gina hasta que recargas,
+                   y el aviso Ã¡mbar explica que no habrÃ¡ segunda
                    oportunidad. -->
               <div id="token-reveal" class="nx-card-body hidden">
-                <p class="nx-status nx-status--warn">Este es el único momento en que se muestra el token. Cópialo ahora: después solo verás su prefijo.</p>
-                <p class="nx-eyebrow nx-t-3">Token de <span id="token-reveal-name" class="mono">—</span></p>
+                <p class="nx-status nx-status--warn">Este es el Ãºnico momento en que se muestra el token. CÃ³pialo ahora: despuÃ©s solo verÃ¡s su prefijo.</p>
+                <p class="nx-eyebrow nx-t-3">Token de <span id="token-reveal-name" class="mono">â€”</span></p>
                 <div class="nx-secret nx-t-2">
-                  <p id="token-reveal-value" class="nx-secret-text">—</p>
+                  <p id="token-reveal-value" class="nx-secret-text">â€”</p>
                   <button id="token-reveal-copy" type="button" class="btn btn-ghost btn-sm">Copiar</button>
                 </div>
               </div>
@@ -1803,22 +1803,22 @@
                   <div class="nx-form-grid nx-form-grid--3">
                     <label class="field">
                       <span class="nx-eyebrow">Nombre</span>
-                      <input id="token-name" type="text" maxlength="80" required class="input-field" placeholder="Integración de métricas" />
+                      <input id="token-name" type="text" maxlength="80" required class="input-field" placeholder="IntegraciÃ³n de mÃ©tricas" />
                     </label>
                     <label class="field">
-                      <span class="nx-eyebrow">Ámbito</span>
+                      <span class="nx-eyebrow">Ãmbito</span>
                       <select id="token-scope" class="input-field input-field--mono">
-                        <option value="read">read · solo lectura</option>
-                        <option value="write">write · lectura y escritura</option>
+                        <option value="read">read Â· solo lectura</option>
+                        <option value="write">write Â· lectura y escritura</option>
                       </select>
                     </label>
                     <label class="field">
                       <span class="nx-eyebrow">Caducidad</span>
                       <select id="token-ttl" class="input-field">
-                        <option value="30">30 días</option>
-                        <option value="90" selected>90 días</option>
-                        <option value="180">180 días</option>
-                        <option value="365">365 días</option>
+                        <option value="30">30 dÃ­as</option>
+                        <option value="90" selected>90 dÃ­as</option>
+                        <option value="180">180 dÃ­as</option>
+                        <option value="365">365 dÃ­as</option>
                         <option value="">Sin caducidad</option>
                       </select>
                     </label>
@@ -1837,12 +1837,12 @@
                     <tr>
                       <th scope="col">Nombre</th>
                       <th scope="col">Prefijo</th>
-                      <th scope="col">Ámbito</th>
+                      <th scope="col">Ãmbito</th>
                       <th scope="col">Creado</th>
-                      <th scope="col">Último uso</th>
+                      <th scope="col">Ãšltimo uso</th>
                       <th scope="col">Caduca</th>
                       <th scope="col">Estado</th>
-                      <th scope="col" class="nx-cell-actions">Acción</th>
+                      <th scope="col" class="nx-cell-actions">AcciÃ³n</th>
                     </tr>
                   </thead>
                   <tbody id="tokens-table">
@@ -1856,7 +1856,7 @@
             <div class="nx-subpanel hidden" data-subgroup="security" data-subpanel="sessions" role="tabpanel">
               <div class="nx-card-head">
                 <h3 class="panel-title">Sesiones activas</h3>
-                <p class="panel-note panel-note--inline">La sesión actual no se puede revocar desde aquí: se cierra con "Salir"</p>
+                <p class="panel-note panel-note--inline">La sesiÃ³n actual no se puede revocar desde aquÃ­: se cierra con "Salir"</p>
                 <div class="nx-card-actions">
                   <button id="refresh-sessions" type="button" class="btn btn-ghost btn-sm">
                     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13.4 8a5.4 5.4 0 1 1-1.58-3.82"/><path d="M13.4 2.6v3.1h-3.1"/></svg>
@@ -1871,11 +1871,11 @@
                       <th scope="col">Identificador</th>
                       <th scope="col">Usuario</th>
                       <th scope="col">Creada</th>
-                      <th scope="col">Última actividad</th>
+                      <th scope="col">Ãšltima actividad</th>
                       <th scope="col">Expira</th>
                       <th scope="col" class="nx-th-num">Inactiva</th>
                       <th scope="col">Estado</th>
-                      <th scope="col" class="nx-cell-actions">Acción</th>
+                      <th scope="col" class="nx-cell-actions">AcciÃ³n</th>
                     </tr>
                   </thead>
                   <tbody id="sessions-table">
@@ -1889,7 +1889,7 @@
             <div class="nx-subpanel hidden" data-subgroup="security" data-subpanel="twofactor" role="tabpanel">
               <div class="nx-card-head">
                 <h3 class="panel-title">Segundo factor</h3>
-                <p class="panel-note panel-note--inline">TOTP con aplicación de autenticación y códigos de recuperación de un solo uso</p>
+                <p class="panel-note panel-note--inline">TOTP con aplicaciÃ³n de autenticaciÃ³n y cÃ³digos de recuperaciÃ³n de un solo uso</p>
                 <div class="nx-card-actions">
                   <button id="refresh-2fa" type="button" class="btn btn-ghost btn-sm">
                     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13.4 8a5.4 5.4 0 1 1-1.58-3.82"/><path d="M13.4 2.6v3.1h-3.1"/></svg>
@@ -1901,37 +1901,37 @@
               <div class="nx-card-body" id="2fa-status-body"></div>
 
               <!-- Preparar: el servidor entrega el secreto y los
-                   códigos una sola vez. No se usa ninguna biblioteca
+                   cÃ³digos una sola vez. No se usa ninguna biblioteca
                    de QR: el otpauth se entrega como texto
                    seleccionable para copiarlo o teclearlo. -->
               <div id="2fa-setup-wrap" class="nx-card-body hidden">
-                <p class="nx-status nx-status--warn">El secreto y los códigos de recuperación se muestran una sola vez. Guárdalos antes de continuar.</p>
+                <p class="nx-status nx-status--warn">El secreto y los cÃ³digos de recuperaciÃ³n se muestran una sola vez. GuÃ¡rdalos antes de continuar.</p>
 
                 <p class="nx-eyebrow nx-t-4">Secreto TOTP</p>
                 <div class="nx-secret nx-t-2">
-                  <p id="2fa-secret" class="nx-secret-text">—</p>
+                  <p id="2fa-secret" class="nx-secret-text">â€”</p>
                   <button id="2fa-secret-copy" type="button" class="btn btn-ghost btn-sm">Copiar</button>
                 </div>
 
                 <p class="nx-eyebrow nx-t-4">URL otpauth</p>
                 <div class="nx-secret nx-t-2">
-                  <p id="2fa-otpauth" class="nx-secret-text nx-secret-text--dim">—</p>
+                  <p id="2fa-otpauth" class="nx-secret-text nx-secret-text--dim">â€”</p>
                   <button id="2fa-otpauth-copy" type="button" class="btn btn-ghost btn-sm">Copiar</button>
                 </div>
 
-                <p class="nx-eyebrow nx-t-4">Códigos de recuperación</p>
-                <pre id="2fa-codes" class="nx-codes">—</pre>
+                <p class="nx-eyebrow nx-t-4">CÃ³digos de recuperaciÃ³n</p>
+                <pre id="2fa-codes" class="nx-codes">â€”</pre>
 
                 <form id="2fa-enable-form" autocomplete="off">
                   <div class="nx-t-3">
                     <label class="field">
-                      <span class="nx-eyebrow">Código de 6 dígitos de tu aplicación</span>
+                      <span class="nx-eyebrow">CÃ³digo de 6 dÃ­gitos de tu aplicaciÃ³n</span>
                       <input id="2fa-code" type="text" inputmode="numeric" maxlength="6" pattern="\d{6}" required class="input-field input-field--mono" placeholder="000000" />
                     </label>
                   </div>
                   <div class="nx-actionbar">
                     <button id="2fa-enable" type="submit" class="btn btn-primary">Activar segundo factor</button>
-                    <button id="2fa-setup-cancel" type="button" class="btn btn-ghost">Descartar preparación</button>
+                    <button id="2fa-setup-cancel" type="button" class="btn btn-ghost">Descartar preparaciÃ³n</button>
                     <span class="nx-actionbar-note">Sin activar, el secreto preparado no protege nada</span>
                   </div>
                   <p id="2fa-enable-status" class="nx-status hidden"></p>
@@ -1942,13 +1942,13 @@
                 <form id="2fa-disable-form" autocomplete="off">
                   <div class="nx-form-grid">
                     <label class="field">
-                      <span class="nx-eyebrow">Contraseña actual · para confirmar</span>
+                      <span class="nx-eyebrow">ContraseÃ±a actual Â· para confirmar</span>
                       <input id="2fa-password" type="password" maxlength="256" required class="input-field" autocomplete="current-password" />
                     </label>
                   </div>
                   <div class="nx-actionbar">
                     <button id="2fa-disable" type="submit" class="btn btn-danger">Desactivar segundo factor</button>
-                    <span class="nx-actionbar-note">Pide la contraseña: quitar un segundo factor no puede ser un clic</span>
+                    <span class="nx-actionbar-note">Pide la contraseÃ±a: quitar un segundo factor no puede ser un clic</span>
                   </div>
                   <p id="2fa-disable-status" class="nx-status hidden"></p>
                 </form>
@@ -1962,17 +1962,17 @@
       <section id="section-terminal" class="tab-section nx-stack hidden" aria-label="Terminal del servidor">
         <div class="nx-section-head" data-reveal>
           <h2 class="nx-section-title">Terminal</h2>
-          <span class="nx-meta">SSH al servidor del hub · sesión auditada</span>
+          <span class="nx-meta">SSH al servidor del hub Â· sesiÃ³n auditada</span>
         </div>
         <section class="panel panel--flush" data-reveal aria-label="Terminal SSH">
           <div class="nx-card-head">
             <h3 class="panel-title">Terminal SSH</h3>
-            <p class="panel-note panel-note--inline">Conexión cifrada al servidor. Solo administrador; se cierra al salir de la pestaña.</p>
+            <p class="panel-note panel-note--inline">ConexiÃ³n cifrada al servidor. Solo administrador; se cierra al salir de la pestaÃ±a.</p>
             <div class="nx-card-actions">
               <label class="nx-terminal-picker" for="terminal-host">
                 <span class="nx-terminal-picker-label">Servidor</span>
                 <select id="terminal-host" class="input-field nx-terminal-select" aria-label="Servidor de la terminal" disabled>
-                  <option value="">Cargando servidores…</option>
+                  <option value="">Cargando servidoresâ€¦</option>
                 </select>
               </label>
               <button id="terminal-reconnect" type="button" class="btn btn-ghost btn-sm">Reconectar</button>
@@ -1980,7 +1980,7 @@
           </div>
           <div class="nx-terminal-body">
             <div id="terminal" class="nx-terminal"></div>
-            <p id="terminal-status" class="nx-hint">Abre la pestaña para conectar por SSH.</p>
+            <p id="terminal-status" class="nx-hint">Abre la pestaÃ±a para conectar por SSH.</p>
           </div>
         </section>
       </section>
@@ -2001,25 +2001,25 @@
             <button id="chat-clear" class="btn btn-text btn-sm" type="button">Limpiar</button>
           </div>
 
-          <!-- La línea de arranque es una entrada de registro, no una
+          <!-- La lÃ­nea de arranque es una entrada de registro, no una
                tarjeta dentro del panel: sin caja, con filete. -->
           <div id="chat-messages" class="chat-scroll">
             <div class="chat-intro">
-              <p class="chat-intro-title">Agente Nexus · sin proveedor de IA configurado…</p>
+              <p class="chat-intro-title">Agente Nexus Â· sin proveedor de IA configuradoâ€¦</p>
               <p class="chat-intro-text">Puedo auditar la red local, desplegar contenedores, revisar el estado del sistema y gestionar sus servicios. Las acciones que modifican el host te las pido antes de ejecutarlas.</p>
             </div>
           </div>
 
           <form id="chat-form" class="nx-composer">
             <div class="nx-composer-row">
-              <textarea id="chat-input" rows="2" placeholder="Pregunta por el estado del servidor…"
+              <textarea id="chat-input" rows="2" placeholder="Pregunta por el estado del servidorâ€¦"
                         class="input-field flex-1 resize-none"></textarea>
               <button type="submit" id="chat-send" class="btn btn-primary" aria-label="Enviar mensaje">
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 13.2V3.4"/><path d="M3.9 7.5 8 3.4l4.1 4.1"/></svg>
               </button>
             </div>
             <p class="nx-composer-hint">
-              <span>Enter envía · Shift+Enter salta de línea</span>
+              <span>Enter envÃ­a Â· Shift+Enter salta de lÃ­nea</span>
             </p>
           </form>
         </div>

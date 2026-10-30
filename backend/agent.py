@@ -40,6 +40,7 @@ import socket
 import subprocess
 import sys
 import time
+import urllib.parse
 from pathlib import Path
 from typing import Any, Callable
 
@@ -83,6 +84,24 @@ def config_path() -> Path:
     return root / "nexus-agent" / CONFIG_FILENAME
 
 
+def validate_hub_url(hub: str) -> str:
+    """Exige HTTPS; solo permite HTTP loopback con un flag explícito de dev."""
+    value = (hub or "").strip().rstrip("/")
+    parsed = urllib.parse.urlparse(value)
+    if parsed.scheme == "https" and parsed.netloc:
+        return value
+    if (
+        parsed.scheme == "http"
+        and parsed.hostname in {"127.0.0.1", "localhost", "::1"}
+        and os.environ.get("NEXUS_AGENT_ALLOW_HTTP", "") == "1"
+    ):
+        return value
+    raise ValueError(
+        "El hub del agente debe usar https://. Para pruebas locales en loopback, "
+        "define NEXUS_AGENT_ALLOW_HTTP=1."
+    )
+
+
 def load_config() -> dict[str, Any]:
     """Lee la configuración guardada (error claro si el agente no está enrolado)."""
     path = config_path()
@@ -97,6 +116,10 @@ def load_config() -> dict[str, Any]:
         raise SystemExit(f"No se pudo leer la configuración {path}: {exc}") from exc
     if not data.get("hub") or not data.get("token"):
         raise SystemExit(f"La configuración {path} está incompleta (falta «hub» o «token»).")
+    try:
+        data["hub"] = validate_hub_url(str(data["hub"]))
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
     return data
 
 
@@ -425,7 +448,7 @@ class HubClient:
     """Cliente HTTP del agente hacia el hub (una conexión, salida siempre)."""
 
     def __init__(self, hub: str, token: str, timeout: float = 30.0) -> None:
-        self.base = f"{hub.rstrip('/')}/api/agent"
+        self.base = f"{validate_hub_url(hub)}/api/agent"
         self.headers = {"Authorization": f"Bearer {token}"}
         self._client = httpx.Client(timeout=timeout)
 
@@ -475,6 +498,10 @@ class HubClient:
 
 def enroll(hub: str, enroll_token: str, name: str) -> tuple[int, Path]:
     """Da de alta este host en el hub y guarda el token recibido."""
+    try:
+        hub = validate_hub_url(hub)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
     who = identity(name)
     payload = {"token": enroll_token, "agent_version": AGENT_VERSION, **who}
     with httpx.Client(timeout=20.0) as client:

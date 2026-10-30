@@ -22,6 +22,7 @@ from fastapi import HTTPException, status
 
 from app.core.audit import audit
 from app.core.config import get_settings
+from app.core import secret_storage
 from app.core.logging_conf import logger
 from app.core.paths import ai_env_path
 
@@ -79,7 +80,14 @@ def _read_file_map() -> dict[str, str]:
         key, _, value = line.partition("=")
         key = key.strip()
         if key in MANAGED_KEYS:
-            values[key] = value.strip()
+            value = value.strip()
+            if key in SECRET_ENV_KEYS and secret_storage.is_encrypted(value):
+                try:
+                    value = secret_storage.decrypt(value)
+                except ValueError:
+                    logger.error("No se pudo descifrar {} de ai.env; se ignora", key)
+                    value = ""
+            values[key] = value
     return values
 
 
@@ -89,7 +97,10 @@ def _write_file_map(values: dict[str, str]) -> None:
     lines = [_HEADER]
     for key in MANAGED_KEYS:
         if key in values:
-            lines.append(f"{key}={values[key]}\n")
+            value = str(values[key])
+            if key in SECRET_ENV_KEYS and value:
+                value = secret_storage.encrypt(value)
+            lines.append(f"{key}={value}\n")
     tmp = path.with_name(path.name + ".tmp")
     tmp.write_text("".join(lines), encoding="utf-8")
     try:

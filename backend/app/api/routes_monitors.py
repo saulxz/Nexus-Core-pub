@@ -228,17 +228,23 @@ async def prometheus_metrics(request: Request) -> PlainTextResponse:
     incluir ``Authorization: Bearer <token>``; en caso contrario responde 401.
     """
     expected = get_settings().METRICS_TOKEN.strip()
-    if expected:
-        header = request.headers.get("Authorization", "")
-        scheme, _, token = header.partition(" ")
-        if scheme.lower() != "bearer" or not token or not hmac.compare_digest(
-            token.strip(), expected
-        ):
-            raise HTTPException(
-                status.HTTP_401_UNAUTHORIZED,
-                "Falta o es inválido el token de métricas (Authorization: Bearer).",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+    if not expected:
+        # Sin token, el endpoint no se publica: evita exponer telemetría en
+        # Internet. Si necesitas Prometheus, define METRICS_TOKEN.
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            "Exportación Prometheus deshabilitada. Define METRICS_TOKEN para activarla.",
+        )
+    header = request.headers.get("Authorization", "")
+    scheme, _, token = header.partition(" ")
+    if scheme.lower() != "bearer" or not token or not hmac.compare_digest(
+        token.strip(), expected
+    ):
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            "Falta o es inválido el token de métricas (Authorization: Bearer).",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     body = prometheus.render()
     logger.debug("Exportación Prometheus: {} bytes", len(body))
     return PlainTextResponse(

@@ -47,3 +47,5 @@ python-nmap==0.7.1
 loguru==0.7.3
 # Hash de contraseñas con argon2id (autenticación del panel).
 argon2-cffi==25.1.0
+# Cifrado autenticado de secretos en reposo (TOTP y backups).
+cryptography==50.0.2

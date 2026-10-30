@@ -99,6 +99,22 @@ install -d -m 0755 /etc/nexus
 install -m 0644 -o root -g root "${APP_DIR}/deploy/nexus/allowed-units" /etc/nexus/allowed-units
 install -m 0644 -o root -g root "${APP_DIR}/deploy/nexus/installable.json" /etc/nexus/installable.json
 
+echo "==> Claves de cifrado en reposo"
+# Clave del hub (TOTP): la lee el usuario nexus, pero no está en data/ ni en backups.
+if [[ ! -s /etc/nexus/secret.key ]]; then
+  python3 -c 'import base64, os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())' \
+    > /etc/nexus/secret.key
+fi
+chown "${SERVICE_USER}:${SERVICE_USER}" /etc/nexus/secret.key
+chmod 0600 /etc/nexus/secret.key
+# Clave de backups: solo root; el backup se cifra antes de salir del host.
+if [[ ! -s /etc/nexus/backup.key ]]; then
+  python3 -c 'import base64, os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())' \
+    > /etc/nexus/backup.key
+fi
+chown root:root /etc/nexus/backup.key
+chmod 0600 /etc/nexus/backup.key
+
 echo "==> Reglas sudoers (validando sintaxis antes de instalar)"
 visudo -cf "${APP_DIR}/deploy/sudoers.d/nexus"
 install -m 0440 -o root -g root "${APP_DIR}/deploy/sudoers.d/nexus" /etc/sudoers.d/nexus
