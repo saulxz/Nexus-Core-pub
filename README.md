@@ -115,6 +115,27 @@ y reconecta solo si el hub se reinicia. Si cambia la URL del hub (por ejemplo, u
 Quick Tunnel nuevo), vuelve a ejecutar el instalador con la URL y el token actuales;
 el host se reenrola.
 
+## Edición privada self-hosted
+
+Nexus-Core también puede distribuirse como **edición privada**: cada comprador
+despliega su propio hub, su propio dominio, su propia base de datos y su propio
+administrador. La APK es solo el cliente; no está atada a un hub central ni
+incluye credenciales.
+
+- La URL del hub se configura en el primer arranque y debe ser HTTPS.
+- La licencia es independiente del hub y del dominio. La opción recomendada es
+  un archivo de licencia firmado offline (Ed25519) con comprador, caducidad,
+  límite de dispositivos y firma; la APK solo incorpora la clave pública.
+- La APK de venta debe ser `release`, sin `debuggable`, firmada con un keystore
+  privado y con R8/ProGuard.
+- La compra se entrega por web/teléfono mediante un enlace privado con APK,
+  licencia, SHA-256, huella del certificado e instrucciones.
+- Android puede mostrar el aviso de “app de origen desconocido” al instalar
+  fuera de Google Play; no se puede eliminar desde la app. Para evitarlo por
+  completo hay que usar Play privado/closed testing o Managed Google Play.
+- No se comparte el administrador del hub: cada comprador crea el suyo y activa
+  su propio 2FA. La licencia no da acceso al hub de otra persona.
+
 ### Android nativo
 
 También hay un cliente **Android nativo** en [`android/`](android/README.md), escrito

@@ -545,6 +545,35 @@ Límites actuales: las notificaciones en segundo plano usan WorkManager cada 15
 minutos (no FCM), el cambio de IP solo aplica al hub local con netplan y la app
 no guarda una copia offline completa.
 
+## 8.7 Edición privada self-hosted y licencias
+
+La edición privada no usa el hub del vendedor. Cada comprador instala Nexus-Core
+en su propia máquina o servidor, con su dominio, su base de datos y su
+administrador. La APK solo contiene el cliente y pide la URL del hub en el
+primer arranque.
+
+La licencia recomendada es **offline y firmada**: un archivo `nexus.license`
+emitido por el vendedor con identificador de comprador, caducidad, límite de
+dispositivos y firma Ed25519. La APK incluye únicamente la clave pública, por lo
+que no necesita contactar con un servidor central para validar la compra. La
+licencia no está vinculada a un dominio concreto.
+
+Flujo de venta:
+
+1. El comprador contacta por la web o el teléfono.
+2. Recibe un enlace privado con `Nexus-Core.apk`, `nexus.license`, `SHA256.txt`
+   e instrucciones.
+3. Instala y configura su propio hub.
+4. Introduce la URL HTTPS de su hub y activa la licencia.
+5. Crea su administrador y activa su 2FA.
+
+El APK debe compilarse en `release`, con keystore privado, R8 y sin
+`android:debuggable`. La instalación fuera de Google Play puede mostrar el aviso
+de “origen desconocido” o una advertencia de Play Protect; eso depende del canal,
+no del código. Para una distribución con confianza de tienda habría que usar una
+prueba cerrada de Play o Managed Google Play. Nunca se comparte el usuario
+`admin` entre compradores.
+
 # 9. Laboratorios para el aula
 
 > Todos los ejercicios se hacen en una red de laboratorio propia y con autorización. No se

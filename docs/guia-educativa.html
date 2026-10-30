@@ -303,6 +303,7 @@ marcadores como <code>&lt;TOKEN&gt;</code>. Ninguna credencial real aparece en e
 <li><a href="#84-backups-y-actualizacion">8.4 Backups y actualización</a></li>
 <li><a href="#85-diagnostico-rapido">8.5 Diagnóstico rápido</a></li>
 <li><a href="#86-cliente-android-nativo">8.6 Cliente Android nativo</a></li>
+<li><a href="#87-edicion-privada-self-hosted-y-licencias">8.7 Edición privada self-hosted y licencias</a></li>
 </ul>
 </li>
 <li><a href="#9-laboratorios-para-el-aula">9. Laboratorios para el aula</a><ul>
@@ -998,6 +999,31 @@ interfaz es nativa y consume la misma API HTTPS del hub.</p>
 <p>Límites actuales: las notificaciones en segundo plano usan WorkManager cada 15
 minutos (no FCM), el cambio de IP solo aplica al hub local con netplan y la app
 no guarda una copia offline completa.</p>
+<h2 id="87-edicion-privada-self-hosted-y-licencias">8.7 Edición privada self-hosted y licencias</h2>
+<p>La edición privada no usa el hub del vendedor. Cada comprador instala Nexus-Core
+en su propia máquina o servidor, con su dominio, su base de datos y su
+administrador. La APK solo contiene el cliente y pide la URL del hub en el
+primer arranque.</p>
+<p>La licencia recomendada es <strong>offline y firmada</strong>: un archivo <code>nexus.license</code>
+emitido por el vendedor con identificador de comprador, caducidad, límite de
+dispositivos y firma Ed25519. La APK incluye únicamente la clave pública, por lo
+que no necesita contactar con un servidor central para validar la compra. La
+licencia no está vinculada a un dominio concreto.</p>
+<p>Flujo de venta:</p>
+<ol>
+<li>El comprador contacta por la web o el teléfono.</li>
+<li>Recibe un enlace privado con <code>Nexus-Core.apk</code>, <code>nexus.license</code>, <code>SHA256.txt</code>
+   e instrucciones.</li>
+<li>Instala y configura su propio hub.</li>
+<li>Introduce la URL HTTPS de su hub y activa la licencia.</li>
+<li>Crea su administrador y activa su 2FA.</li>
+</ol>
+<p>El APK debe compilarse en <code>release</code>, con keystore privado, R8 y sin
+<code>android:debuggable</code>. La instalación fuera de Google Play puede mostrar el aviso
+de “origen desconocido” o una advertencia de Play Protect; eso depende del canal,
+no del código. Para una distribución con confianza de tienda habría que usar una
+prueba cerrada de Play o Managed Google Play. Nunca se comparte el usuario
+<code>admin</code> entre compradores.</p>
 <h1 id="9-laboratorios-para-el-aula">9. Laboratorios para el aula</h1>
 <blockquote>
 <p>Todos los ejercicios se hacen en una red de laboratorio propia y con autorización. No se

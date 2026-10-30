@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
@@ -54,6 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nexuscore.mobile.ui.components.ErrorCard
 import com.nexuscore.mobile.ui.theme.ThemeController
@@ -124,8 +127,12 @@ fun MainScreen(vm: NexusViewModel) {
                     title = {
                         Text(
                             vm.section.label,
+                            modifier = Modifier.widthIn(max = 180.dp),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     },
                     navigationIcon = {
@@ -264,10 +271,16 @@ fun MainScreen(vm: NexusViewModel) {
 private fun HostMenu(vm: NexusViewModel) {
     var expanded by remember { mutableStateOf(false) }
     Box {
-        TextButton(onClick = { expanded = true }) {
+        TextButton(
+            onClick = { expanded = true },
+            contentPadding = PaddingValues(horizontal = 6.dp),
+        ) {
             Text(
-                vm.selectedHost?.name?.take(20) ?: "Host",
+                vm.selectedHost?.name ?: "Host",
+                modifier = Modifier.widthIn(max = 96.dp),
                 maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
             )
             Icon(Icons.Outlined.ArrowDropDown, contentDescription = null)
         }

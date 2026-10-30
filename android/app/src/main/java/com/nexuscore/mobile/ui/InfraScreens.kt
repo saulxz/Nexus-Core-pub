@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nexuscore.mobile.data.ContainerDto
 import com.nexuscore.mobile.data.ServiceDto
@@ -37,6 +38,7 @@ import com.nexuscore.mobile.ui.components.SectionTitle
 import com.nexuscore.mobile.ui.components.StatusPill
 import com.nexuscore.mobile.ui.components.array
 import com.nexuscore.mobile.ui.components.textOrNull
+import com.nexuscore.mobile.ui.theme.NexusMono
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -336,27 +338,61 @@ fun NetworkScreen(vm: NexusViewModel) {
         } else {
             items(network.interfaces) { iface ->
                 val name = iface.textOrNull("name") ?: "interfaz"
-                val addresses = iface.array("addresses").joinToString(", ") {
-                    (it as? JsonPrimitive)?.content ?: it.toString()
-                }.ifBlank { "sin IP" }
+                val addresses = iface.array("addresses").mapNotNull {
+                    (it as? JsonPrimitive)?.content ?: it.toString().takeIf { value -> value.isNotBlank() }
+                }.ifEmpty { listOf("sin IP") }
                 val up = iface.textOrNull("up") ?: "—"
                 NexusCard {
-                    Column(Modifier.padding(14.dp)) {
+                    Column(
+                        Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         Row(
                             Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                         ) {
-                            Text(name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                name,
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
                             StatusPill(
                                 if (up == "true") "up" else "down",
                                 if (up == "true") MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error,
                             )
                         }
-                        KeyValue("Direcciones", addresses)
-                        KeyValue("MTU", iface.textOrNull("mtu") ?: "—")
-                        KeyValue("Velocidad", iface.textOrNull("speed_mbps")?.let { "$it Mbps" } ?: "—")
-                        KeyValue("RX", iface.textOrNull("rx_bytes") ?: "—")
-                        KeyValue("TX", iface.textOrNull("tx_bytes") ?: "—")
+                        Text(
+                            "Direcciones",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        addresses.forEach { address ->
+                            Text(
+                                address,
+                                fontFamily = NexusMono,
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            NetworkStat("MTU", iface.textOrNull("mtu") ?: "—", Modifier.weight(1f))
+                            NetworkStat("Velocidad", iface.textOrNull("speed_mbps")?.let { "$it Mbps" } ?: "—", Modifier.weight(1f))
+                        }
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            NetworkStat("RX", iface.textOrNull("rx_bytes") ?: "—", Modifier.weight(1f))
+                            NetworkStat("TX", iface.textOrNull("tx_bytes") ?: "—", Modifier.weight(1f))
+                        }
                     }
                 }
             }
@@ -587,5 +623,25 @@ fun SystemScreen(vm: NexusViewModel) {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun NetworkStat(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            value,
+            fontFamily = NexusMono,
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
