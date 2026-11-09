@@ -567,10 +567,12 @@ WebSocket autenticado. Hay dos transportes:</p>
   necesario para la terminal por agente.</li>
 </ul>
 <p>La sesi?n exige cookie de administrador, token CSRF en el subprotocolo
-<code>csrf.&lt;token&gt;</code>, mismo origen y cierre por inactividad. El host local ejecuta la
-shell con el usuario del servicio; los agentes Linux/Kali usan <code>pty</code> y Windows
-usa ConPTY/pywinpty. No hay una shell root impl?cita.</p>
-<p>El desplegable <strong>Servidor</strong> muestra el transporte (<code>local</code>, <code>agente</code> o <code>SSH</code>).
+El host local ejecuta la shell con el usuario del servicio. En los
+agentes Linux/Kali se puede activar <code>NEXUS_AGENT_TERMINAL_ROOT=1</code>:
+el agente sigue ejecutándose como <code>nexus-agent</code>, pero el PTY arranca
+con <code>sudo -n /bin/bash -i</code> y una regla sudoers limitada a shells.
+Es root explícito, no implícito; exige administrador y 2FA.
+El desplegable <strong>Servidor</strong> muestra el transporte (<code>local</code>, <code>agente</code> o <code>SSH</code>).
 Los agentes 1.0.0 aparecen deshabilitados con el motivo ?actualiza el agente?
 hasta que se instala la versi?n 1.1.0.</p>
 <p>Variables relevantes:</p>
