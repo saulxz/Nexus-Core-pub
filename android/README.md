@@ -13,7 +13,7 @@ Cliente **nativo** de Nexus-Core para Android. Está hecho con **Kotlin + Jetpac
 - **Cambio de IP del hub** con planificación, watchdog, confirmación y reversión.
 - **Gestión completa de 2FA**: alta, activación con código, códigos de recuperación y desactivación con contraseña.
 - **Editor de IA**: proveedor, modelo, temperatura, URLs base y claves (las claves actuales nunca se muestran).
-- Terminal nativa por WebSocket: PTY local del hub o shell remota transportada por el agente 1.1.0, sin SSH y sin depender de la red local.
+- Terminal nativa por WebSocket: PTY local del hub o shell remota transportada por el agente 1.1.0, sin SSH y sin depender de la red local. En agentes Linux/Kali puede arrancar como root con `NEXUS_AGENT_TERMINAL_ROOT=1` y sudo restringido a shells.
 - Asistente con propuestas pendientes de confirmación.
 - Aviso de alertas en segundo plano con WorkManager cada 15 minutos.
 - HTTPS obligatorio, sin tráfico en claro.
