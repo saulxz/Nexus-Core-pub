@@ -80,7 +80,7 @@ Navegador ──HTTPS──▶ Hub (FastAPI + SQLite + panel)
 - **Instalador apt con allowlist**: catálogo cerrado (nginx, Samba, dnsmasq, Docker,
   fail2ban y Redis), confirmación explícita, auditoría y helper root-owned; funciona
   en el hub y en los agentes Linux.
-- **Terminal local y por agente**: xterm.js con PTY local del hub o shell remota transportada por el WebSocket saliente del agente 1.1.0; sin SSH, sin puertos entrantes y con sesi?n/CSRF/origen. El host local usa PowerShell; Linux/Kali usan su shell. El SSH queda solo como fallback opcional. En agentes Linux/Kali se puede activar `NEXUS_AGENT_TERMINAL_ROOT=1`; el agente sigue como usuario de servicio y el PTY usa `sudo -n /bin/bash -i` con una regla sudoers limitada a shells. Es root explícito, solo para administrador con 2FA.
+- **Terminal local y por agente**: xterm.js con PTY local del hub o shell remota transportada por el WebSocket saliente del agente 1.2.0; sin SSH, sin puertos entrantes y con sesi?n/CSRF/origen. El host local usa PowerShell; Linux/Kali usan su shell. El SSH queda solo como fallback opcional. En agentes Linux/Kali se puede activar `NEXUS_AGENT_TERMINAL_ROOT=1`; el agente sigue como usuario de servicio y el PTY usa `sudo -n /bin/bash -i` con una regla sudoers limitada a shells. Es root explícito, solo para administrador con 2FA.
 
 - **Tema claro/oscuro**: tokens de papel c?lido/tinta, Geist/Geist Mono y Lucide vendorizados; el tema se sincroniza entre web, escritorio y Android.
 - **Seguridad reforzada**: 2FA TOTP con códigos de recuperación, cookies Secure,
@@ -310,7 +310,7 @@ queda marcado como `expired`).
 
 ### Terminal remota sin SSH
 
-El agente 1.1.0 abre un WebSocket saliente contra el hub y expone una PTY local.
+El agente 1.2.0 abre un WebSocket saliente contra el hub y expone una PTY local.
 El navegador solo habla con el hub; el hub reenv?a la sesi?n al agente. Funciona
 detr?s de NAT, sin abrir puertos, sin SSH y sin que el puesto del administrador est?
 en la misma red. En Windows la shell es PowerShell; en Linux/Kali se usa la shell
@@ -465,7 +465,7 @@ Prefijo base: `/api`. Documentación interactiva en `/docs`.
 - **Cambio de IP con watchdog**: reversión automática si no se confirma.
 - **Terminal local/por agente**: solo administrador; exige cookie de sesión, CSRF en el
   subprotocolo `csrf.<token>`, mismo origen y `known_hosts` fijado. El desplegable
-  solo permite hosts del inventario; el agente 1.1.0 usa su canal saliente y SSH queda como fallback configurado en `TERMINAL_TARGETS`;
+  solo permite hosts del inventario; el agente 1.2.0 usa su canal saliente y SSH queda como fallback configurado en `TERMINAL_TARGETS`;
   la IP y el usuario SSH nunca vienen del navegador. La clave vive en el servidor
   (`/etc/nexus/terminal_key`), nunca en el cliente, y la sesión se cierra al cambiar
   de pestaña o por inactividad.

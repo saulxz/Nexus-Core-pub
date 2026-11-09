@@ -186,7 +186,7 @@ WebSocket autenticado. Hay dos transportes:
 
 - **Hub local**: una PTY de PowerShell en Windows o de la shell del servicio en
   Linux. Se activa con `TERMINAL_LOCAL_SHELL=true`.
-- **Agente remoto**: el agente Nexus 1.1.0 abre un WebSocket saliente contra el
+- **Agente remoto**: el agente Nexus 1.2.0 abre un WebSocket saliente contra el
   hub y expone una PTY en el host. El navegador nunca inicia una conexi?n hacia
   el servidor: funciona detr?s de NAT, sin abrir puertos y sin SSH.
 - **SSH**: queda como fallback opcional para instalaciones antiguas, pero no es
@@ -200,7 +200,7 @@ con `sudo -n /bin/bash -i` y una regla sudoers limitada a shells.
 Es root explícito, no implícito; exige administrador y 2FA.
 El desplegable **Servidor** muestra el transporte (`local`, `agente` o `SSH`).
 Los agentes 1.0.0 aparecen deshabilitados con el motivo ?actualiza el agente?
-hasta que se instala la versi?n 1.1.0.
+hasta que se instala la versi?n 1.2.0.
 
 Variables relevantes:
 
@@ -238,6 +238,8 @@ ejecuta comandos de consulta.
 - **Aplicación:** 2FA, cookie Secure, `ALLOWED_HOSTS`, CORS, caducidad de sesión, cadena
   de auditoría, tokens de API, flota, backup y límite de enrolamiento.
 - **Windows:** Defender, firewall, SMBv1, RDP y último hotfix.
+
+La auditor?a se puede ejecutar sobre el hub local o sobre cualquier agente conectado desde el selector de host de la cabecera. En un agente se auditan sistema, identidad, archivos, SSH, systemd, Docker, red y firewall; la capa de aplicaci?n y el baseline siguen siendo del hub.
 
 La puntuación parte de 100 y resta pesos por hallazgo (25 crítico, 15 alto, 7 medio, 3
 bajo; un aviso resta la mitad). Los checks omitidos no penalizan, pero se muestran con su
