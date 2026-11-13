@@ -1,0 +1,212 @@
+/*
+ * Controles de la consola: una única retícula para acciones.
+ *
+ * Mantiene la paleta y las superficies actuales. Solo fija alturas, padding,
+ * radios, iconos y alineación para que botones primarios, secundarios,
+ * peligrosos, de texto y de icono se comporten igual en todas las vistas.
+ */
+html[data-theme] {
+  --nx-btn-h: 32px;
+  --nx-btn-h-sm: 30px;
+  --nx-btn-px: 10px;
+  --nx-btn-px-sm: 8px;
+  --nx-field-h: 32px;
+  --nx-control-radius: 2px;
+}
+
+html[data-theme] .btn,
+html[data-theme] .btn-primary,
+html[data-theme] .btn-ghost,
+html[data-theme] .btn-danger,
+html[data-theme] .btn-text {
+  height: var(--nx-btn-h) !important;
+  min-height: var(--nx-btn-h) !important;
+  padding-inline: var(--nx-btn-px) !important;
+  border-radius: var(--nx-control-radius) !important;
+  gap: 6px;
+  font-family: var(--nx-font-sans);
+  font-size: 12px;
+  line-height: 1;
+}
+
+html[data-theme] .btn-sm,
+html[data-theme] .btn-sm.btn-primary,
+html[data-theme] .btn-sm.btn-ghost,
+html[data-theme] .btn-sm.btn-danger,
+html[data-theme] .btn-sm.btn-text {
+  height: var(--nx-btn-h-sm) !important;
+  min-height: var(--nx-btn-h-sm) !important;
+  padding-inline: var(--nx-btn-px-sm) !important;
+  font-size: 11px;
+}
+
+html[data-theme] .btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+html[data-theme] .nx-card-actions {
+  gap: 8px;
+  align-items: center;
+}
+
+html[data-theme] .nx-card-actions .btn {
+  min-height: var(--nx-btn-h-sm) !important;
+}
+
+html[data-theme] .nx-btn-row {
+  gap: 8px;
+  align-items: center;
+}
+
+html[data-theme] .nx-header-tools {
+  gap: 6px;
+}
+
+html[data-theme] .nx-header-tools .btn {
+  height: var(--nx-btn-h-sm) !important;
+  min-height: var(--nx-btn-h-sm) !important;
+}
+
+html[data-theme] .btn[data-theme-toggle] {
+  width: var(--nx-btn-h-sm);
+  min-width: var(--nx-btn-h-sm);
+  padding-inline: 0 !important;
+}
+
+html[data-theme] .nx-search-trigger,
+html[data-theme] .nx-live,
+html[data-theme] .nx-topbar-host .nx-hostsel {
+  height: var(--nx-btn-h) !important;
+  min-height: var(--nx-btn-h) !important;
+  border-radius: var(--nx-control-radius) !important;
+}
+
+html[data-theme] .nx-search-trigger {
+  padding-inline: 9px;
+}
+
+html[data-theme] .nx-poll-btn {
+  height: var(--nx-btn-h-sm) !important;
+  min-height: var(--nx-btn-h-sm) !important;
+  padding-inline: 8px !important;
+  border-radius: var(--nx-control-radius) !important;
+}
+
+html[data-theme] .nx-seg {
+  height: var(--nx-btn-h) !important;
+  border-radius: var(--nx-control-radius) !important;
+}
+
+html[data-theme] .nx-seg-btn {
+  height: 100% !important;
+  min-height: 0 !important;
+  padding-inline: 10px !important;
+  border-radius: var(--nx-control-radius) !important;
+  font-size: 11px;
+}
+
+html[data-theme] .input-field,
+html[data-theme] select.input-field,
+html[data-theme] .nx-hostsel-select {
+  height: var(--nx-field-h);
+  min-height: var(--nx-field-h);
+  border-radius: var(--nx-control-radius) !important;
+}
+
+html[data-theme] textarea.input-field {
+  height: auto;
+  min-height: 64px;
+}
+
+html[data-theme] .nx-count {
+  height: 24px;
+  padding-inline: 4px;
+  border-radius: var(--nx-control-radius);
+}
+
+html[data-theme] .nx-status,
+html[data-theme] .nx-search-trigger,
+html[data-theme] .nx-live {
+  border-radius: var(--nx-control-radius) !important;
+}
+
+/* Las acciones de las tablas no deben cambiar la altura de la fila. */
+html[data-theme] .nx-cell-actions .btn,
+html[data-theme] .nx-table-actions .btn {
+  height: var(--nx-btn-h-sm) !important;
+  min-height: var(--nx-btn-h-sm) !important;
+}
+
+@media (max-width: 700px) {
+  html[data-theme] .nx-header-tools {
+    gap: 4px;
+  }
+
+  html[data-theme] .nx-header-tools .btn {
+    padding-inline: 7px !important;
+  }
+}
+
+/* Selector de host dentro de la auditor?a de seguridad. */
+html[data-theme] .nx-audit-host {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 180px;
+}
+
+html[data-theme] .nx-audit-host .nx-eyebrow {
+  margin: 0;
+  white-space: nowrap;
+}
+
+html[data-theme] .nx-audit-host select {
+  width: 180px;
+  height: var(--nx-btn-h-sm);
+  min-height: var(--nx-btn-h-sm);
+  padding-inline: 8px;
+  font-size: 11px;
+}
+
+@media (max-width: 900px) {
+  html[data-theme] .nx-audit-host {
+    width: 100%;
+  }
+
+  html[data-theme] .nx-audit-host select {
+    flex: 1 1 auto;
+    width: auto;
+  }
+}
+
+/* Instalaci?n manual de un paquete apt. */
+html[data-theme] .nx-install-manual {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 10px;
+  align-items: end;
+  padding: 12px 0 14px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--nx-border-soft);
+}
+
+html[data-theme] .nx-install-manual .field {
+  min-width: 0;
+}
+
+html[data-theme] .nx-install-manual .nx-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 10.5px;
+}
+
+@media (max-width: 700px) {
+  html[data-theme] .nx-install-manual {
+    grid-template-columns: 1fr;
+  }
+
+  html[data-theme] .nx-install-manual .btn {
+    width: 100%;
+  }
+}
