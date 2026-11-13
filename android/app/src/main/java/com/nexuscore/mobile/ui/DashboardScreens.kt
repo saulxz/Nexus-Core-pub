@@ -253,6 +253,15 @@ fun HistoryScreen(vm: NexusViewModel) {
                 }
             }
         }
+        item {
+            NexusOutlinedButton(
+                onClick = { vm.exportHistoryCsv() },
+                enabled = vm.selectedHostId == 1,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(if (vm.selectedHostId == 1) "Exportar hist?rico CSV" else "CSV solo para el hub local")
+            }
+        }
         val series = vm.history?.series?.get(vm.historyMetric).orEmpty()
         item {
             NexusCard {

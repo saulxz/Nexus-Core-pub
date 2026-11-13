@@ -56,16 +56,16 @@ fun ContainersScreen(vm: NexusViewModel) {
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Button(onClick = { deploy = true }, modifier = Modifier.weight(1f)) {
+                NexusButton(onClick = { deploy = true }, modifier = Modifier.weight(1f)) {
                     Text("Desplegar")
                 }
-                OutlinedButton(onClick = { vm.refresh() }, modifier = Modifier.weight(1f)) {
+                NexusOutlinedButton(onClick = { vm.refresh() }, modifier = Modifier.weight(1f)) {
                     Text("Refrescar")
                 }
             }
         }
         item {
-            OutlinedButton(
+            NexusOutlinedButton(
                 onClick = { confirmPrune = true },
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("Limpiar recursos Docker") }
@@ -97,13 +97,13 @@ fun ContainersScreen(vm: NexusViewModel) {
             title = { Text("Eliminar contenedor") },
             text = { Text("¿Eliminar ${container.name}? Esta acción no se puede deshacer.") },
             confirmButton = {
-                Button(onClick = {
+                NexusButton(onClick = {
                     vm.removeContainer(container)
                     pendingDelete = null
                 }) { Text("Eliminar") }
             },
             dismissButton = {
-                TextButton(onClick = { pendingDelete = null }) { Text("Cancelar") }
+                NexusTextButton(onClick = { pendingDelete = null }) { Text("Cancelar") }
             },
         )
     }
@@ -113,13 +113,13 @@ fun ContainersScreen(vm: NexusViewModel) {
             title = { Text("Limpiar Docker") },
             text = { Text("Se eliminarán contenedores parados e imágenes sin usar. ¿Continuar?") },
             confirmButton = {
-                Button(onClick = {
+                NexusButton(onClick = {
                     vm.pruneContainers()
                     confirmPrune = false
                 }) { Text("Limpiar") }
             },
             dismissButton = {
-                TextButton(onClick = { confirmPrune = false }) { Text("Cancelar") }
+                NexusTextButton(onClick = { confirmPrune = false }) { Text("Cancelar") }
             },
         )
     }
@@ -159,9 +159,9 @@ private fun ContainerCard(
             KeyValue("ID", container.shortId.ifBlank { container.id })
             KeyValue("Puertos", container.ports.joinToString(", ").ifBlank { "—" })
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = onLogs) { Text("Logs") }
-                TextButton(onClick = onStats) { Text("Stats") }
-                TextButton(onClick = onDelete) { Text("Eliminar") }
+                NexusTextButton(onClick = onLogs) { Text("Logs") }
+                NexusTextButton(onClick = onStats) { Text("Stats") }
+                NexusTextButton(onClick = onDelete) { Text("Eliminar") }
             }
         }
     }
@@ -204,43 +204,123 @@ private fun DeployContainerDialog(
             }
         },
         confirmButton = {
-            Button(
+            NexusButton(
                 onClick = { onDeploy(image, port.toIntOrNull(), name.ifBlank { null }) },
                 enabled = image.isNotBlank(),
             ) { Text("Desplegar") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
+        dismissButton = { NexusTextButton(onClick = onDismiss) { Text("Cancelar") } },
     )
 }
 
 @Composable
 fun ServicesScreen(vm: NexusViewModel) {
+    var query by remember { mutableStateOf("") }
+    var filter by remember { mutableStateOf("all") }
+    var showManual by remember { mutableStateOf(false) }
+    var packageName by remember { mutableStateOf("") }
+    var manualTotp by remember { mutableStateOf("") }
     val data = vm.services
+    val services = data?.services.orEmpty()
+    val normalized = query.trim().lowercase()
+    val filtered = services.filter { service ->
+        val matchesQuery = normalized.isBlank() ||
+            service.name.lowercase().contains(normalized) ||
+            service.description.lowercase().contains(normalized) ||
+            (service.friendlyName ?: "").lowercase().contains(normalized)
+        val matchesFilter = when (filter) {
+            "active" -> service.activeState == "active"
+            "inactive" -> service.activeState != "active"
+            else -> true
+        }
+        matchesQuery && matchesFilter
+    }
     LazyColumn(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item {
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                label = { Text("Buscar servicio") },
+                placeholder = { Text("nombre o descripci?n") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        item {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                ServiceFilterButton("Todos", filter == "all", { filter = "all" }, Modifier.weight(1f))
+                ServiceFilterButton("Activos", filter == "active", { filter = "active" }, Modifier.weight(1f))
+                ServiceFilterButton("Inactivos", filter == "inactive", { filter = "inactive" }, Modifier.weight(1f))
+            }
+        }
+        item {
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Button(onClick = { vm.refresh() }, modifier = Modifier.weight(1f)) {
+                NexusButton(onClick = { vm.refresh() }, modifier = Modifier.weight(1f)) {
                     Text("Refrescar")
+                }
+                NexusOutlinedButton(onClick = { showManual = true }, modifier = Modifier.weight(1f)) {
+                    Text("Instalar paquete")
                 }
             }
         }
         if (data == null) {
-            item { EmptyState("Cargando servicios…") }
+            item { EmptyState("Cargando servicios?") }
         } else if (!data.available) {
             item { EmptyState("systemd no disponible", data.reason ?: "Este host no expone systemd.") }
-        } else if (data.services.isEmpty()) {
+        } else if (services.isEmpty()) {
             item { EmptyState("Sin servicios") }
+        } else if (filtered.isEmpty()) {
+            item { EmptyState("Sin resultados", "Prueba otro nombre o cambia el filtro.") }
         } else {
-            items(data.services, key = { it.name }) { service ->
-                ServiceCard(service, vm)
-            }
+            items(filtered, key = { it.name }) { service -> ServiceCard(service, vm) }
         }
+    }
+    if (showManual) {
+        AlertDialog(
+            onDismissRequest = { showManual = false },
+            title = { Text("Instalar paquete apt") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = packageName,
+                        onValueChange = { packageName = it.trim().lowercase() },
+                        label = { Text("Nombre del paquete") },
+                        placeholder = { Text("ej. nginx") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = manualTotp,
+                        onValueChange = { manualTotp = it.filter(Char::isDigit).take(6) },
+                        label = { Text("C?digo 2FA") },
+                        singleLine = true,
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(
+                        "Se ejecutar? apt como root. El nombre se valida, el c?digo 2FA se verifica y la operaci?n queda auditada.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
+            confirmButton = {
+                NexusButton(
+                    onClick = { vm.installManual(packageName, manualTotp); showManual = false },
+                    enabled = packageName.matches(Regex("^[a-z0-9][a-z0-9+.:-]{0,79}$")) && manualTotp.length == 6 && !vm.busy,
+                ) { Text("Instalar") }
+            },
+            dismissButton = { NexusTextButton(onClick = { showManual = false }) { Text("Cancelar") } },
+        )
     }
 }
 
@@ -272,20 +352,35 @@ private fun ServiceCard(service: ServiceDto, vm: NexusViewModel) {
             }
             KeyValue("Subestado", service.subState.ifBlank { "—" })
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                TextButton(onClick = { vm.serviceAction(service.name, "restart") }) {
+                NexusTextButton(onClick = { vm.serviceAction(service.name, "restart") }) {
                     Text("Reiniciar")
                 }
-                TextButton(onClick = { vm.serviceAction(service.name, "stop") }) {
+                NexusTextButton(onClick = { vm.serviceAction(service.name, "stop") }) {
                     Text("Parar")
                 }
-                TextButton(onClick = { vm.serviceAction(service.name, "start") }) {
+                NexusTextButton(onClick = { vm.serviceAction(service.name, "start") }) {
                     Text("Iniciar")
                 }
-                TextButton(onClick = { vm.showServiceLogs(service.name) }) {
+                NexusTextButton(onClick = { vm.showServiceLogs(service.name) }) {
                     Text("Logs")
                 }
             }
         }
+    }
+}
+
+
+@Composable
+private fun ServiceFilterButton(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (selected) {
+        NexusButton(onClick = onClick, modifier = modifier) { Text(label) }
+    } else {
+        NexusOutlinedButton(onClick = onClick, modifier = modifier) { Text(label) }
     }
 }
 
@@ -308,13 +403,13 @@ fun NetworkScreen(vm: NexusViewModel) {
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                 )
-                Button(onClick = { vm.scanNetwork(subnet) }) {
+                NexusButton(onClick = { vm.scanNetwork(subnet) }) {
                     Text("Escanear")
                 }
             }
         }
         item {
-            Button(
+            NexusButton(
                 onClick = { showChange = true },
                 enabled = vm.selectedHostId == 1,
                 modifier = Modifier.fillMaxWidth(),
@@ -503,18 +598,18 @@ private fun NetworkChangeDialog(vm: NexusViewModel, onDismiss: () -> Unit) {
         confirmButton = {
             if (vm.networkToken != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = {
+                    NexusButton(onClick = {
                         vm.confirmNetwork()
                         onDismiss()
                     }) { Text("Confirmar") }
-                    TextButton(onClick = {
+                    NexusTextButton(onClick = {
                         vm.revertNetwork()
                         onDismiss()
                     }) { Text("Revertir") }
                 }
             } else {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(
+                    NexusOutlinedButton(
                         enabled = address.isNotBlank() && gateway.isNotBlank() && prefixValue != null,
                         onClick = {
                             vm.planNetwork(
@@ -526,7 +621,7 @@ private fun NetworkChangeDialog(vm: NexusViewModel, onDismiss: () -> Unit) {
                             )
                         },
                     ) { Text("Planificar") }
-                    Button(
+                    NexusButton(
                         enabled = address.isNotBlank() && gateway.isNotBlank() && prefixValue != null,
                         onClick = {
                             vm.applyNetwork(
@@ -541,7 +636,7 @@ private fun NetworkChangeDialog(vm: NexusViewModel, onDismiss: () -> Unit) {
                 }
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cerrar") } },
+        dismissButton = { NexusTextButton(onClick = onDismiss) { Text("Cerrar") } },
     )
 }
 

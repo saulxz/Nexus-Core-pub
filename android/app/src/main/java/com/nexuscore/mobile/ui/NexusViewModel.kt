@@ -1,6 +1,9 @@
 package com.nexuscore.mobile.ui
 
 import android.app.Application
+import android.util.Log
+import android.widget.Toast
+import android.content.Intent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -26,6 +29,9 @@ import com.nexuscore.mobile.data.NetworkPlanDto
 import com.nexuscore.mobile.data.NetworkApplyDto
 import com.nexuscore.mobile.data.AiTestDto
 import com.nexuscore.mobile.data.AiSettingsDto
+import com.nexuscore.mobile.data.MaintenanceWindowListDto
+import com.nexuscore.mobile.data.NotificationChannelListDto
+import com.nexuscore.mobile.data.RemediationListDto
 import com.nexuscore.mobile.data.MonitorDto
 import com.nexuscore.mobile.data.NetworkStateDto
 import com.nexuscore.mobile.data.PortsDto
@@ -41,7 +47,9 @@ import com.nexuscore.mobile.data.TwoFactorDto
 import com.nexuscore.mobile.data.UnauthorizedException
 import com.nexuscore.mobile.data.UpdatesDto
 import com.nexuscore.mobile.worker.AlertWorker
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import okhttp3.WebSocket
@@ -89,6 +97,12 @@ class NexusViewModel(application: Application) : AndroidViewModel(application) {
     var alertEvents by mutableStateOf<List<AlertEventDto>>(emptyList())
         private set
     var alertRules by mutableStateOf<List<AlertRuleDto>>(emptyList())
+        private set
+    var notificationChannels by mutableStateOf<NotificationChannelListDto?>(null)
+        private set
+    var maintenanceWindows by mutableStateOf<MaintenanceWindowListDto?>(null)
+        private set
+    var remediationProposals by mutableStateOf<RemediationListDto?>(null)
         private set
     var monitors by mutableStateOf<List<MonitorDto>>(emptyList())
         private set
@@ -247,8 +261,8 @@ class NexusViewModel(application: Application) : AndroidViewModel(application) {
         detailBody = null
     }
 
-    fun openTerminal(hostId: Int, listener: WebSocketListener): WebSocket? =
-        runCatching { api.openTerminal(hostId, listener) }
+    fun openTerminal(hostId: Int, totp: String, listener: WebSocketListener): WebSocket? =
+        runCatching { api.openTerminal(hostId, totp, listener) }
             .onFailure { error = it.message }
             .getOrNull()
 
@@ -326,12 +340,44 @@ class NexusViewModel(application: Application) : AndroidViewModel(application) {
         loadMonitorsInternal()
     }
 
+    fun createNotificationChannel(name: String, url: String) = action("Canal creado") {
+        repo.createNotificationChannel(name, "webhook", mapOf("url" to url))
+        loadAlertsInternal()
+    }
+
+    fun testNotificationChannel(id: Int) = action("Prueba de canal enviada") {
+        repo.testNotificationChannel(id)
+        loadAlertsInternal()
+    }
+
+    fun deleteNotificationChannel(id: Int) = action("Canal eliminado") {
+        repo.deleteNotificationChannel(id)
+        loadAlertsInternal()
+    }
+
+    fun createMaintenanceWindow(name: String, startsAt: String, endsAt: String) =
+        action("Ventana creada") {
+            repo.createMaintenanceWindow(name, startsAt, endsAt)
+            loadAlertsInternal()
+        }
+
+    fun deleteMaintenanceWindow(id: Int) = action("Ventana eliminada") {
+        repo.deleteMaintenanceWindow(id)
+        loadAlertsInternal()
+    }
+
+    fun resolveProposal(id: String, confirm: Boolean) =
+        action(if (confirm) "Propuesta confirmada" else "Propuesta cancelada") {
+            repo.resolveProposal(id, confirm)
+            loadAlertsInternal()
+        }
+
     fun runSecurityAudit() {
         viewModelScope.launch {
             busy = true
             error = null
             try {
-                securityAudit = repo.securityAudit(force = true)
+                securityAudit = repo.securityAudit(selectedHostId, force = true)
             } catch (exc: Throwable) {
                 handle(exc)
             } finally {
@@ -346,6 +392,31 @@ class NexusViewModel(application: Application) : AndroidViewModel(application) {
     fun serviceAction(service: String, action: String) = action("Servicio $action") {
         repo.serviceAction(selectedHostId, service, action)
         loadServicesInternal()
+    }
+
+    fun installManual(packageName: String, totp: String) {
+        viewModelScope.launch {
+            busy = true
+            error = null
+            try {
+                val result = repo.installManual(selectedHostId, packageName, totp)
+                val resultObj = result as? kotlinx.serialization.json.JsonObject
+                val ok = resultObj?.get("success")?.toString() != "false"
+                if (!ok) {
+                    val message = resultObj?.get("message")?.toString()?.trim('"')
+                        ?: "No se pudo instalar el paquete."
+                    throw ApiException(0, message)
+                }
+                val message = resultObj?.get("message")?.toString()?.trim('"')
+                    ?: "Paquete instalado."
+                showDetail("Paquete instalado", message)
+                loadServicesInternal()
+            } catch (exc: Throwable) {
+                handle(exc)
+            } finally {
+                busy = false
+            }
+        }
     }
 
     fun showServiceLogs(service: String) {
@@ -726,10 +797,31 @@ class NexusViewModel(application: Application) : AndroidViewModel(application) {
         history = repo.history(selectedHostId, historyRange, historyMetric)
     }
 
+    fun exportHistoryCsv() {
+        viewModelScope.launch {
+            try {
+                val csv = withContext(Dispatchers.IO) { repo.historyCsv(selectedHostId, historyRange) }
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/csv"
+                    putExtra(Intent.EXTRA_SUBJECT, "Nexus-Core ? hist?rico ${historyRange}")
+                    putExtra(Intent.EXTRA_TEXT, csv)
+                }
+                val chooser = Intent.createChooser(intent, "Exportar hist?rico CSV")
+                chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                getApplication<Application>().startActivity(chooser)
+            } catch (exc: Throwable) {
+                handle(exc)
+            }
+        }
+    }
+
     private suspend fun loadAlertsInternal() {
         val events = repo.alertEvents()
         alertEvents = events.events
         alertRules = repo.alertRules().rules
+        notificationChannels = repo.notificationChannels()
+        maintenanceWindows = repo.maintenanceWindows()
+        remediationProposals = repo.remediationProposals()
     }
 
     private suspend fun loadMonitorsInternal() {
@@ -756,7 +848,7 @@ class NexusViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun loadAuditInternal(force: Boolean) {
         auditEntries = repo.audit().events
-        securityAudit = repo.securityAudit(force = force)
+        securityAudit = repo.securityAudit(selectedHostId, force = force)
     }
 
     private suspend fun loadSecurityInternal() {
@@ -792,6 +884,7 @@ class NexusViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun handle(exc: Throwable) {
+        Log.e("NexusVM", "Error: ${exc.javaClass.name}", exc)
         if (exc is UnauthorizedException) {
             authenticated = false
             store.clear()
