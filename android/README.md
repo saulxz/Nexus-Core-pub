@@ -13,17 +13,17 @@ Cliente **nativo** de Nexus-Core para Android. Está hecho con **Kotlin + Jetpac
 - **Cambio de IP del hub** con planificación, watchdog, confirmación y reversión.
 - **Gestión completa de 2FA**: alta, activación con código, códigos de recuperación y desactivación con contraseña.
 - **Editor de IA**: proveedor, modelo, temperatura, URLs base y claves (las claves actuales nunca se muestran).
-- Terminal nativa por WebSocket: PTY local del hub o shell remota transportada por el agente 1.1.0, sin SSH y sin depender de la red local. En agentes Linux/Kali puede arrancar como root con `NEXUS_AGENT_TERMINAL_ROOT=1` y sudo restringido a shells.
+- Terminal nativa por WebSocket: PTY local del hub o shell remota transportada por el agente 1.2.0, sin SSH y sin depender de la red local. En agentes Linux/Kali puede arrancar como root con `NEXUS_AGENT_TERMINAL_ROOT=1` y sudo restringido a shells.
 - Asistente con propuestas pendientes de confirmación.
 - Aviso de alertas en segundo plano con WorkManager cada 15 minutos.
 - HTTPS obligatorio, sin tráfico en claro.
 
-## Requisitos de instalaci?n
+## Requisitos de instalación
 
 - **Android 8.0 o superior** (`minSdk 26`); target SDK 37.
 - ABIs empaquetadas: `arm64-v8a`, `armeabi-v7a`, `x86` y `x86_64`.
 - El APK disponible es de **debug**, firmado con la clave de debug; se puede instalar por sideload/ADB.
-- Para Play Store hace falta una **release firmada**, keystore de producci?n, pol?tica de privacidad, ficha y AAB.
+- Para Play Store hace falta una **release firmada**, keystore de producción, política de privacidad, ficha y AAB.
 - URL del hub editable en el login; por defecto `https://nexus.example.com`. Solo HTTPS.
 - El hub debe ser accesible por HTTPS y la cuenta debe tener 2FA activo.
 
@@ -71,6 +71,18 @@ También hay una copia en:
 Nexus-Core-Android.apk
 ```
 
+## Verificación
+
+- Backend: **248 tests passed, 1 skipped** (`pytest backend/tests -q`).
+- Android: `gradlew.bat :app:assembleDebug` correcto; workflow de CI incluido
+  en `.github/workflows/ci.yml`.
+- APK instalada y probada en un emulador Android 37: login/sesión, pestañas
+  de Alertas, diálogo de instalación manual con 2FA y exportación CSV con
+  datos reales.
+- La app no tiene tests instrumentados todavía; la verificación de UI es manual.
+- El CSV solo está habilitado para el hub local; en un host remoto la interfaz
+  lo indica y el backend rechaza la exportación.
+
 ## Configuración
 
 - URL por defecto: `https://nexus.example.com`.
@@ -86,6 +98,7 @@ Nexus-Core-Android.apk
 - La terminal solo funciona en hosts con destino en `TERMINAL_TARGETS`; si no está configurado, muestra el motivo.
 - La app consulta el hub en vivo; no replica la SQLite central ni guarda una copia completa de la base de datos.
 - Los logs/stats locales de contenedores dependen de que el hub exponga esas rutas; en hosts remotos se ejecutan por el agente.
+- La exportación CSV y la instalación manual usan la API del hub; el CSV no está disponible para hosts remotos y la instalación manual requiere un agente 1.2.0 con helper.
 - APK de debug firmado con la clave de debug. Para distribuirlo por Play Store hay que crear una release firmada, política de privacidad y ficha de tienda.
 
 ## Seguridad
@@ -96,3 +109,6 @@ Nexus-Core-Android.apk
 - Credenciales de sesión en `EncryptedSharedPreferences`.
 - No se incrustan tokens `write` en la app.
 - Confirmación explícita para eliminar contenedores, reglas, hosts y limpiar Docker.
+
+
+La terminal Android exige un código TOTP nuevo por sesión; se envía en el subprotocolo WebSocket, no en la URL.

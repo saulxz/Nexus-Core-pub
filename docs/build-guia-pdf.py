@@ -258,8 +258,8 @@ HTML = f"""<!DOCTYPE html>
       </p>
     </div>
     <div class="cover__meta">
-      Saúl Moreno · Málaga · Octubre de 2026<br>
-      Documento educativo · Versión 1.0
+      Saúl Moreno · Málaga · Noviembre de 2026<br>
+      Documento educativo · Versión 1.1
     </div>
   </section>
 
