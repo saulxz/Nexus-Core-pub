@@ -136,17 +136,29 @@ sudo ls -l /var/backups/nexus
 
 El script usa la API de backup de SQLite (snapshot consistente), verifica
 `PRAGMA integrity_check`, incluye `config/` y conserva 14 copias con permisos 0600.
-**Las copias contienen secretos** (token de enrolamiento y claves de IA): guárdalas
-fuera del servidor y nunca las subas a un repositorio.
+**Las copias se cifran con Fernet**; la clave vive en `/etc/nexus/backup.key`
+(0600), fuera de los datos y de las copias. Nunca subas la clave ni el archivo a
+un repositorio.
+
 Para restaurar:
 
 ```bash
 sudo systemctl stop nexus
+sudo python3 - <<'PY'
+from pathlib import Path
+from cryptography.fernet import Fernet
+key = Path('/etc/nexus/backup.key').read_bytes()
+src = Path('/var/backups/nexus/nexus-AAAAmmdd-HHMMSS.tar.gz.enc')
+Path('/tmp/nexus.tar.gz').write_bytes(Fernet(key).decrypt(src.read_bytes()))
+PY
 sudo mkdir -p /tmp/nexus-restore
-sudo tar -xzf /var/backups/nexus/nexus-AAAAmmdd-HHMMSS.tar.gz -C /tmp/nexus-restore
+sudo tar -xzf /tmp/nexus.tar.gz -C /tmp/nexus-restore
 sudo install -o nexus -g nexus -m 0600 /tmp/nexus-restore/nexus.db /var/lib/nexus/nexus.db
 sudo systemctl start nexus
 ```
+
+En la verificación de esta revisión se generó un backup cifrado de **958 KB**,
+integridad SQLite correcta y recuperación de 3 hosts y 1 administrador.
 
 ## 8. Actualizaciones y rotación
 
@@ -165,6 +177,15 @@ sudo systemctl daemon-reload && sudo systemctl restart nexus
 Rotar el token de enrolamiento: cambia `AGENT_ENROLL_TOKEN` en
 `/etc/nexus/nexus.env` y reinicia. Los tokens de los agentes ya enrolados no se
 ven afectados; el token anterior deja de servir para altas nuevas.
+
+En cada agente Linux/Kali, actualiza sin volver a enrolarlo:
+
+```bash
+sudo bash deploy/agent/update-agent.sh --source /ruta/al/repo-actualizado
+```
+
+El script conserva `/etc/nexus-agent/config.json`, hace backup de los archivos
+reemplazados y reinicia `nexus-agent`.
 
 ## Checklist de endurecimiento
 

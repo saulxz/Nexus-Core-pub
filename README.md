@@ -12,7 +12,6 @@ acciones en lenguaje natural y un administrador que las confirma.
 > **Documentación completa:** [Guía educativa y técnica](docs/GUIA-EDUCATIVA.md) ·
 > [PDF de la guía](Nexus-Core-Guia-Educativa.pdf) ·
 > [Despliegue en producción](deploy/PRODUCCION.md) ·
-> [Memoria del TFG](docs/Memoria_TFG_Nexus-Core.md)
 
 ---
 
@@ -45,8 +44,7 @@ para explicarla en clase:
 | [`docs/GUIA-EDUCATIVA.md`](docs/GUIA-EDUCATIVA.md) | Guía completa: arquitectura, datos, redes, seguridad, operación, laboratorios y preguntas de repaso |
 | [`Nexus-Core-Guia-Educativa.pdf`](Nexus-Core-Guia-Educativa.pdf) | La misma guía maquetada para imprimir o proyectar |
 | [`deploy/PRODUCCION.md`](deploy/PRODUCCION.md) | TLS con Caddy, Cloudflare Tunnel, firewall, backups, agente en Linux y checklist de seguridad |
-| [`docs/Memoria_TFG_Nexus-Core.md`](docs/Memoria_TFG_Nexus-Core.md) | Memoria académica del Trabajo Fin de Grado |
-| [`PENDIENTE.md`](PENDIENTE.md) | Trabajo pendiente y decisiones abiertas del desarrollo |
+| [`android/README.md`](android/README.md) | Cliente Android nativo, compilación, límites y verificación |
 
 ### Arquitectura en una imagen
 
@@ -76,19 +74,19 @@ Navegador ──HTTPS──▶ Hub (FastAPI + SQLite + panel)
 - **Flota multi-host**: hub central + agentes en Linux/Windows; alta con token,
   latido, reconexión automática y comandos por allowlist.
 - **Alertas y monitores**: umbrales con duración e histéresis, acknowledgment,
-  snooze, notificaciones, monitores HTTP/TCP/SSL y página de estado.
-- **Instalador apt con allowlist**: catálogo cerrado (nginx, Samba, dnsmasq, Docker,
-  fail2ban y Redis), confirmación explícita, auditoría y helper root-owned; funciona
-  en el hub y en los agentes Linux.
-- **Terminal local y por agente**: xterm.js con PTY local del hub o shell remota transportada por el WebSocket saliente del agente 1.2.0; sin SSH, sin puertos entrantes y con sesi?n/CSRF/origen. El host local usa PowerShell; Linux/Kali usan su shell. El SSH queda solo como fallback opcional. En agentes Linux/Kali se puede activar `NEXUS_AGENT_TERMINAL_ROOT=1`; el agente sigue como usuario de servicio y el PTY usa `sudo -n /bin/bash -i` con una regla sudoers limitada a shells. Es root explícito, solo para administrador con 2FA.
+  snooze, canales de notificación, ventanas de mantenimiento y propuestas de
+  remediación confirmadas por el administrador; monitores HTTP/TCP/SSL y página
+  de estado.
+- **Instalador apt**: catálogo cerrado (nginx, Samba, dnsmasq, Docker, Fail2ban y
+  Redis) y **paquete manual validado** (`^[a-z0-9][a-z0-9+.:-]{0,79}$`); instalación
+  local o remota, confirmación explícita, **TOTP** cuando la cuenta lo exige,
+  auditoría y helper root-owned.
+- **Terminal local y por agente**: xterm.js con PTY local del hub o shell remota transportada por el WebSocket saliente del agente 1.2.0; sin SSH, sin puertos entrantes y con sesión/CSRF/origen. El host local usa PowerShell; Linux/Kali usan su shell. El SSH queda solo como fallback opcional. En agentes Linux/Kali se puede activar `NEXUS_AGENT_TERMINAL_ROOT=1`; el agente sigue como usuario de servicio y el PTY usa `sudo -n /bin/bash -i` con una regla sudoers limitada a shells. Es root explícito, solo para administrador con 2FA.
 
 - **Tema claro/oscuro**: tokens de papel c?lido/tinta, Geist/Geist Mono y Lucide vendorizados; el tema se sincroniza entre web, escritorio y Android.
 - **Seguridad reforzada**: 2FA TOTP con códigos de recuperación, cookies Secure,
   CSRF, rate limiting, tokens de API, auditoría encadenada y backups verificados.
-- **Auditoría de seguridad read-only**: 50 comprobaciones (+ nmap opcional) de
-  sistema, identidad, archivos, SSH, systemd, Docker, red, firewall y aplicación,
-  con severidad, evidencia, recomendación, baseline/comparación y exportación JSON.
-  No modifica el host.
+- **Auditoría de seguridad read-only**: comprobaciones de sistema, identidad, archivos, SSH, systemd, Docker, red, firewall y aplicación, con severidad, evidencia, recomendación, baseline/comparación y exportación JSON. La misma auditoría puede ejecutarse contra cualquier agente conectado, no solo contra el hub. No modifica el host.
 - **Despliegue**: servicio systemd, Caddy con TLS, Cloudflare Tunnel (Quick/Named),
   entorno de producción separado y guía paso a paso.
 - **Autenticación integrada** (argon2id, sesiones con CSRF, límite de intentos)
@@ -184,6 +182,13 @@ sabe crear el entorno con `virtualenv` embebido si el sistema no trae
 cd ~/Nexus-Core
 git pull
 sudo bash deploy/update.sh   # copia el código, arregla el acceso a Docker y reinicia
+```
+
+
+En cada agente Linux/Kali se actualiza sin volver a enrolarlo:
+
+```bash
+sudo bash deploy/agent/update-agent.sh --source /ruta/al/repo-actualizado
 ```
 
 ---
@@ -311,10 +316,10 @@ queda marcado como `expired`).
 ### Terminal remota sin SSH
 
 El agente 1.2.0 abre un WebSocket saliente contra el hub y expone una PTY local.
-El navegador solo habla con el hub; el hub reenv?a la sesi?n al agente. Funciona
-detr?s de NAT, sin abrir puertos, sin SSH y sin que el puesto del administrador est?
+El navegador solo habla con el hub; el hub reenv?a la sesión al agente. Funciona
+detrás de NAT, sin abrir puertos, sin SSH y sin que el puesto del administrador está
 en la misma red. En Windows la shell es PowerShell; en Linux/Kali se usa la shell
-del servicio. La sesi?n exige administrador, 2FA, CSRF y mismo origen.
+del servicio. La sesión exige administrador, 2FA, CSRF y mismo origen.
 
 Archivos principales: `backend/app/core/agent_terminals.py`,
 `backend/app/api/routes_agent.py`, `backend/app/api/routes_terminal.py` y
@@ -340,6 +345,8 @@ host local no se puede eliminar).
 | **Contenedores** | Listar, desplegar y eliminar contenedores del host |
 | **Red** | Interfaces de la máquina (IP/máscara/MAC/MTU), escaneo de hosts y cambio de IP con reversión automática |
 | **Servicios** | Inventario systemd con buscador y filtros, logs, control (start/stop/restart/reload) y configuración guiada de Samba y dnsmasq con copias de seguridad |
+| **Alertas** | Eventos, reglas, canales de notificación, ventanas de mantenimiento y propuestas de remediación |
+| **Histórico** | Series por host y rango; exportación CSV de lo visible |
 | **Terminal** | Terminal local o por agente en el navegador (xterm.js + WebSocket autenticado), con desplegable de hosts y transportes; sin SSH obligatorio |
 | **Ajustes** | Configuración del agente de IA: proveedor, modelo, claves y prueba de conexión en caliente |
 | **Asistente IA** | Chat en lenguaje natural: consulta datos reales y **propone** acciones que tú confirmas |
@@ -356,8 +363,14 @@ Además del panel web, el repositorio incluye un cliente **Android nativo** en
 - Login con **usuario + contraseña + TOTP** y sesión persistente con cookie/CSRF.
 - Selector global de host y datos del hub central; no replica la SQLite.
 - Cambio de IP con watchdog, gestión completa de 2FA y editor de configuración de IA.
-- **Requisitos del APK**: Android 8.0+ (`minSdk 26`), target 37, ABIs `arm64-v8a`, `armeabi-v7a`, `x86` y `x86_64`. El APK de debug est? firmado con la clave de debug y es instalable por sideload.
-- **No es todav?a un build de Play Store**: la variante release no est? firmada; faltan keystore de producci?n, ficha de tienda y pol?tica de privacidad.
+- **Histórico CSV**: descarga el rango visible; en hosts remotos se indica que el
+  CSV solo está disponible en el hub local.
+- **Servicios**: búsqueda, filtros Activos/Inactivos e instalación manual de un
+  paquete apt validado con TOTP.
+- **Alertas**: pestañas Eventos, Reglas, Canales, Mantenimiento y Propuestas, con
+  prueba/borrado de canales y confirmación de propuestas.
+- **Requisitos del APK**: Android 8.0+ (`minSdk 26`), target 37, ABIs `arm64-v8a`, `armeabi-v7a`, `x86` y `x86_64`. El APK de debug está firmado con la clave de debug y es instalable por sideload.
+- **No es todavía un build de Play Store**: la variante release no está firmada; faltan keystore de producción, ficha de tienda y política de privacidad.
 - **APK de debug**: `android/app/build/outputs/apk/debug/app-debug.apk`.
 - Compilación: abre `android/` en Android Studio (SDK 37) o ejecuta
   `android\gradlew.bat :app:assembleDebug`.
@@ -444,6 +457,8 @@ Prefijo base: `/api`. Documentación interactiva en `/docs`.
 | `POST` | `/api/agent/heartbeat` | Latido con métricas del host |
 | `GET` | `/api/agent/commands` | Sondeo de comandos (long-poll) |
 | `POST` | `/api/agent/commands/{id}/result` | Resultado de un comando |
+| `POST` | `/api/install/manual` | Instala un paquete apt validado; TOTP y `host_id` opcional |
+| `GET` | `/api/metrics-export.csv` | Exporta el histórico visible en CSV |
 | `GET` | `/api/hosts` | Inventario de la flota con estado |
 | `GET` | `/api/hosts/enrollment` | Token de enrolamiento (secreto) |
 | `GET` | `/api/hosts/{id}/metrics/history` | Histórico de un host |
@@ -494,6 +509,7 @@ Prefijo base: `/api`. Documentación interactiva en `/docs`.
 
 ```
 Nexus-Core/
+├── .github/workflows/ci.yml # Tests backend, sintaxis JS y build Android
 ├── backend/
 │   ├── app/
 │   │   ├── main.py            # Entrypoint FastAPI, routers, middleware, ciclo de vida
@@ -514,7 +530,7 @@ Nexus-Core/
 │   ├── systemd/nexus.service  # Unidad systemd
 │   └── agent/                 # Instalador y unidad del agente remoto
 ├── android/                   # App Android nativa (Kotlin + Jetpack Compose)
-├── docs/                      # Memoria del TFG
+├── docs/                      # Gu?a y documentaci?n
 ├── requirements.txt           # Dependencias fijadas (Python 3.12 – 3.14)
 ├── Dockerfile
 ├── docker-compose.yml

@@ -147,6 +147,11 @@ silenciarla durante un mantenimiento.
 > decenas de eventos. Con ella, la alerta se abre cuando se cruza el umbral y se cierra solo
 > cuando baja del umbral de recuperación.
 
+El panel permite además crear **canales de notificación**, programar **ventanas de
+mantenimiento** y revisar **propuestas de remediación** pendientes de confirmar. Un
+canal se puede probar y eliminar; una propuesta se confirma o se cancela y caduca si
+no se atiende.
+
 ## 3.2 Monitores y página de estado
 
 Los monitores comprueban HTTP, TCP y certificados SSL. Su resultado alimenta una página pública
@@ -162,37 +167,46 @@ el control.
 
 ## 3.4 Instalación de servicios (apt)
 
-El panel incluye un catálogo cerrado de servicios instalables con apt: Nginx, Samba,
-dnsmasq, Docker, Fail2ban y Redis. No acepta nombres de paquete libres: la clave se
-valida contra `/etc/nexus/installable.json` y un helper root-owned con allowlist. Cada
-instalación exige confirmación y queda registrada en Auditoría.
+El panel mantiene un catálogo cerrado de servicios instalables con apt: Nginx,
+Samba, dnsmasq, Docker, Fail2ban y Redis. La clave se valida contra
+`/etc/nexus/installable.json` y un helper root-owned con allowlist. Además, el
+administrador puede escribir un **paquete apt manual**; no se acepta una shell ni
+argumentos: se normaliza a minúsculas y se valida con la expresión
+`^[a-z0-9][a-z0-9+.:-]{0,79}$` antes de llamar al helper.
 
-- En el host local del hub, el backend llama al helper mediante una regla sudoers exacta.
-- En un agente Linux, la orden viaja por el despachador y el agente llama a su propio helper.
-- Docker añade el usuario del servicio al grupo `docker`; hay que reiniciar `nexus` o
-  `nexus-agent` para que el proceso lo vea.
+- **Local**: el backend del hub llama al helper mediante una regla sudoers exacta.
+- **Remoto**: el panel envía `install.manual` al agente 1.2.0, que ejecuta su
+  propio helper; el hub espera el resultado y no abre puertos en el host.
+- **TOTP**: si la cuenta tiene 2FA activo, la instalación manual exige un código
+  válido y no reutilizable. Sin código o con un código erróneo devuelve `403` y
+  deja el intento en la auditoría.
+- **Auditoría**: se registra la solicitud, el resultado y el actor, sin guardar
+  secretos.
+- Docker añade el usuario del servicio al grupo `docker`; hay que reiniciar
+  `nexus` o `nexus-agent` para que el proceso lo vea.
 - Para que apt pueda escribir, las unidades relajan `ProtectSystem` y
   `NoNewPrivileges`; la aplicación y el agente siguen ejecutándose como usuarios no
   privilegiados y solo el helper tiene root.
 
-> **Por qué allowlist y no un campo de paquete:** instalar paquetes es una operación de
-> root. Un campo libre convertiría el panel en una shell root; el catálogo cerrado
-> mantiene la superficie de ataque pequeña y auditable.
+> **Por qué se valida el paquete:** instalar software es una operación de root.
+> El catálogo reduce la superficie y el campo manual se limita a un nombre de
+> paquete, sin metacaracteres, espacios ni opciones de apt. El helper vuelve a
+> validar y nunca usa una shell.
 
 ## 3.5 Terminal local y por agente
 
-La pesta?a **Terminal** abre una shell real dentro del navegador con xterm.js y un
+La pestaña **Terminal** abre una shell real dentro del navegador con xterm.js y un
 WebSocket autenticado. Hay dos transportes:
 
 - **Hub local**: una PTY de PowerShell en Windows o de la shell del servicio en
   Linux. Se activa con `TERMINAL_LOCAL_SHELL=true`.
 - **Agente remoto**: el agente Nexus 1.2.0 abre un WebSocket saliente contra el
-  hub y expone una PTY en el host. El navegador nunca inicia una conexi?n hacia
-  el servidor: funciona detr?s de NAT, sin abrir puertos y sin SSH.
+  hub y expone una PTY en el host. El navegador nunca inicia una conexión hacia
+  el servidor: funciona detrás de NAT, sin abrir puertos y sin SSH.
 - **SSH**: queda como fallback opcional para instalaciones antiguas, pero no es
   necesario para la terminal por agente.
 
-La sesi?n exige cookie de administrador, token CSRF en el subprotocolo
+La sesión exige cookie de administrador, token CSRF en el subprotocolo
 El host local ejecuta la shell con el usuario del servicio. En los
 agentes Linux/Kali se puede activar `NEXUS_AGENT_TERMINAL_ROOT=1`:
 el agente sigue ejecutándose como `nexus-agent`, pero el PTY arranca
@@ -200,7 +214,7 @@ con `sudo -n /bin/bash -i` y una regla sudoers limitada a shells.
 Es root explícito, no implícito; exige administrador y 2FA.
 El desplegable **Servidor** muestra el transporte (`local`, `agente` o `SSH`).
 Los agentes 1.0.0 aparecen deshabilitados con el motivo ?actualiza el agente?
-hasta que se instala la versi?n 1.2.0.
+hasta que se instala la versión 1.2.0.
 
 Variables relevantes:
 
@@ -212,7 +226,7 @@ TERMINAL_IDLE_SECONDS=900
 ```
 
 El canal del agente usa `/api/agent/terminal`; el navegador usa
-`/api/terminal/ws?host=ID`. Ambos est?n autenticados y auditados.
+`/api/terminal/ws?host=ID`. Ambos están autenticados y auditados. Abrir terminal exige un código TOTP nuevo por sesión (anti-replay), aunque el login ya haya usado 2FA.
 
 
 ## 3.6 Auditoría de seguridad (solo lectura)
@@ -239,7 +253,7 @@ ejecuta comandos de consulta.
   de auditoría, tokens de API, flota, backup y límite de enrolamiento.
 - **Windows:** Defender, firewall, SMBv1, RDP y último hotfix.
 
-La auditor?a se puede ejecutar sobre el hub local o sobre cualquier agente conectado desde el selector de host de la cabecera. En un agente se auditan sistema, identidad, archivos, SSH, systemd, Docker, red y firewall; la capa de aplicaci?n y el baseline siguen siendo del hub.
+La auditoría se puede ejecutar sobre el **hub local** o sobre cualquier **agente conectado** desde el selector de host de la cabecera. En un agente se auditan los bloques del sistema, identidad, archivos, SSH, systemd, Docker, red y firewall; la capa de aplicación, el baseline y los tokens del hub no se mezclan con el host remoto.
 
 La puntuación parte de 100 y resta pesos por hallazgo (25 crítico, 15 alto, 7 medio, 3
 bajo; un aviso resta la mitad). Los checks omitidos no penalizan, pero se muestran con su
@@ -295,6 +309,11 @@ incluye la configuración y rota las copias. Un backup que no se ha probado a re
 un backup.
 
 ---
+
+La copia se cifra con Fernet y la clave se guarda fuera de `NEXUS_DATA_DIR` y de
+los propios backups. En la verificación de esta revisión se generó un archivo de
+**958 KB**, se comprobó la integridad SQLite y se recuperaron correctamente los
+hosts y el administrador en un directorio temporal.
 
 # 5. Multi-host: una flota, un panel
 
@@ -500,9 +519,33 @@ offline.
 
 ## 8.4 Backups y actualización
 
+El backup de producción crea un snapshot SQLite consistente, comprueba
+`PRAGMA integrity_check`, incluye `config/` y publica un `.tar.gz.enc` cifrado con
+Fernet. La clave vive en `/etc/nexus/backup.key` (0600), fuera de los datos y de
+las copias.
+
 ```bash
 sudo systemctl enable --now nexus-backup.timer
 sudo systemctl start nexus-backup.service
+sudo ls -l /var/backups/nexus
+```
+
+Para restaurar, detén el hub, descifra el archivo con la clave y extrae el
+snapshot; después instala el `nexus.db` con propietario `nexus` y arranca:
+
+```bash
+sudo systemctl stop nexus
+python3 - <<'PY'
+from pathlib import Path
+from cryptography.fernet import Fernet
+key = Path('/etc/nexus/backup.key').read_bytes()
+src = Path('/var/backups/nexus/nexus-AAAAmmdd-HHMMSS.tar.gz.enc')
+Path('/tmp/nexus.tar.gz').write_bytes(Fernet(key).decrypt(src.read_bytes()))
+PY
+sudo mkdir -p /tmp/nexus-restore
+sudo tar -xzf /tmp/nexus.tar.gz -C /tmp/nexus-restore
+sudo install -o nexus -g nexus -m 0600 /tmp/nexus-restore/nexus.db /var/lib/nexus/nexus.db
+sudo systemctl start nexus
 ```
 
 Actualizar el hub:
@@ -511,6 +554,15 @@ Actualizar el hub:
 cd nexus-core && git pull
 sudo bash deploy/update.sh
 ```
+
+Actualizar un agente Linux/Kali sin volver a enrolarlo:
+
+```bash
+sudo bash deploy/agent/update-agent.sh --source /ruta/al/repo-actualizado
+```
+
+El script hace copia de los archivos reemplazados, conserva
+`/etc/nexus-agent/config.json`, reinstala agente/helper y reinicia el servicio.
 
 ## 8.5 Diagnóstico rápido
 
@@ -540,9 +592,13 @@ interfaz es nativa y consume la misma API HTTPS del hub.
   sesiones, auditoría, baseline, terminal local/por agente, asistente, cambio de IP, 2FA y la
   configuración de IA.
 - La sesión se guarda cifrada con Android Keystore; no se incrustan tokens `write`.
-- APK de debug instalable por sideload en Android 8.0+ (`minSdk 26`); ABIs `arm64-v8a`, `armeabi-v7a`, `x86` y `x86_64`. La release de Play Store a?n requiere firma de producci?n.
+- APK de debug instalable por sideload en Android 8.0+ (`minSdk 26`); ABIs `arm64-v8a`, `armeabi-v7a`, `x86` y `x86_64`. La release de Play Store aún requiere firma de producción.
 - Se compila abriendo `android/` en Android Studio (SDK 37) o con
   `android\gradlew.bat :app:assembleDebug`.
+
+- **Alertas**: pestañas Eventos, Reglas, Canales, Mantenimiento y Propuestas.
+- **Histórico CSV**: exporta el rango visible; solo está habilitado para el hub local.
+- **Servicios**: búsqueda, filtros e instalación manual de paquetes con TOTP.
 
 Límites actuales: las notificaciones en segundo plano usan WorkManager cada 15
 minutos (no FCM), el cambio de IP solo aplica al hub local con netplan y la app
@@ -576,6 +632,19 @@ de “origen desconocido” o una advertencia de Play Protect; eso depende del c
 no del código. Para una distribución con confianza de tienda habría que usar una
 prueba cerrada de Play o Managed Google Play. Nunca se comparte el usuario
 `admin` entre compradores.
+
+## 8.8 Integración continua y verificación
+
+El workflow `.github/workflows/ci.yml` ejecuta en cada push y pull request:
+
+- `pytest backend/tests -q` con Python 3.12;
+- `node --check frontend/js/app.js`;
+- `./gradlew assembleDebug` para Android.
+
+La verificación local de esta revisión dio **248 tests passed, 1 skipped**, sintaxis
+JavaScript correcta y build Android correcto. La app se instaló y probó en un
+emulador Android 37: login, pestañas de Alertas, CSV y diálogo de instalación
+manual con 2FA. Los tests instrumentados de Android siguen pendientes.
 
 # 9. Laboratorios para el aula
 
@@ -615,7 +684,7 @@ Activa TOTP, cierra sesión y entra con el código. Después usa un código de r
 
 ## Laboratorio 7 — Backup y restauración
 
-Ejecuta el script de backup, inspecciona el archivo y restaura en una copia de la base.
+Ejecuta el script de backup, inspecciona el `.tar.gz.enc`, descífralo con la clave y restaura en una copia de la base.
 **Objetivo:** comprobar integridad y entender que un backup sin restauración no es una garantía.
 
 ## Laboratorio 8 — Publicación segura
@@ -677,6 +746,8 @@ Access? (No se implementó en esta versión.)
 | GET | `/api/system/smart` | Estado SMART |
 | GET | `/api/alerts/rules` | Reglas de alerta |
 | GET | `/api/monitors` | Monitores HTTP/TCP/SSL |
+| POST | `/api/install/manual` | Paquete apt validado; TOTP y host opcional |
+| GET | `/api/metrics-export.csv` | Exportación CSV del histórico |
 | GET | `/api/hosts` | Inventario de la flota |
 | POST | `/api/hosts/{id}/command` | Comando a un agente |
 | POST | `/api/agent/enroll` | Alta de un agente |
@@ -695,6 +766,7 @@ Access? (No se implementó en esta versión.)
 - `services.list`, `services.detail`, `services.logs`, `services.action`
 - `network.interfaces`, `network.scan`
 - `system.ports`, `system.updates`, `system.smart`
+- `install.manual`
 
 ## 12.3 Estructura del proyecto
 
