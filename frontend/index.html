@@ -74,6 +74,9 @@
   <!-- Tipografía: pilas del sistema, sin descargas externas -->
   <link rel="stylesheet" href="/css/styles.css?v=16" />
   <link rel="stylesheet" href="/css/redesign.css?v=1" />
+  <link rel="stylesheet" href="/css/official.css?v=2" />
+  <link rel="stylesheet" href="/css/formal.css?v=4" />
+  <link rel="stylesheet" href="/css/controls.css?v=3" />
 <link rel="stylesheet" href="/vendor/xterm/xterm.css">
   <script src="/js/theme.js"></script>
 </head>
@@ -305,7 +308,6 @@
           <!-- Aviso de ámbito: al elegir un host remoto, el Resumen
                mezcla dos fuentes (sensores del agente + inventarios
                locales) y lo dice antes de que se lea como una sola. -->
-          <p class="nx-status nx-status--warn hidden" id="dashboard-scope-note" role="status"></p>
 
           <div class="nx-dashboard-status" id="nx-dashboard-status"></div>
 
@@ -517,6 +519,7 @@
               <span class="nx-fact-value">5 s</span>
             </div>
           </div>
+          <p class="nx-status nx-status--warn hidden" id="dashboard-scope-note" role="status"></p>
         </section>
 
         <!-- SECCIÓN: CONTENEDORES -->
@@ -856,6 +859,14 @@
             </summary>
             <div class="nx-card-body">
               <p id="install-status" class="nx-hint"></p>
+              <div class="nx-install-manual">
+                <label class="field">
+                  <span class="nx-eyebrow">Instalar paquete manual</span>
+                  <input id="install-manual-package" class="input-field input-field--mono" type="text" placeholder="ej. nginx" autocomplete="off" autocapitalize="none" spellcheck="false" />
+                </label>
+                <button id="install-manual-submit" class="btn btn-primary btn-sm" type="button">Instalar con apt</button>
+                <p class="nx-hint">Nombre de paquete validado; apt ejecutar? sus scripts como root. La operaci?n queda auditada.</p>
+              </div>
               <div id="install-catalog" class="nx-install-list"></div>
             </div>
           </details>
@@ -1686,8 +1697,12 @@
           <section class="panel panel--flush" data-reveal aria-label="Auditoría de seguridad">
             <div class="nx-card-head">
               <h3 class="panel-title">Auditoría de seguridad</h3>
-              <p class="panel-note panel-note--inline">Solo lectura: sistema, puertos, servicios, archivos, Docker, SSH y la propia aplicación. No modifica nada.</p>
+              <p class="panel-note panel-note--inline">Solo lectura: sistema, puertos, servicios, archivos, Docker, SSH y firewall. Selecciona el host en la cabecera; la capa de aplicación se audita en el hub.</p>
               <div class="nx-card-actions">
+                <label class="nx-audit-host">
+                  <span class="nx-eyebrow">Host</span>
+                  <select id="security-audit-host" class="input-field" aria-label="Host que se va a auditar"></select>
+                </label>
                 <button id="security-audit-run" type="button" class="btn btn-primary btn-sm">Ejecutar auditoría</button>
                 <button id="security-audit-baseline" type="button" class="btn btn-ghost btn-sm">Guardar baseline</button>
                 <button id="security-audit-baseline-clear" type="button" class="btn btn-ghost btn-sm" disabled>Borrar baseline</button>
@@ -2151,7 +2166,7 @@
   <script src="/vendor/xterm/xterm.js"></script>
 <script src="/vendor/xterm/addon-fit.js"></script>
 <script src="/vendor/lucide/lucide.min.js"></script>
-<script src="/js/app.js?v=16"></script>
+<script src="/js/app.js?v=21"></script>
 <script src="/js/redesign.js?v=1"></script>
 </body>
 </html>

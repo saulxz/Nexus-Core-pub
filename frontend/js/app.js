@@ -437,8 +437,26 @@ function alarmRowHtml(alarm) {
       <p class="nx-alarm-msg">${escapeHtml(alarm.message)}</p>
     </div>
     <span class="nx-alarm-time" data-at="${alarm.at}">${formatRelative(alarm.at)}</span>
+    <button type="button" class="nx-alarm-dismiss" data-dismiss-alarm="${alarm.id}" aria-label="Descartar alarma de ${escapeHtml(alarm.object)}" title="Descartar de esta sesión">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+    </button>
   </div>`;
 }
+
+function dismissAlarm(id) {
+  const before = state.alarms.length;
+  state.alarms = state.alarms.filter((alarm) => alarm.id !== id);
+  if (state.alarms.length === before) return;
+  renderAlarms();
+  renderRollup();
+}
+
+document.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-dismiss-alarm]');
+  if (!button) return;
+  event.preventDefault();
+  dismissAlarm(Number(button.dataset.dismissAlarm));
+});
 
 function emptyAlarmsHtml(filter) {
   const filtered = filter !== 'all';
@@ -1434,6 +1452,38 @@ async function installService(key) {
     }
   }
 }
+
+async function installManualPackage() {
+  const input = $('install-manual-package');
+  const button = $('install-manual-submit');
+  if (!input) return;
+  const packageName = (input.value || '').trim().toLowerCase();
+  if (!/^[a-z0-9][a-z0-9+.:-]{0,79}$/.test(packageName)) {
+    showToast('Nombre de paquete no v?lido. Usa solo letras min?sculas, n?meros, +, ., : o -.', 'error');
+    return;
+  }
+  if (!window.confirm(`?Instalar el paquete ?${packageName}? con apt? La operaci?n queda auditada.`)) return;
+  const totp = window.prompt('C?digo 2FA para instalar el paquete');
+  if (!totp) { showToast('Instalaci?n cancelada: falta el c?digo 2FA.', 'error'); return; }
+  if (button) { button.disabled = true; button.textContent = 'Instalando?'; }
+  try {
+    const suffix = isRemoteScope() ? `?host_id=${encodeURIComponent(String(state.hostId))}` : '';
+    const result = await apiFetch(`/api/install/manual${suffix}`, {
+      method: 'POST',
+      body: JSON.stringify({ confirm: true, package: packageName, totp: totp.trim() }),
+    }, 220000);
+    const ok = Boolean(result.success);
+    showToast(result.message || result.reason || (ok ? 'Paquete instalado.' : 'No se pudo instalar.'), ok ? 'success' : 'error');
+    if (ok) input.value = '';
+    await fetchInstallCatalog();
+    await fetchServices();
+  } catch (error) {
+    showToast(`Error al instalar: ${error.message}`, 'error');
+  } finally {
+    if (button) { button.disabled = false; button.textContent = 'Instalar con apt'; }
+  }
+}
+
 
 async function showServiceDetail(name) {
   const panel = $('service-detail');
@@ -4144,7 +4194,7 @@ function renderSecurityAudit(data) {
         ${badgeHtml('badge-stopped', `Omitidas ${counts.skipped || 0}`)}
       </div>
     </div>
-    <p class="nx-meta">Solo lectura · ${escapeHtml(data.platform || '')} · ${data.duration_ms || 0} ms${data.cached ? ' · caché 5 min' : ''} · ${escapeHtml(data.generated_at || '')}</p>
+    <p class="nx-meta">Solo lectura · ${escapeHtml(data.host || '')} · ${escapeHtml(data.platform || '')} · ${data.duration_ms || 0} ms${data.cached ? ' · caché 5 min' : ''} · ${escapeHtml(data.generated_at || '')}</p>
     ${comparisonHtml}
     <div class="nx-toolbar" style="grid-template-columns:minmax(0,240px);margin-top:10px">
       <label class="field">
@@ -4169,8 +4219,14 @@ function renderSecurityAudit(data) {
   }
   const exportButton = $('security-audit-export');
   if (exportButton) exportButton.disabled = false;
+  const remoteScope = isRemoteScope();
+  const baselineSave = $('security-audit-baseline');
+  if (baselineSave) {
+    baselineSave.disabled = remoteScope;
+    baselineSave.title = remoteScope ? 'El baseline se guarda en el hub local.' : '';
+  }
   const baselineClear = $('security-audit-baseline-clear');
-  if (baselineClear) baselineClear.disabled = !comparison;
+  if (baselineClear) baselineClear.disabled = remoteScope || !comparison;
 }
 
 async function fetchSecurityAudit(force = false) {
@@ -4181,11 +4237,16 @@ async function fetchSecurityAudit(force = false) {
     button.disabled = true;
     button.textContent = 'Analizando…';
   }
-  body.innerHTML = '<p class="nx-meta">Analizando sistema, puertos, servicios, archivos, Docker y aplicación…</p>';
+  const host = selectedHost();
+  const remote = Boolean(host && Number(host.is_local) !== 1);
+  const suffix = remote ? `?host_id=${encodeURIComponent(String(state.hostId))}` : '';
+  const timeout = remote ? 120000 : undefined;
+  const target = remote ? `el agente ${host.name}` : 'el hub local';
+  body.innerHTML = `<p class="nx-meta">Analizando ${escapeHtml(target)}: sistema, puertos, servicios, archivos, Docker y firewall…</p>`;
   try {
     const data = force
-      ? await apiFetch('/api/audit/security/run', { method: 'POST' })
-      : await apiFetch('/api/audit/security');
+      ? await apiFetch(`/api/audit/security/run${suffix}`, { method: 'POST' }, timeout)
+      : await apiFetch(`/api/audit/security${suffix}`, {}, timeout);
     state.securityAudit = data;
     renderSecurityAudit(data);
   } catch (error) {
@@ -4197,6 +4258,7 @@ async function fetchSecurityAudit(force = false) {
     }
   }
 }
+
 
 function exportSecurityAudit() {
   if (!state.securityAudit) return;
@@ -4210,6 +4272,10 @@ function exportSecurityAudit() {
 }
 
 async function saveSecurityBaseline() {
+  if (isRemoteScope()) {
+    showToast('El baseline se guarda solo en el hub local.', 'error');
+    return;
+  }
   if (!window.confirm('¿Guardar el informe actual como baseline? Se creará security_audit_baseline.json en el directorio de datos. La auditoría en sí no cambia el host.')) return;
   const button = $('security-audit-baseline');
   if (button) button.disabled = true;
@@ -4225,6 +4291,10 @@ async function saveSecurityBaseline() {
 }
 
 async function clearSecurityBaseline() {
+  if (isRemoteScope()) {
+    showToast('El baseline se guarda solo en el hub local.', 'error');
+    return;
+  }
   if (!window.confirm('¿Borrar el baseline? Solo se elimina el archivo de comparación; el host no se toca.')) return;
   try {
     await apiFetch('/api/audit/security/baseline', { method: 'DELETE' });
@@ -5241,6 +5311,7 @@ function renderHosts() {
 
   if (!state.hosts.length) {
     tbody.innerHTML = emptyCell(9, 'Sin hosts', 'El hub no tiene ningún host en el inventario todavía.');
+
     renderHostSummary();
     return;
   }
@@ -5529,6 +5600,21 @@ async function copyWithFeedback(text, button, idleLabel) {
 // ------------------------ Selector global ------------------------
 
 /** Opciones del <select>. El LED del estado va al lado, no dentro. */
+function renderSecurityAuditHost() {
+  const select = $('security-audit-host');
+  if (!select) return;
+  const current = String(state.hostId);
+  select.innerHTML = state.hosts
+    .map((host) => {
+      const local = Number(host.is_local) === 1;
+      const suffix = local ? '' : ` · agente #${host.id}`;
+      return `<option value="${escapeHtml(String(host.id))}">${escapeHtml(host.name)}${escapeHtml(suffix)}</option>`;
+    })
+    .join('');
+  select.value = current;
+}
+
+
 function renderHostSelector() {
   const select = $('host-select');
   if (!select) return;
@@ -5568,6 +5654,7 @@ function renderHostScope() {
   if (name) name.textContent = host ? host.name : 'Este servidor';
   if (chip) chip.dataset.scope = remote ? 'remote' : 'local';
   renderHostSelectorLed();
+  renderSecurityAuditHost();
 
   // El drilledown de los contadores de severidad salta al registro de
   // alarmas, que es de SESIÓN y por tanto del host local. Con un host
@@ -5669,6 +5756,11 @@ async function applyHostScope() {
     fetchPorts();
     fetchUpdates();
     fetchSmart();
+  }
+
+  if (isTabVisible('audit')) {
+    state.securityAudit = null;
+    fetchSecurityAudit();
   }
 
   renderHostSummary();
@@ -6370,9 +6462,14 @@ function openTerminalSession() {
   try { fit.fit(); } catch (_error) { /* aún sin tamaño */ }
 
   const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  const reauth = window.prompt('Código 2FA para abrir la terminal');
+  if (!reauth) {
+    setTerminalStatus('Reautenticación cancelada.', true);
+    return;
+  }
   const ws = new WebSocket(
     `${scheme}://${window.location.host}/api/terminal/ws?host=${encodeURIComponent(String(target.id))}`,
-    ['nexus-terminal', `csrf.${state.csrf || ''}`]
+    ['nexus-terminal', `csrf.${state.csrf || ''}`, `totp.${reauth.trim()}`]
   );
   ws.binaryType = 'arraybuffer';
   const session = { term, fit, ws, host, hostId: Number(target.id) };
@@ -6481,6 +6578,10 @@ function registerEventListeners() {
   const hostSelect = $('host-select');
   if (hostSelect) {
     hostSelect.addEventListener('change', () => selectHost(hostSelect.value));
+  }
+  const securityAuditHost = $('security-audit-host');
+  if (securityAuditHost) {
+    securityAuditHost.addEventListener('change', () => selectHost(securityAuditHost.value));
   }
 
   const hostsTable = $('hosts-table');
@@ -6729,6 +6830,7 @@ function registerAuditListeners() {
     if (node) node.addEventListener(event, handler);
   };
   on('refresh-audit', 'click', fetchAudit);
+  on('install-manual-submit', 'click', installManualPackage);
   on('security-audit-run', 'click', () => fetchSecurityAudit(true));
   on('security-audit-export', 'click', exportSecurityAudit);
   on('security-audit-baseline', 'click', saveSecurityBaseline);
