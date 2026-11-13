@@ -15,6 +15,7 @@ from app.core.proc import run_hidden
 
 HELPER = "/usr/local/lib/nexus/pkg-install"
 KEY_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,31}$")
+PACKAGE_RE = re.compile(r"^[a-z0-9][a-z0-9+.:-]{0,79}$")
 
 
 def _run(arguments: list[str], timeout: int = 210) -> dict:
@@ -62,3 +63,11 @@ def install(key: str) -> dict:
     if not KEY_RE.match(key or ""):
         return {"success": False, "message": "Clave de servicio no válida."}
     return _run(["install", key])
+
+
+def install_manual(package: str) -> dict:
+    """Instala un paquete apt concreto con validaci?n y sin shell."""
+    clean = (package or "").strip().lower()
+    if not PACKAGE_RE.fullmatch(clean):
+        return {"success": False, "message": "Nombre de paquete no v?lido."}
+    return _run(["install-manual", clean])

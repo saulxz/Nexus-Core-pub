@@ -19,3 +19,8 @@ def test_installable_catalog_is_valid_and_allowlisted():
 def test_installer_rejects_unknown_keys_before_calling_sudo():
     result = installer.install("../nginx")
     assert result["success"] is False
+
+def test_installer_rejects_invalid_manual_package():
+    result = installer.install_manual("bad name; rm -rf /")
+    assert result["success"] is False
+    assert "no v?lido" in result["message"]
