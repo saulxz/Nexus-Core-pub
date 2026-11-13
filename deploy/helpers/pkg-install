@@ -8,6 +8,7 @@ desde el panel. Salida: JSON por stdout.
 Uso:
     pkg-install catalog
     pkg-install install <clave>
+    pkg-install install-manual <paquete>
 """
 
 from __future__ import annotations
@@ -148,13 +149,58 @@ def install(key: str, catalog: dict) -> dict:
     }
 
 
+PACKAGE_RE = re.compile(r"^[a-z0-9][a-z0-9+.:-]{0,79}$")
+
+
+def install_manual(package: str) -> dict:
+    """Instala un paquete apt concreto, sin shell y con nombre validado."""
+    package = (package or "").strip().lower()
+    if not PACKAGE_RE.fullmatch(package):
+        return {"success": False, "message": "Nombre de paquete no v?lido."}
+
+    log(f"install-manual package={package}")
+    environment = dict(os.environ, DEBIAN_FRONTEND="noninteractive", APT_LISTCHANGES_FRONTEND="none")
+    update = subprocess.run(
+        ["apt-get", "update", "-qq"],
+        capture_output=True,
+        text=True,
+        env=environment,
+        timeout=90,
+    )
+    if update.returncode != 0:
+        return {
+            "success": False,
+            "message": (update.stderr or update.stdout or "apt-get update fall?")[-500:],
+        }
+    result = subprocess.run(
+        ["apt-get", "install", "-y", "--no-install-recommends", package],
+        capture_output=True,
+        text=True,
+        env=environment,
+        timeout=150,
+    )
+    if result.returncode != 0:
+        log(f"install-manual package={package} failed rc={result.returncode}")
+        return {
+            "success": False,
+            "message": (result.stderr or result.stdout or "apt-get install fall?")[-500:],
+        }
+    log(f"install-manual package={package} ok")
+    return {
+        "success": True,
+        "message": f"Paquete {package} instalado correctamente.",
+        "package": package,
+        "installed": True,
+    }
+
+
 def main() -> int:
     if os.geteuid() != 0:
         print(json.dumps({"success": False, "message": "Este helper debe ejecutarse como root."}))
         return 1
 
-    if len(sys.argv) < 2 or sys.argv[1] not in {"catalog", "install"}:
-        print(json.dumps({"success": False, "message": "Uso: pkg-install catalog | install <clave>"}))
+    if len(sys.argv) < 2 or sys.argv[1] not in {"catalog", "install", "install-manual"}:
+        print(json.dumps({"success": False, "message": "Uso: pkg-install catalog | install <clave> | install-manual <paquete>"}))
         return 2
 
     try:
@@ -163,8 +209,11 @@ def main() -> int:
             print(json.dumps({"catalog": catalog_payload(catalog)}, ensure_ascii=False))
             return 0
         if len(sys.argv) < 3:
-            print(json.dumps({"success": False, "message": "Falta la clave del servicio."}))
+            print(json.dumps({"success": False, "message": "Falta la clave o el paquete."}))
             return 2
+        if sys.argv[1] == "install-manual":
+            print(json.dumps(install_manual(sys.argv[2]), ensure_ascii=False))
+            return 0
         print(json.dumps(install(sys.argv[2], catalog), ensure_ascii=False))
         return 0
     except subprocess.TimeoutExpired:

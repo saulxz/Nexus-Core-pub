@@ -83,6 +83,7 @@ fi
 
 echo "==> Directorios"
 install -d -m 0755 "${APP_DIR}"
+install -d -o "${SERVICE_USER}" -g "${SERVICE_USER}" -m 0700 "${APP_DIR}/data"
 install -d -o "${SERVICE_USER}" -g "${SERVICE_USER}" -m 0700 "${CONF_DIR}"
 
 echo "==> Copiando el proyecto a ${APP_DIR}"
@@ -97,6 +98,8 @@ find "${APP_DIR}" -name '__pycache__' -type d -prune -exec rm -rf {} + 2>/dev/nu
 echo "==> Instalador apt (helper + catalogo)"
 install -d -m 0755 /usr/local/lib/nexus-agent
 install -m 0755 -o root -g root "${SCRIPT_DIR}/deploy/helpers/pkg-install" /usr/local/lib/nexus-agent/pkg-install
+install -m 0755 -o root -g root "${SCRIPT_DIR}/deploy/agent/security-audit-helper" /usr/local/lib/nexus-agent/security-audit-helper
+sed -i 's/\r$//' /usr/local/lib/nexus-agent/pkg-install /usr/local/lib/nexus-agent/security-audit-helper
 install -d -m 0755 /etc/nexus
 install -m 0644 -o root -g root "${SCRIPT_DIR}/deploy/nexus/installable.json" /etc/nexus/installable.json
 SUDOERS_PKG="/etc/sudoers.d/nexus-agent-pkg"
@@ -104,6 +107,12 @@ printf '%s\n' "nexus-agent ALL=(root) NOPASSWD: /usr/local/lib/nexus-agent/pkg-i
 chown root:root "${SUDOERS_PKG}"
 chmod 0440 "${SUDOERS_PKG}"
 visudo -cf "${SUDOERS_PKG}"
+
+SUDOERS_AUDIT="/etc/sudoers.d/nexus-agent-audit"
+printf '%s\n' "nexus-agent ALL=(root) NOPASSWD: /usr/local/lib/nexus-agent/security-audit-helper" > "${SUDOERS_AUDIT}"
+chown root:root "${SUDOERS_AUDIT}"
+chmod 0440 "${SUDOERS_AUDIT}"
+visudo -cf "${SUDOERS_AUDIT}"
 
 echo "==> Entorno virtual del agente"
 if [[ ! -x "${APP_DIR}/venv/bin/python" ]]; then
